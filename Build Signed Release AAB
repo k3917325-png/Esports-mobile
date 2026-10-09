@@ -1,4 +1,5 @@
 
+name: Build Signed Release AAB
 
 on:
   push:
@@ -12,21 +13,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Find and Extract Android Project Zip
+      - name: Extract Project Zip
         run: |
-          # Repository ke andar jo bhi zip file hai use dhoondh kar extract karenge
           ZIP_FILE=$(find . -maxdepth 1 -name "*.zip" | head -n 1)
           if [ -n "$ZIP_FILE" ]; then
-            echo "Found zip file: $ZIP_FILE. Extracting..."
-            unzip -q "$ZIP_FILE" -d extracted_project
-            # Agar zip ke andar folder ke andar files hain toh unhe root par layenge
+            echo "Extracting $ZIP_FILE..."
+            unzip -q "$ZIP_FILE" -d temp_folder
+            # Move extracted contents to root workspace
             shopt -s dotglob
-            mv extracted_project/*/* extracted_project/ 2>/dev/null || true
-            # Saari files ko main workspace par move kar denge
-            mv extracted_project/* .
-            rm -rf extracted_project "$ZIP_FILE"
+            cp -r temp_folder/*/* . 2>/dev/null || cp -r temp_folder/* . 2>/dev/null || true
+            rm -rf temp_folder "$ZIP_FILE"
           else
-            echo "No zip file found, checking standard project structure..."
+            echo "No zip file found, proceeding with repository files."
           fi
           ls -la
 
@@ -51,7 +49,7 @@ jobs:
           RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
           RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
-        run: ./gradlew :app:bundleRelease --no-daemon --stacktrace
+        run: ./gradlew :app:bundleRelease --no-daemon
 
       - name: Upload AAB artifact
         uses: actions/upload-artifact@v4
@@ -59,8 +57,3 @@ jobs:
           name: app-release-aab
           path: app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
-
-      - name: Clean up keystore from workspace
-        if: always()
-        run: rm -f release-key.jks
-        
