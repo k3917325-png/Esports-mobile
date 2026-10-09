@@ -1,3 +1,4 @@
+
 name: Build Signed Release AAB
 
 on:
@@ -9,8 +10,26 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Find and Extract Android Project Zip
+        run: |
+          # Repository ke andar jo bhi zip file hai use dhoondh kar extract karenge
+          ZIP_FILE=$(find . -maxdepth 1 -name "*.zip" | head -n 1)
+          if [ -n "$ZIP_FILE" ]; then
+            echo "Found zip file: $ZIP_FILE. Extracting..."
+            unzip -q "$ZIP_FILE" -d extracted_project
+            # Agar zip ke andar folder ke andar files hain toh unhe root par layenge
+            shopt -s dotglob
+            mv extracted_project/*/* extracted_project/ 2>/dev/null || true
+            # Saari files ko main workspace par move kar denge
+            mv extracted_project/* .
+            rm -rf extracted_project "$ZIP_FILE"
+          else
+            echo "No zip file found, checking standard project structure..."
+          fi
+          ls -la
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -45,3 +64,4 @@ jobs:
       - name: Clean up keystore from workspace
         if: always()
         run: rm -f release-key.jks
+        
