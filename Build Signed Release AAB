@@ -1,5 +1,4 @@
 
-name: Build Signed Release AAB
 
 on:
   push:
