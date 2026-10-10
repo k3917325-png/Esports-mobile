@@ -79,4 +79,3 @@ jobs:
       - name: Clean up keystore from workspace
         if: always()
         run: rm -f release-key.jks
-        

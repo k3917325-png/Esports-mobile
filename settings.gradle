@@ -1,0 +1,19 @@
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+rootProject.name = "EsportsReward"
+include ":app"
+// app module ki build file ka naam unique rakha hai (app-build.gradle) taaki phone se upload karte waqt
+// root build.gradle se confuse na ho.
+project(":app").buildFileName = "app-build.gradle"

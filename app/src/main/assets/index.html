@@ -1,0 +1,2407 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Esports Reward App</title>
+<style>
+:root{--bg:#ece6fa;--card:#fff;--text:#2a1560;--muted:#7b6c9f;--acc:#6d2fe0;--gold:#f5a300;--ok:#1fa971;--in:rgba(109,47,224,.09);
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#160c2e;--card:#26154a;--text:#f3ecff;--muted:#b3a3d6}}
+:root[data-theme="dark"]{--bg:#160c2e;--card:#26154a;--text:#f3ecff;--muted:#b3a3d6}
+*{box-sizing:border-box}html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Segoe UI',Roboto,Arial,sans-serif;display:flex;justify-content:center}
+.app{width:100%;max-width:440px;height:100%;display:flex;flex-direction:column}
+header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px 6px}
+.logo{font-weight:800;font-size:19px}.logo span{color:var(--acc)}
+.bal{background:var(--card);color:var(--gold);padding:7px 13px;border-radius:20px;font-weight:700;font-size:13px}
+main{flex:1;overflow-y:auto;padding:8px 16px 16px}
+.card{background:var(--card);border-radius:14px;padding:14px;margin-bottom:10px}
+.btn{border:none;border-radius:10px;padding:12px;font-weight:700;font-size:14px;cursor:pointer;background:var(--acc);color:#fff;width:100%}
+.btn.g{background:var(--ok);color:#04281a}.btn.s{background:var(--in);color:var(--text)}.btn:disabled{opacity:.45}
+.btn.sm{width:auto;padding:8px 14px;font-size:13px}
+input{width:100%;padding:12px;border-radius:10px;border:2px solid transparent;background:var(--in);color:var(--text);font-size:15px;margin-bottom:10px;outline:none}
+input:focus{border-color:var(--acc)}
+h3{margin:4px 0 10px;font-size:15px}.mut{color:var(--muted);font-size:12px}
+.chips{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.chip{border:1px solid rgba(180,140,255,.18);background:var(--card);color:var(--muted);padding:10px 18px;border-radius:20px;font-size:14px;font-weight:700;cursor:pointer;transition:transform .15s}
+.chip.on{background:linear-gradient(135deg,#a970ff,#6d2fe0);color:#fff;border-color:transparent;box-shadow:0 4px 16px rgba(109,47,224,.45);transform:scale(1.05)}
+.slider{display:flex;overflow-x:auto;gap:10px;scroll-snap-type:x mandatory;margin-bottom:12px}
+.slide{flex:0 0 88%;scroll-snap-align:start;border-radius:14px;padding:18px;color:#fff;font-weight:700;min-height:84px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cat{background:linear-gradient(160deg,#241542,#120a28);border:1px solid rgba(180,140,255,.25);border-radius:16px;padding:18px 12px;font-size:14px;font-weight:700;color:#fff;display:flex;justify-content:space-between;align-items:center;box-shadow:0 4px 14px rgba(50,20,110,.3)}
+.cat .ci{font-size:24px;background:rgba(255,255,255,.08);border-radius:10px;width:38px;height:38px;display:flex;align-items:center;justify-content:center}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.lb{display:flex;gap:12px;align-items:center;padding:11px 14px;background:var(--card);border-radius:12px;margin-bottom:8px}
+.lb b:first-child{width:26px;color:var(--muted)}.lb:nth-child(-n+4) b:first-child{color:var(--gold)}.lb .n{flex:1;font-weight:600}.lb .p{color:var(--ok);font-weight:700}
+.room{background:var(--in);border-radius:8px;padding:8px 10px;font-size:13px;margin-top:8px}
+nav{display:flex;background:var(--card);padding:6px 0 8px}
+nav button{flex:1;background:none;border:none;color:var(--muted);font-size:10px;padding:5px;cursor:pointer}nav button.on{color:var(--acc)}nav span{display:block;font-size:19px}
+.msg{text-align:center;font-weight:600;font-size:13px;min-height:20px;margin:6px 0}.ok{color:var(--ok)}.err{color:#ff5c5c}
+canvas{display:block;margin:0 auto 10px;border-radius:10px;max-width:100%}
+.login{max-width:440px;margin:auto;padding:30px 20px;width:100%}
+.hero{background:linear-gradient(180deg,#b06bff,#7c3fd6);border-radius:16px;padding:22px 10px;text-align:center;color:#fff;font-weight:800;font-size:26px;line-height:1.1;margin-bottom:12px}.hero b{display:block;color:#ffd54a;font-size:38px}
+.tc{background:var(--card);border-radius:18px;overflow:hidden;margin-bottom:14px;box-shadow:0 4px 14px rgba(80,40,160,.18)}
+.tb{height:104px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:22px;letter-spacing:1px;text-shadow:0 2px 6px rgba(0,0,0,.4)}
+.tm{display:flex;justify-content:space-between;padding:12px 14px 4px;text-align:center}.tm div{flex:1;font-size:11px;color:var(--muted)}.tm b{display:block;font-size:15px;color:var(--text);margin-top:3px}
+.play{margin:8px 14px 14px;width:calc(100% - 28px);background:linear-gradient(180deg,#8b4dff,#5a1fc4)}
+.adbox{min-height:70px;border:1px dashed var(--muted);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted);background:var(--in);margin-bottom:14px}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+</style>
+</head>
+<body>
+<div class="app" id="root"></div>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const COUNTRIES = [
+  {id:"AF", flag:"🇦🇫", name:'Afghanistan', code:"+93"},
+  {id:"AL", flag:"🇦🇱", name:'Albania', code:"+355"},
+  {id:"DZ", flag:"🇩🇿", name:'Algeria', code:"+213"},
+  {id:"AD", flag:"🇦🇩", name:'Andorra', code:"+376"},
+  {id:"AO", flag:"🇦🇴", name:'Angola', code:"+244"},
+  {id:"AG", flag:"🇦🇬", name:'Antigua and Barbuda', code:"+1268"},
+  {id:"AR", flag:"🇦🇷", name:'Argentina', code:"+54"},
+  {id:"AM", flag:"🇦🇲", name:'Armenia', code:"+374"},
+  {id:"AU", flag:"🇦🇺", name:'Australia', code:"+61"},
+  {id:"AT", flag:"🇦🇹", name:'Austria', code:"+43"},
+  {id:"AZ", flag:"🇦🇿", name:'Azerbaijan', code:"+994"},
+  {id:"BS", flag:"🇧🇸", name:'Bahamas', code:"+1242"},
+  {id:"BH", flag:"🇧🇭", name:'Bahrain', code:"+973"},
+  {id:"BD", flag:"🇧🇩", name:'Bangladesh', code:"+880"},
+  {id:"BB", flag:"🇧🇧", name:'Barbados', code:"+1246"},
+  {id:"BY", flag:"🇧🇾", name:'Belarus', code:"+375"},
+  {id:"BE", flag:"🇧🇪", name:'Belgium', code:"+32"},
+  {id:"BZ", flag:"🇧🇿", name:'Belize', code:"+501"},
+  {id:"BJ", flag:"🇧🇯", name:'Benin', code:"+229"},
+  {id:"BT", flag:"🇧🇹", name:'Bhutan', code:"+975"},
+  {id:"BO", flag:"🇧🇴", name:'Bolivia', code:"+591"},
+  {id:"BA", flag:"🇧🇦", name:'Bosnia and Herzegovina', code:"+387"},
+  {id:"BW", flag:"🇧🇼", name:'Botswana', code:"+267"},
+  {id:"BR", flag:"🇧🇷", name:'Brazil', code:"+55"},
+  {id:"BN", flag:"🇧🇳", name:'Brunei', code:"+673"},
+  {id:"BG", flag:"🇧🇬", name:'Bulgaria', code:"+359"},
+  {id:"BF", flag:"🇧🇫", name:'Burkina Faso', code:"+226"},
+  {id:"BI", flag:"🇧🇮", name:'Burundi', code:"+257"},
+  {id:"KH", flag:"🇰🇭", name:'Cambodia', code:"+855"},
+  {id:"CM", flag:"🇨🇲", name:'Cameroon', code:"+237"},
+  {id:"CA", flag:"🇨🇦", name:'Canada', code:"+1"},
+  {id:"CV", flag:"🇨🇻", name:'Cape Verde', code:"+238"},
+  {id:"CF", flag:"🇨🇫", name:'Central African Republic', code:"+236"},
+  {id:"TD", flag:"🇹🇩", name:'Chad', code:"+235"},
+  {id:"CL", flag:"🇨🇱", name:'Chile', code:"+56"},
+  {id:"CN", flag:"🇨🇳", name:'China', code:"+86"},
+  {id:"CO", flag:"🇨🇴", name:'Colombia', code:"+57"},
+  {id:"KM", flag:"🇰🇲", name:'Comoros', code:"+269"},
+  {id:"CG", flag:"🇨🇬", name:'Congo', code:"+242"},
+  {id:"CD", flag:"🇨🇩", name:'Congo (DRC)', code:"+243"},
+  {id:"CR", flag:"🇨🇷", name:'Costa Rica', code:"+506"},
+  {id:"CI", flag:"🇨🇮", name:'Cote d\'Ivoire', code:"+225"},
+  {id:"HR", flag:"🇭🇷", name:'Croatia', code:"+385"},
+  {id:"CU", flag:"🇨🇺", name:'Cuba', code:"+53"},
+  {id:"CY", flag:"🇨🇾", name:'Cyprus', code:"+357"},
+  {id:"CZ", flag:"🇨🇿", name:'Czech Republic', code:"+420"},
+  {id:"DK", flag:"🇩🇰", name:'Denmark', code:"+45"},
+  {id:"DJ", flag:"🇩🇯", name:'Djibouti', code:"+253"},
+  {id:"DM", flag:"🇩🇲", name:'Dominica', code:"+1767"},
+  {id:"DO", flag:"🇩🇴", name:'Dominican Republic', code:"+1809"},
+  {id:"EC", flag:"🇪🇨", name:'Ecuador', code:"+593"},
+  {id:"EG", flag:"🇪🇬", name:'Egypt', code:"+20"},
+  {id:"SV", flag:"🇸🇻", name:'El Salvador', code:"+503"},
+  {id:"GQ", flag:"🇬🇶", name:'Equatorial Guinea', code:"+240"},
+  {id:"ER", flag:"🇪🇷", name:'Eritrea', code:"+291"},
+  {id:"EE", flag:"🇪🇪", name:'Estonia', code:"+372"},
+  {id:"SZ", flag:"🇸🇿", name:'Eswatini', code:"+268"},
+  {id:"ET", flag:"🇪🇹", name:'Ethiopia', code:"+251"},
+  {id:"FJ", flag:"🇫🇯", name:'Fiji', code:"+679"},
+  {id:"FI", flag:"🇫🇮", name:'Finland', code:"+358"},
+  {id:"FR", flag:"🇫🇷", name:'France', code:"+33"},
+  {id:"GA", flag:"🇬🇦", name:'Gabon', code:"+241"},
+  {id:"GM", flag:"🇬🇲", name:'Gambia', code:"+220"},
+  {id:"GE", flag:"🇬🇪", name:'Georgia', code:"+995"},
+  {id:"DE", flag:"🇩🇪", name:'Germany', code:"+49"},
+  {id:"GH", flag:"🇬🇭", name:'Ghana', code:"+233"},
+  {id:"GR", flag:"🇬🇷", name:'Greece', code:"+30"},
+  {id:"GD", flag:"🇬🇩", name:'Grenada', code:"+1473"},
+  {id:"GT", flag:"🇬🇹", name:'Guatemala', code:"+502"},
+  {id:"GN", flag:"🇬🇳", name:'Guinea', code:"+224"},
+  {id:"GW", flag:"🇬🇼", name:'Guinea-Bissau', code:"+245"},
+  {id:"GY", flag:"🇬🇾", name:'Guyana', code:"+592"},
+  {id:"HT", flag:"🇭🇹", name:'Haiti', code:"+509"},
+  {id:"HN", flag:"🇭🇳", name:'Honduras', code:"+504"},
+  {id:"HK", flag:"🇭🇰", name:'Hong Kong', code:"+852"},
+  {id:"HU", flag:"🇭🇺", name:'Hungary', code:"+36"},
+  {id:"IS", flag:"🇮🇸", name:'Iceland', code:"+354"},
+  {id:"IN", flag:"🇮🇳", name:'India', code:"+91"},
+  {id:"ID", flag:"🇮🇩", name:'Indonesia', code:"+62"},
+  {id:"IR", flag:"🇮🇷", name:'Iran', code:"+98"},
+  {id:"IQ", flag:"🇮🇶", name:'Iraq', code:"+964"},
+  {id:"IE", flag:"🇮🇪", name:'Ireland', code:"+353"},
+  {id:"IL", flag:"🇮🇱", name:'Israel', code:"+972"},
+  {id:"IT", flag:"🇮🇹", name:'Italy', code:"+39"},
+  {id:"JM", flag:"🇯🇲", name:'Jamaica', code:"+1876"},
+  {id:"JP", flag:"🇯🇵", name:'Japan', code:"+81"},
+  {id:"JO", flag:"🇯🇴", name:'Jordan', code:"+962"},
+  {id:"KZ", flag:"🇰🇿", name:'Kazakhstan', code:"+7"},
+  {id:"KE", flag:"🇰🇪", name:'Kenya', code:"+254"},
+  {id:"KI", flag:"🇰🇮", name:'Kiribati', code:"+686"},
+  {id:"KW", flag:"🇰🇼", name:'Kuwait', code:"+965"},
+  {id:"KG", flag:"🇰🇬", name:'Kyrgyzstan', code:"+996"},
+  {id:"LA", flag:"🇱🇦", name:'Laos', code:"+856"},
+  {id:"LV", flag:"🇱🇻", name:'Latvia', code:"+371"},
+  {id:"LB", flag:"🇱🇧", name:'Lebanon', code:"+961"},
+  {id:"LS", flag:"🇱🇸", name:'Lesotho', code:"+266"},
+  {id:"LR", flag:"🇱🇷", name:'Liberia', code:"+231"},
+  {id:"LY", flag:"🇱🇾", name:'Libya', code:"+218"},
+  {id:"LI", flag:"🇱🇮", name:'Liechtenstein', code:"+423"},
+  {id:"LT", flag:"🇱🇹", name:'Lithuania', code:"+370"},
+  {id:"LU", flag:"🇱🇺", name:'Luxembourg', code:"+352"},
+  {id:"MO", flag:"🇲🇴", name:'Macau', code:"+853"},
+  {id:"MG", flag:"🇲🇬", name:'Madagascar', code:"+261"},
+  {id:"MW", flag:"🇲🇼", name:'Malawi', code:"+265"},
+  {id:"MY", flag:"🇲🇾", name:'Malaysia', code:"+60"},
+  {id:"MV", flag:"🇲🇻", name:'Maldives', code:"+960"},
+  {id:"ML", flag:"🇲🇱", name:'Mali', code:"+223"},
+  {id:"MT", flag:"🇲🇹", name:'Malta', code:"+356"},
+  {id:"MH", flag:"🇲🇭", name:'Marshall Islands', code:"+692"},
+  {id:"MR", flag:"🇲🇷", name:'Mauritania', code:"+222"},
+  {id:"MU", flag:"🇲🇺", name:'Mauritius', code:"+230"},
+  {id:"MX", flag:"🇲🇽", name:'Mexico', code:"+52"},
+  {id:"FM", flag:"🇫🇲", name:'Micronesia', code:"+691"},
+  {id:"MD", flag:"🇲🇩", name:'Moldova', code:"+373"},
+  {id:"MC", flag:"🇲🇨", name:'Monaco', code:"+377"},
+  {id:"MN", flag:"🇲🇳", name:'Mongolia', code:"+976"},
+  {id:"ME", flag:"🇲🇪", name:'Montenegro', code:"+382"},
+  {id:"MA", flag:"🇲🇦", name:'Morocco', code:"+212"},
+  {id:"MZ", flag:"🇲🇿", name:'Mozambique', code:"+258"},
+  {id:"MM", flag:"🇲🇲", name:'Myanmar', code:"+95"},
+  {id:"NA", flag:"🇳🇦", name:'Namibia', code:"+264"},
+  {id:"NR", flag:"🇳🇷", name:'Nauru', code:"+674"},
+  {id:"NP", flag:"🇳🇵", name:'Nepal', code:"+977"},
+  {id:"NL", flag:"🇳🇱", name:'Netherlands', code:"+31"},
+  {id:"NZ", flag:"🇳🇿", name:'New Zealand', code:"+64"},
+  {id:"NI", flag:"🇳🇮", name:'Nicaragua', code:"+505"},
+  {id:"NE", flag:"🇳🇪", name:'Niger', code:"+227"},
+  {id:"NG", flag:"🇳🇬", name:'Nigeria', code:"+234"},
+  {id:"KP", flag:"🇰🇵", name:'North Korea', code:"+850"},
+  {id:"MK", flag:"🇲🇰", name:'North Macedonia', code:"+389"},
+  {id:"NO", flag:"🇳🇴", name:'Norway', code:"+47"},
+  {id:"OM", flag:"🇴🇲", name:'Oman', code:"+968"},
+  {id:"PK", flag:"🇵🇰", name:'Pakistan', code:"+92"},
+  {id:"PW", flag:"🇵🇼", name:'Palau', code:"+680"},
+  {id:"PS", flag:"🇵🇸", name:'Palestine', code:"+970"},
+  {id:"PA", flag:"🇵🇦", name:'Panama', code:"+507"},
+  {id:"PG", flag:"🇵🇬", name:'Papua New Guinea', code:"+675"},
+  {id:"PY", flag:"🇵🇾", name:'Paraguay', code:"+595"},
+  {id:"PE", flag:"🇵🇪", name:'Peru', code:"+51"},
+  {id:"PH", flag:"🇵🇭", name:'Philippines', code:"+63"},
+  {id:"PL", flag:"🇵🇱", name:'Poland', code:"+48"},
+  {id:"PT", flag:"🇵🇹", name:'Portugal', code:"+351"},
+  {id:"QA", flag:"🇶🇦", name:'Qatar', code:"+974"},
+  {id:"RO", flag:"🇷🇴", name:'Romania', code:"+40"},
+  {id:"RU", flag:"🇷🇺", name:'Russia', code:"+7"},
+  {id:"RW", flag:"🇷🇼", name:'Rwanda', code:"+250"},
+  {id:"KN", flag:"🇰🇳", name:'Saint Kitts and Nevis', code:"+1869"},
+  {id:"LC", flag:"🇱🇨", name:'Saint Lucia', code:"+1758"},
+  {id:"VC", flag:"🇻🇨", name:'Saint Vincent and the Grenadines', code:"+1784"},
+  {id:"WS", flag:"🇼🇸", name:'Samoa', code:"+685"},
+  {id:"SM", flag:"🇸🇲", name:'San Marino', code:"+378"},
+  {id:"ST", flag:"🇸🇹", name:'Sao Tome and Principe', code:"+239"},
+  {id:"SA", flag:"🇸🇦", name:'Saudi Arabia', code:"+966"},
+  {id:"SN", flag:"🇸🇳", name:'Senegal', code:"+221"},
+  {id:"RS", flag:"🇷🇸", name:'Serbia', code:"+381"},
+  {id:"SC", flag:"🇸🇨", name:'Seychelles', code:"+248"},
+  {id:"SL", flag:"🇸🇱", name:'Sierra Leone', code:"+232"},
+  {id:"SG", flag:"🇸🇬", name:'Singapore', code:"+65"},
+  {id:"SK", flag:"🇸🇰", name:'Slovakia', code:"+421"},
+  {id:"SI", flag:"🇸🇮", name:'Slovenia', code:"+386"},
+  {id:"SB", flag:"🇸🇧", name:'Solomon Islands', code:"+677"},
+  {id:"SO", flag:"🇸🇴", name:'Somalia', code:"+252"},
+  {id:"ZA", flag:"🇿🇦", name:'South Africa', code:"+27"},
+  {id:"KR", flag:"🇰🇷", name:'South Korea', code:"+82"},
+  {id:"SS", flag:"🇸🇸", name:'South Sudan', code:"+211"},
+  {id:"ES", flag:"🇪🇸", name:'Spain', code:"+34"},
+  {id:"LK", flag:"🇱🇰", name:'Sri Lanka', code:"+94"},
+  {id:"SD", flag:"🇸🇩", name:'Sudan', code:"+249"},
+  {id:"SR", flag:"🇸🇷", name:'Suriname', code:"+597"},
+  {id:"SE", flag:"🇸🇪", name:'Sweden', code:"+46"},
+  {id:"CH", flag:"🇨🇭", name:'Switzerland', code:"+41"},
+  {id:"SY", flag:"🇸🇾", name:'Syria', code:"+963"},
+  {id:"TW", flag:"🇹🇼", name:'Taiwan', code:"+886"},
+  {id:"TJ", flag:"🇹🇯", name:'Tajikistan', code:"+992"},
+  {id:"TZ", flag:"🇹🇿", name:'Tanzania', code:"+255"},
+  {id:"TH", flag:"🇹🇭", name:'Thailand', code:"+66"},
+  {id:"TL", flag:"🇹🇱", name:'Timor-Leste', code:"+670"},
+  {id:"TG", flag:"🇹🇬", name:'Togo', code:"+228"},
+  {id:"TO", flag:"🇹🇴", name:'Tonga', code:"+676"},
+  {id:"TT", flag:"🇹🇹", name:'Trinidad and Tobago', code:"+1868"},
+  {id:"TN", flag:"🇹🇳", name:'Tunisia', code:"+216"},
+  {id:"TR", flag:"🇹🇷", name:'Turkey', code:"+90"},
+  {id:"TM", flag:"🇹🇲", name:'Turkmenistan', code:"+993"},
+  {id:"TV", flag:"🇹🇻", name:'Tuvalu', code:"+688"},
+  {id:"UG", flag:"🇺🇬", name:'Uganda', code:"+256"},
+  {id:"UA", flag:"🇺🇦", name:'Ukraine', code:"+380"},
+  {id:"AE", flag:"🇦🇪", name:'United Arab Emirates', code:"+971"},
+  {id:"GB", flag:"🇬🇧", name:'United Kingdom', code:"+44"},
+  {id:"US", flag:"🇺🇸", name:'United States', code:"+1"},
+  {id:"UY", flag:"🇺🇾", name:'Uruguay', code:"+598"},
+  {id:"UZ", flag:"🇺🇿", name:'Uzbekistan', code:"+998"},
+  {id:"VU", flag:"🇻🇺", name:'Vanuatu', code:"+678"},
+  {id:"VA", flag:"🇻🇦", name:'Vatican City', code:"+379"},
+  {id:"VE", flag:"🇻🇪", name:'Venezuela', code:"+58"},
+  {id:"VN", flag:"🇻🇳", name:'Vietnam', code:"+84"},
+  {id:"YE", flag:"🇾🇪", name:'Yemen', code:"+967"},
+  {id:"ZM", flag:"🇿🇲", name:'Zambia', code:"+260"},
+  {id:"ZW", flag:"🇿🇼", name:'Zimbabwe', code:"+263"}
+];
+const SUPPORT_PLATFORMS = {
+  instagram: {label:"Instagram", icon:"📸", bg:"linear-gradient(135deg,#f58529,#dd2a7b,#8134af)"},
+  telegram:  {label:"Telegram",  icon:"✈️", bg:"#229ED9"},
+  whatsapp:  {label:"WhatsApp",  icon:"💬", bg:"#25D366"},
+  youtube:   {label:"YouTube",   icon:"▶️", bg:"#FF0000"},
+  facebook:  {label:"Facebook",  icon:"📘", bg:"#1877F2"},
+  twitter:   {label:"X / Twitter", icon:"✖️", bg:"#000000"},
+  discord:   {label:"Discord",   icon:"🎮", bg:"#5865F2"},
+  website:   {label:"Website / Other", icon:"🌐", bg:"#64748b"}
+};
+function supportLinksCard(){
+  const links = (cfg().supportLinks||[]).filter(l=>l.url);
+  if(!links.length) return "";
+  return `<div class="card"><h3>🎧 Support Team</h3>
+    <div class="mut" style="margin-bottom:10px">Kisi bhi help ke liye humse yahan judo</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+      ${links.map(l=>{ const p = SUPPORT_PLATFORMS[l.platform]||SUPPORT_PLATFORMS.website;
+        return `<a href="${esc(l.url)}" target="_blank" rel="noopener" style="text-decoration:none;flex:1 1 auto;min-width:120px;display:flex;align-items:center;gap:6px;padding:10px 12px;border-radius:10px;background:${p.bg};color:#fff;font-weight:700;font-size:13px"><span style="font-size:16px">${p.icon}</span>${esc(p.label)}</a>`;
+      }).join("")}
+    </div></div>`;
+}
+const TERMS_HTML = `
+<h3 style="margin-top:0">1. Eligibility & Account Rules</h3>
+<p>Is app ka use karne ke liye user ki minimum age 18 years honi chahiye (ya kam age par parental guidance zaroori hai). Har user ko sirf ek (1) account rakhne ki permission hai — multiple accounts banana, fake details use karna, ya bots/automation ka use karna strictly prohibited hai aur isse account ban ho sakta hai.</p>
+<h3>2. RP Points & Reward Policy</h3>
+<p>RP (Reward Points) is app ke andar ki ek virtual in-app currency hai. Jab tak isse kisi reward (coins/cash/gift) ke roop mein claim na kiya jaye, RP ki koi real-world cash value nahi hai. Rewards, Leaderboard Ranks, aur RP points ko kisi bhi waqt change, adjust ya void karne ka right Admin/Management ke paas reserved hai.</p>
+<h3>3. Anti-Fraud & Cheating Policy</h3>
+<p>Auto-clickers, VPN, Proxy, Emulators, ya kisi bhi tarah ke app modification/hacking/cheating tools ka use strictly forbidden hai. Agar fraud ya cheating detect hoti hai to Admin bina kisi prior warning ke account suspend ya permanently ban kar sakta hai, aur saare earned RP/rewards void kiye ja sakte hain.</p>
+<h3>4. Taxation & Compliance (India)</h3>
+<p>Applicable Government regulations (jaise Section 194BA / Income Tax rules) ke mutabik, user ke net earnings/rewards par applicable TDS ya taxes deduct kiye ja sakte hain. Apni individual tax liability ke liye user khud responsible hoga — app/company kisi bhi personal tax filing ke liye responsible nahi hai.</p>
+<h3>5. Ad Serving & Third-Party Services</h3>
+<p>Rewards claim karne ke liye user ko third-party rewarded ads (jaise Google AdMob, AppLovin MAX, Unity Ads) dekhne pad sakte hain. App in third-party ad networks ki kisi bhi downtime, failure ya malfunction ke liye responsible nahi hai.</p>
+<h3>6. Service Termination & Modifications</h3>
+<p>Management ke paas kisi bhi samay, bina prior notice ke, app ke features, RP allocation rates, reward structure, ya leaderboard rules ko update/modify/discontinue karne ka adhikar surakshit hai.</p>
+<h3>7. Agreement</h3>
+<p>App install/use/signup karke user in sabhi Terms & Conditions aur hamari Privacy Policy se agree (sehmat) hota hai.</p>`;
+const PRIVACY_HTML = `
+<h3 style="margin-top:0">1. Information We Collect</h3>
+<p>Signup ke waqt hum basic information collect karte hain: naam, mobile number (OTP verification ke liye) aur country. Gameplay ke dauraan scores, coins, RP, tournament history aur withdrawal requests ka data bhi store hota hai.</p>
+<h3>2. How We Use Your Information</h3>
+<p>Collected data ka use account verification, rewards/leaderboard calculate karne, withdrawal process karne, fraud prevention, aur app ki services improve karne ke liye hota hai. Aapka data kisi third party ko bina zaroorat ke becha ya share nahi kiya jaata.</p>
+<h3>3. Third-Party Services</h3>
+<p>App rewarded ads dikhane ke liye third-party ad networks (Google AdMob, AppLovin MAX, Unity Ads) use karta hai — in networks ki apni alag privacy policies hoti hain jo device/ad data collect kar sakti hain.</p>
+<h3>4. Data Security</h3>
+<p>Hum aapke data ko surakshit rakhne ke liye reasonable security measures use karte hain, lekin koi bhi internet-based service 100% secure hone ki guarantee nahi de sakti.</p>
+<h3>5. Payout Information</h3>
+<p>Withdrawal ke liye diya gaya UPI ID / mobile number / email / wallet ID sirf payout process karne ke liye use hota hai aur secure backend ke zariye handle kiya jaata hai.</p>
+<h3>6. Your Rights</h3>
+<p>Aap kisi bhi waqt apna account delete karne ya apne data ke baare mein query karne ke liye Support Team se contact kar sakte hain.</p>
+<h3>7. Policy Changes</h3>
+<p>Yeh Privacy Policy samay-samay par update ho sakti hai. App ka use jaari rakhke aap updated policy se agree karte hain.</p>`;
+function legalBox(type){
+  const title = type==="privacy" ? "🔒 Privacy Policy" : "📜 Terms & Conditions";
+  const body = type==="privacy" ? PRIVACY_HTML : TERMS_HTML;
+  const o = document.createElement("div"); o.id = "legalbox";
+  o.style.cssText = "position:fixed;inset:0;z-index:99;background:#000000a0;display:flex;align-items:center;justify-content:center;padding:16px";
+  o.onclick = e => { if(e.target===o) o.remove(); };
+  const url = cfg().legalUrl;
+  o.innerHTML = `<div style="background:var(--card);border-radius:16px;padding:20px;max-width:480px;width:100%;max-height:82vh;overflow-y:auto">
+    <h2 style="margin-top:0">${title}</h2>
+    <div style="font-size:14px;line-height:1.5;color:var(--text)">${body}</div>
+    ${url?`<div class="mut" style="margin-top:12px;font-size:12px">Full hosted page: <a href="${esc(url)}" target="_blank" rel="noopener" style="color:var(--acc)">${esc(url)}</a></div>`:""}
+    <button class="btn s" style="width:100%;margin-top:14px" onclick="document.getElementById('legalbox').remove()">Close</button></div>`;
+  document.body.appendChild(o);
+}
+function legalLinksCard(){
+  const url = cfg().legalUrl;
+  return `<div class="card"><h3>📄 Legal</h3>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="btn s sm" style="text-align:left" onclick="legalBox('terms')">📜 Terms & Conditions</button>
+      <button class="btn s sm" style="text-align:left" onclick="legalBox('privacy')">🔒 Privacy Policy</button>
+      ${url?`<a href="${esc(url)}" target="_blank" rel="noopener" class="btn s sm" style="text-align:left;text-decoration:none">🌐 Open Hosted Page</a>`:""}
+    </div></div>`;
+}
+const WD_ID = {1:"Upi", 2:"Paypal", 3:"Paytm", 4:"Phonepe", 5:"Binance"};
+const WD_METHOD = {1:"UPI", 2:"PayPal", 3:"Paytm", 4:"PhonePe", 5:"Binance"};
+function tdsPctFor(opt){ // PayPal/Binance have no TDS (processing fee only); UPI/Paytm/PhonePe each have their own admin-set TDS %
+  const c = cfg();
+  if(opt===3) return c.paytmTdsPct;
+  if(opt===4) return c.phonepeTdsPct;
+  return c.upiTdsPct;
+}
+function tdsPctForMethod(method){
+  const c = cfg();
+  if(method==="Paytm") return c.paytmTdsPct;
+  if(method==="PhonePe") return c.phonepeTdsPct;
+  return c.upiTdsPct;
+}
+function isFeeOpt(opt){ return opt===2 || opt===5; } // fee-based (no TDS) methods: PayPal, Binance
+function isFeeMethod(method){ return method==="PayPal" || method==="Binance"; }
+function feePctFor(opt){ const c = cfg(); return opt===5 ? c.binanceFeePct : c.paypalFeePct; }
+function feePctForMethod(method){ const c = cfg(); return method==="Binance" ? cfg().binanceFeePct : cfg().paypalFeePct; }
+const now = () => Date.now(), MIN = 60000;
+function defaultConfig(){ return {
+  rate: 1500, // coins per $1
+  minWithdrawUsd: 1.32, maxWithdrawUsd: 10,
+  wdMaxPerDay: 1, // din mein max kitni baar withdrawal kar sakta hai
+  supportLinks: [], // Support Team / Social links: [{id,platform,url}] - admin panel se add/manage hote hain
+  legalUrl: "https://astonishing-biscochitos-6e3bd9.netlify.app", // hosted T&C/Privacy Policy public page (Play Console submission ke liye)
+  cloudApiUrl: "", // public URL of the deployed Cloud API (esports-backend). No secrets here.
+  rpAdCooldownMin: 3, // rewarded "2x" ad ke baad itne minute tak dobara RP-ad nahi (cooldown)
+  blockedLoginCountries: [], // country id (ISO2) list — in countries se login/signup allowed nahi hoga
+  blockedWithdrawCountries: [], // country id (ISO2) list — in countries ko PayPal/Binance mobile verification mein allowed nahi
+  wdTimeEnabled: false, wdTimeStart: "18:00", wdTimeEnd: "22:00", // sirf is window mein withdrawal allowed
+  wdDaysEnabled: false, wdDays: [0,1,2,3,4,5,6], // sirf in weekdays par withdrawal allowed (0=Sun...6=Sat)
+  presetAmounts: [1.32,2.50,3.50,5.50,7,10],
+  upiEnabled: true, upiTdsPct: 30, paypalEnabled: true, paypalFeePct: 18, usdToInr: 83,
+  binanceEnabled: true, binanceFeePct: 6,
+  paytmEnabled: true, phonepeEnabled: true, paytmTdsPct: 30, phonepeTdsPct: 30,
+  tourDurationMin: 30,
+  gamesEnabled: {arctic:true,hoop:true,loop:true,colorbounce:true,bubble:true,drive:true,shooter:true,knife:true,blockmatch:true},
+  gamesOrder: ["arctic","hoop","loop","colorbounce","bubble","drive","shooter","knife","blockmatch"],
+  lbResetHour: 5,
+  lbResetMode: "daily", lbResetDays: [0,1,2,3,4,5,6], lbResetIntervalDays: 1, // mode: "daily" (har din), "days" (sirf selected weekdays par; 0=Sun...6=Sat), ya "interval" (har N din mein ek baar)
+  lbPrizeTable: (()=>{ const t = {1:7500,2:4500,3:3750,4:1500,5:1500,6:750,7:750,8:750,9:150,10:150};
+    for(let r=11;r<=20;r++) t[r] = 100;
+    for(let r=21;r<=30;r++) t[r] = 75;
+    for(let r=31;r<=40;r++) t[r] = 50;
+    for(let r=41;r<=50;r++) t[r] = 25;
+    return t; })(),
+  tourPrizeTable: (()=>{ const p = [3000,2500,2000,1000,950,800,750,700,650,500,
+    350,350,350,350,350,350,350,350,350,350,
+    200,200,200,200,200,200,200,200,200,200,
+    100,100,100,100,100,100,100,100,100,100,
+    65,65,65,65,65,65,65,65,65,65];
+    const t = {}; p.forEach((v,i)=>t[i+1]=v); return t; })(),
+  dailyBonusRp: 10000,
+  dailyBonusIntervalDays: 1, // 1=roz, 2=har 2 din mein ek baar, 3=har 3 din mein ek baar, etc.
+  dailyBonusTimeEnabled: false, dailyBonusTimeStart: "18:00", dailyBonusTimeEnd: "22:00", // sirf is window mein claim available
+  streakRewards: [2000,4000,4500,5000,6000,7500,8500,9000,10000,20000,50000,"$0.10"],
+  topN: 50,
+  gamePools: {arctic:20000,hoop:20000,loop:20000,colorbounce:20000,bubble:20000,drive:20000,shooter:20000,knife:20000,blockmatch:20000},
+  customGames: [],
+  noticeText: "",
+  noticeOn: {home:false, matches:false, wallet:false, profile:false},
+  payoutAutoMode: false,
+  payoutProviders: [],
+  payoutMerchantId: "",
+  payoutWebhookUrl: ""
+}; }
+function cfg(){ return (S && S.config) || defaultConfig(); }
+function minCoins(){ return Math.round(cfg().minWithdrawUsd*cfg().rate); }
+function maxCoins(){ return Math.round(cfg().maxWithdrawUsd*cfg().rate); }
+function wdInTimeWindow(){
+  const c = cfg();
+  if(!c.wdTimeEnabled) return true;
+  const d = new Date(), mins = d.getHours()*60 + d.getMinutes();
+  const [sh,sm] = (c.wdTimeStart||"00:00").split(":").map(Number);
+  const [eh,em] = (c.wdTimeEnd||"23:59").split(":").map(Number);
+  const startM = sh*60+sm, endM = eh*60+em;
+  if(startM<=endM) return mins>=startM && mins<=endM;
+  return mins>=startM || mins<=endM; // overnight window
+}
+function wdDayOk(){
+  const c = cfg();
+  if(!c.wdDaysEnabled) return true;
+  return (c.wdDays||[]).includes(new Date().getDay());
+}
+function wdWindowFmt(){
+  const c = cfg(), fmtT = t=>{ const [h,m]=(t||"00:00").split(":").map(Number); const hh=h%12===0?12:h%12; return `${hh}:${String(m).padStart(2,"0")} ${h<12?"AM":"PM"}`; };
+  return `${fmtT(c.wdTimeStart)} - ${fmtT(c.wdTimeEnd)}`;
+}
+function wdCountLeft(){
+  const todayStr = new Date().toDateString();
+  const used = (S.wdCountDate===todayStr) ? (S.wdCountToday||0) : 0;
+  return Math.max(0, (cfg().wdMaxPerDay||1) - used);
+}
+function wdAvailable(){ return wdInTimeWindow() && wdDayOk() && wdCountLeft()>0; }
+let S = load() || null, tab = "home", sub = "matches", cap = "", adminOn = false, lbShown = 100;
+
+function load(){ try{ return JSON.parse(localStorage.getItem("esp_app")); }catch(e){ return null; } }
+function saveLocal(){ try{ localStorage.setItem("esp_app", JSON.stringify(S)); }catch(e){} }
+function save(){ saveLocal(); cloudQueue(); }
+
+// ===== ☁️ Cloud Sync (progress + tournament scores) =====
+// SECURITY: only the PUBLIC API base URL lives here. No secret keys of any kind (SMS / payout / admin) are ever
+// stored in this file — those stay in the backend's environment variables (see esports-backend/.env.example).
+const CLOUD_API_DEFAULT = ""; // e.g. "https://esports-api.example.com" — deploy esports-backend, then paste its URL here or in Admin Panel
+const CLOUD_KEYS = ["coins","rp","joined","playCount","streakDay","lastStreakClaim","lastBonus","lastBonusDayNum","usedPromos","lastLbPayout","wdSeq","wdCountToday","wdCountDate"];
+let cloudTimer = null, cloudBusy = false, cloudStatus = "idle";
+function cloudUrl(){ return (((S && S.config && S.config.cloudApiUrl) || CLOUD_API_DEFAULT || "")+"").trim().replace(/\/+$/,""); }
+function cloudOn(){ return !!(S && !S.isGuest && S.cloudToken && cloudUrl()); }
+async function cloudCall(method, path, body, token){
+  const ctl = new AbortController(), to = setTimeout(()=>ctl.abort(), 10000);
+  try{
+    const res = await fetch(cloudUrl()+path, { method, signal: ctl.signal,
+      headers: Object.assign({"Content-Type":"application/json"}, token?{Authorization:"Bearer "+token}:{}),
+      body: body ? JSON.stringify(body) : undefined });
+    let data = {}; try{ data = await res.json(); }catch(e){}
+    return { status: res.status, data };
+  } finally { clearTimeout(to); }
+}
+function cloudQueue(){ if(!cloudOn()) return; clearTimeout(cloudTimer); cloudTimer = setTimeout(cloudPush, 4000); }
+// Apply server data locally (used on restore / when another device wrote newer data)
+function cloudAdopt(d){
+  if(!S || !d) return;
+  if(d.progress) CLOUD_KEYS.forEach(k=>{ if(d.progress[k]!==undefined) S[k] = d.progress[k]; });
+  if(typeof d.rev==="number") S.cloudRev = d.rev;
+  // current-round best scores: apply only if the server's round id matches the live tournament round
+  if(d.bestRounds && S.tours) S.tours.forEach(t=>{ const b = d.bestRounds[t.id]; if(b && b.roundId===t.id+":"+t.end) S.best[t.id] = Math.max(S.best[t.id]||0, b.score); });
+  saveLocal();
+  const bl = $(".bal"); if(bl) bl.textContent = balText();
+  if(typeof G==="undefined" || !G) { try{ render(); }catch(e){} }
+}
+async function cloudPush(){
+  if(!cloudOn() || cloudBusy) return; cloudBusy = true;
+  try{
+    const p = {}; CLOUD_KEYS.forEach(k=>{ if(S[k]!==undefined) p[k] = S[k]; });
+    const r = await cloudCall("PUT", "/api/progress", { baseRev: S.cloudRev||0, progress: p }, S.cloudToken);
+    if(r.status===200){ S.cloudRev = r.data.rev; cloudStatus = "ok"; }
+    else if(r.status===409){ cloudAdopt(r.data); cloudStatus = "ok"; }
+    else if(r.status===401){ S.cloudToken = ""; cloudStatus = "auth"; }
+    else cloudStatus = "err";
+  }catch(e){ cloudStatus = "err"; }
+  cloudBusy = false; if(S) saveLocal();
+  if(typeof tab!=="undefined" && tab==="me" && (typeof G==="undefined"||!G)) { const el = $("#cloudStat"); if(el) el.innerHTML = cloudStatText(); }
+}
+function cloudStatText(){
+  if(S.isGuest) return "Guest — cloud sync nahi hota";
+  if(!cloudUrl()) return "⚪ Cloud server set nahi hai (Admin Panel → Cloud Backend)";
+  if(!S.cloudToken) return "⚠️ Account cloud se linked nahi — <a href='#' onclick='event.preventDefault();cloudRegister()' style='color:var(--acc)'>Link karo</a>";
+  return cloudStatus==="ok" ? "✅ Progress cloud par safe hai" : cloudStatus==="err" ? "⚠️ Server tak nahi pahunch pa raha — baad mein auto-retry hoga" : "☁️ Sync ho raha hai...";
+}
+// Called right after a verified signup/login. New phone -> account created; existing phone -> server OTP restore.
+async function cloudRegister(){
+  if(!cloudUrl() || !S || S.isGuest || S.cloudToken) return;
+  try{
+    const r = await cloudCall("POST", "/api/register", { phone:S.phone, name:S.name, cc:S.cc, countryId:S.countryId });
+    if(r.status===200){ S.cloudToken = r.data.token; S.cloudRev = 0; cloudStatus = "ok"; saveLocal(); cloudQueue(); }
+    else if(r.status===409){ cloudRestoreBox(); }
+    else cloudStatus = "err";
+  }catch(e){ cloudStatus = "err"; }
+  const el = $("#cloudStat"); if(el) el.innerHTML = cloudStatText();
+}
+function cloudRestoreBox(){
+  if($("#cbox")) return;
+  const o = document.createElement("div"); o.id = "cbox";
+  o.style.cssText = "position:fixed;inset:0;z-index:99;background:#000000a0;display:flex;align-items:center;justify-content:center;padding:20px";
+  o.innerHTML = `<div style="background:var(--card);border-radius:16px;padding:20px;max-width:320px;width:100%;text-align:center">
+    <h3 style="margin:0 0 8px">☁️ Purana progress restore karo</h3>
+    <div class="mut" style="margin-bottom:10px">Is number ka cloud account pehle se hai. SMS OTP daalo to coins/progress wapas aa jayega.</div>
+    <input id="cotp" placeholder="6-digit OTP" maxlength="6" inputmode="numeric" style="text-align:center;letter-spacing:5px;font-weight:700">
+    <div class="mut" id="cmsg" style="min-height:18px;margin-bottom:8px"></div>
+    <div class="row" style="gap:8px"><button class="btn s" onclick="document.getElementById('cbox').remove()">Skip</button><button class="btn" onclick="cloudOtpVerify()">Restore</button></div>
+    <div style="margin-top:8px"><a href="#" onclick="event.preventDefault();cloudOtpSend()" style="color:var(--acc);font-size:13px">OTP dobara bhejo</a></div></div>`;
+  document.body.appendChild(o); cloudOtpSend();
+}
+async function cloudOtpSend(){
+  const m = $("#cmsg"); if(m) m.textContent = "OTP bhej rahe hain...";
+  try{ const r = await cloudCall("POST","/api/otp/send",{phone:S.phone});
+    if(m) m.textContent = r.status===200 ? "OTP bheja gaya"+(r.data.devOtp?" (dev: "+r.data.devOtp+")":"") : (r.data.error||"OTP nahi ja paya");
+  }catch(e){ if(m) m.textContent = "Server tak nahi pahunch paye"; }
+}
+async function cloudOtpVerify(){
+  const m = $("#cmsg"), code = ($("#cotp").value||"").trim();
+  if(!/^\d{6}$/.test(code)){ if(m) m.textContent = "6 digit OTP daalo"; return; }
+  try{ const r = await cloudCall("POST","/api/otp/verify",{phone:S.phone, code});
+    if(r.status===200){ S.cloudToken = r.data.token; cloudStatus = "ok"; const o = $("#cbox"); if(o) o.remove(); cloudAdopt(r.data); }
+    else if(m) m.textContent = r.data.error || "Verify nahi hua";
+  }catch(e){ if(m) m.textContent = "Server tak nahi pahunch paye"; }
+}
+// Tournament score -> server validates/caps it per round (tamper-resistant winning report data)
+async function cloudScore(t, score, boost, elapsedSec){
+  if(!cloudOn() || !t) return;
+  try{ await cloudCall("POST","/api/score",{ game:t.g, tourId:String(t.id), roundId:t.id+":"+t.end, score, boost:boost||1, elapsedSec }, S.cloudToken); }catch(e){}
+}
+async function cloudPull(){
+  if(!cloudOn()) return;
+  try{ const r = await cloudCall("GET","/api/progress",null,S.cloudToken);
+    if(r.status===200){ cloudStatus = "ok"; if(r.data.rev > (S.cloudRev||0)) cloudAdopt(r.data); else if(r.data.bestRounds) cloudAdopt({bestRounds:r.data.bestRounds, rev:S.cloudRev}); }
+    else if(r.status===401){ S.cloudToken = ""; cloudStatus = "auth"; saveLocal(); }
+    else cloudStatus = "err";
+  }catch(e){ cloudStatus = "err"; }
+}
+function loadBans(){ try{ return JSON.parse(localStorage.getItem("esp_bans"))||[]; }catch(e){ return []; } }
+function saveBans(arr){ try{ localStorage.setItem("esp_bans", JSON.stringify(arr)); }catch(e){} }
+// Persistent per-phone-number account registry: survives logout, so a user who logs back in with the
+// same number keeps their earned coins (RP/leaderboard progress resets fresh on every login, by design).
+function loadAccounts(){ try{ return JSON.parse(localStorage.getItem("esp_accounts"))||{}; }catch(e){ return {}; } }
+function saveAccounts(obj){ try{ localStorage.setItem("esp_accounts", JSON.stringify(obj)); }catch(e){} }
+const GAME_CANON = {
+  arctic:{id:1,g:"arctic",name:"Arctic Voyage",split:"Top 50",pool:20000},
+  hoop:{id:2,g:"hoop",name:"Hoop Challenge",split:"Top 50",pool:20000},
+  loop:{id:4,g:"loop",name:"Infinity Loop",split:"Top 50",pool:20000},
+  colorbounce:{id:6,g:"colorbounce",name:"Colour Bounce Match Up",split:"Top 50",pool:20000},
+  bubble:{id:7,g:"bubble",name:"Guardian of the Bubble",split:"Top 50",pool:20000},
+  drive:{id:8,g:"drive",name:"Car Driving School Simulator",split:"Top 50",pool:20000},
+  shooter:{id:9,g:"shooter",name:"Space Shooter",split:"Top 50",pool:20000},
+  knife:{id:10,g:"knife",name:"Knife Hit",split:"Top 50",pool:20000},
+  blockmatch:{id:11,g:"blockmatch",name:"Color Block Match",split:"Top 50",pool:20000}
+};
+function seedT(){
+  const t = now(), c = cfg(), dur = (c.tourDurationMin||30)*MIN;
+  const order = (c.gamesOrder && c.gamesOrder.length) ? c.gamesOrder : Object.keys(GAME_CANON);
+  return order.filter(g=>GAME_CANON[g] && c.gamesEnabled[g]!==false).map(g=>({...GAME_CANON[g], pool:(c.gamePools&&c.gamePools[g])||GAME_CANON[g].pool, end:t+dur}));
+}
+const TCONF = {
+  arctic:{emoji:"🚢",grad:"linear-gradient(135deg,#0e7490,#38bdf8)"},
+  hoop:{emoji:"🏀",grad:"linear-gradient(135deg,#0f3d4a,#1b1b2f)"},
+  loop:{emoji:"🐝",grad:"linear-gradient(135deg,#38bdf8,#0369a1)"},
+  colorbounce:{emoji:"🌈",grad:"linear-gradient(135deg,#f43f5e,#eab308)"},
+  bubble:{emoji:"🫧",grad:"linear-gradient(135deg,#1e3a8a,#7c3aed)"},
+  drive:{emoji:"🚗",grad:"linear-gradient(135deg,#f97316,#eab308)"},
+  shooter:{emoji:"🚀",grad:"linear-gradient(135deg,#1e1b4b,#4c1d95)"},
+  knife:{emoji:"🔪",grad:"linear-gradient(135deg,#3f3f46,#18181b)"},
+  blockmatch:{emoji:"🧩",grad:"linear-gradient(135deg,#059669,#065f46)"}
+};
+function tourPrizes(){
+  const t = cfg().tourPrizeTable || defaultConfig().tourPrizeTable;
+  return Array.from({length:50},(_,i)=>t[i+1]||0);
+}
+const NAMES = ["ProGamer_X","NightWolf","AceHunter","SkyBlade","Rohit_YT","ClutchKing","ShadowFox","IronViper","PixelQueen","RajuGamer",
+  "TurboKid","GhostRider99","NinjaStrike","BlazeKing","CyberPunk7","DesiSniper","MidnightWolf","ThunderBolt","SavageOP","ArcticFox",
+  "RushHour","StormBreaker","LunarKnight","VenomStrike","EagleEye01","DarkPhoenix","ZeroCool","RapidFire","SilentKiller","TitanX",
+  "FrostByte","BlazeRunner","KnightRider","ViperFang","SkullCrusher","AlphaWolf","RogueAce","CrimsonBlade","NovaStar","JetStreak",
+  "HawkEye77","MaxPower","ChaosLord","SteelHeart","WildFire01","PhantomX","RapidRex","GoldenGun","IceBreaker","TurboCharge"];
+function genReport(t){
+  if(!S.reports) S.reports = {};
+  if(!S.reports[t.id]){
+    let seed = t.id%1000+1;
+    const rnd = () => { seed = (seed*9301+49297)%233280; return seed/233280; };
+    const base = ({hoop:40,arctic:180,loop:150,colorbounce:35,bubble:170,drive:150,shooter:220,knife:22,blockmatch:650})[t.g] || 150;
+    let sc = base + Math.floor(rnd()*30);
+    const list = [];
+    for(let i=0;i<50;i++){ list.push({name:NAMES[i], score:sc}); sc = Math.max(1, sc - Math.ceil(1+rnd()*(base/22))); }
+    S.reports[t.id] = list; save();
+  }
+  return S.reports[t.id];
+}
+function showReport(id){
+  const t = S.tours.find(x=>x.id===id); const list = genReport(t).slice();
+  const my = S.best[id]||0, myEntry = {name:S.name+" (You)", score:my, me:true};
+  let rank = list.findIndex(e=>my>=e.score);
+  if(rank===-1) rank = my>0 ? list.length : -1;
+  if(rank>=0) list.splice(rank,0,myEntry);
+  const rows = list.slice(0,51).map((e,i)=>{ const top3 = i<3;
+    return `<div class="lb" style="${e.me?'border:1px solid var(--acc)':''}${top3?';padding:14px':''}">
+      <b style="${top3?'font-size:20px;color:var(--gold)':''}">${i+1}</b>
+      <span class="n" style="${top3?'font-size:16px':''}">${esc(e.name)}</span>
+      <span class="mut" style="margin-right:8px${top3?';font-size:14px':''}">${e.score}</span>
+      <span class="p" style="${top3?'font-size:18px;font-weight:900':''}">${tourPrizes()[i]?"💜 "+tourPrizes()[i]:"-"}</span></div>`;
+  }).join("");
+  const o = document.createElement("div"); o.id = "rp";
+  o.style.cssText = "position:fixed;inset:0;z-index:99;background:#00000080;display:flex;align-items:flex-end;justify-content:center";
+  o.onclick = e => { if(e.target===o) o.remove(); };
+  o.innerHTML = `<div style="background:var(--card);width:100%;max-width:440px;max-height:78vh;overflow-y:auto;border-radius:18px 18px 0 0;padding:16px">
+    <div class="row" style="margin-bottom:10px"><h3 style="margin:0">🏁 ${esc(t.name)} - Results</h3><button class="btn s sm" onclick="document.getElementById('rp').remove()">✕</button></div>
+    <div class="mut" style="margin-bottom:8px">Score ke hisab se ranking (Top 50 + aapka score)</div>${rows}</div>`;
+  document.body.appendChild(o);
+}
+function showPrizes(){
+  const rows = tourPrizes().map((p,i)=>`<div class="lb"><b>${i+1}</b><span class="n">Winner</span><span class="p">💜 ${p} RP</span></div>`).join("");
+  const o = document.createElement("div"); o.id = "pz";
+  o.style.cssText = "position:fixed;inset:0;z-index:99;background:#00000080;display:flex;align-items:flex-end;justify-content:center";
+  o.onclick = e => { if(e.target===o) o.remove(); };
+  o.innerHTML = `<div style="background:var(--card);width:100%;max-width:440px;max-height:78vh;overflow-y:auto;border-radius:18px 18px 0 0;padding:16px">
+    <div class="row" style="margin-bottom:10px"><h3 style="margin:0">🏆 Top 50 Prize Split</h3><button class="btn s sm" onclick="document.getElementById('pz').remove()">✕</button></div>${rows}</div>`;
+  document.body.appendChild(o);
+}
+if(S && !S.tours){ S.tours = seedT(); S.rp = 0; S.best = {}; save(); }
+if(S && !S.promos){ S.promos = {"111111":500,"222222":1000,"555555":2500,"999999":5000}; save(); }
+if(S && !S.adConfig){ S.adConfig = {on:true, id:""}; save(); }
+if(S && !S.adConfig.screens){ S.adConfig.bannerId = S.adConfig.bannerId||S.adConfig.id||""; S.adConfig.interstitialId = S.adConfig.interstitialId||""; S.adConfig.rewardedId = S.adConfig.rewardedId||"";
+  S.adConfig.screens = {home:true,matches:true,promo:true,wallet:true,profile:true,game:true}; save(); }
+if(S && S.adConfig && !S.adConfig.networks){
+  S.adConfig.network = S.adConfig.network || "mediation";
+  S.adConfig.networks = {
+    admob: {bannerId:S.adConfig.bannerId||"", interstitialId:S.adConfig.interstitialId||"", rewardedId:S.adConfig.rewardedId||""},
+    unity: {gameId:"", bannerId:"", interstitialId:"", rewardedId:""},
+    applovin: {bannerId:"", interstitialId:"", rewardedId:""}
+  };
+  save();
+}
+if(S && S.adConfig && S.adConfig.networks && S.adConfig.networks.unity && S.adConfig.networks.unity.gameId===undefined){
+  S.adConfig.networks.unity.gameId = ""; save();
+}
+if(S && !S.cc && S.phone){ const p = S.phone.split(" "); if(p[0] && p[0].startsWith("+")){ S.cc = p[0]; save(); } }
+if(S && !S.config){ S.config = defaultConfig(); save(); }
+else if(S && S.config){ const d = defaultConfig(); let ch=false; Object.keys(d).forEach(k=>{ if(S.config[k]===undefined){ S.config[k]=d[k]; ch=true; } });
+  // back-fill newly added ranks (11-50) into an existing, already-saved lbPrizeTable
+  if(S.config.lbPrizeTable){ for(let r=1;r<=50;r++){ if(S.config.lbPrizeTable[r]===undefined){ S.config.lbPrizeTable[r] = d.lbPrizeTable[r]; ch=true; } } }
+  // back-fill newly added games (shooter/knife/blockmatch) into existing gamesEnabled/gamePools/gamesOrder
+  if(S.config.gamesEnabled){ Object.keys(d.gamesEnabled).forEach(g=>{ if(S.config.gamesEnabled[g]===undefined){ S.config.gamesEnabled[g] = d.gamesEnabled[g]; ch=true; } }); }
+  if(S.config.gamePools){ Object.keys(d.gamePools).forEach(g=>{ if(S.config.gamePools[g]===undefined){ S.config.gamePools[g] = d.gamePools[g]; ch=true; } }); }
+  if(S.config.gamesOrder){ d.gamesOrder.forEach(g=>{ if(!S.config.gamesOrder.includes(g)){ S.config.gamesOrder.push(g); ch=true; } }); }
+  if(ch) save(); }
+if(S && S.wd && S.wd.length && S.wd.some(w=>!w.id)){
+  // migrate legacy withdrawal entries to the new PENDING/APPROVED/SUCCESS/REJECTED schema
+  let seq = S.wdSeq||1000;
+  S.wd = S.wd.map(w=>{
+    if(w.id) return w;
+    seq++;
+    const statusMap = {Pending:"PENDING", Approved:"SUCCESS", Rejected:"REJECTED"};
+    const net = parseFloat(w.rs)||0, gross = net/(w.fee?0.82:1), tds = 0; // legacy entries predate TDS, so tds=0 for them
+    return {id:"WD"+seq, user_id:S.phone, method:w.type||"UPI", to:w.to||"", coins:Math.round(gross*cfg().rate),
+      requested:gross.toFixed(2), tds:tds.toFixed(2), net:net.toFixed(2), status:statusMap[w.st]||"PENDING", utr:"", created:now()};
+  });
+  S.wdSeq = seq; save();
+}
+function adBox(screen){
+  if(!S.adConfig || !S.adConfig.on) return "";
+  if(screen && S.adConfig.screens && S.adConfig.screens[screen]===false) return "";
+  const id = S.adConfig.bannerId || S.adConfig.id || "";
+  return `<div class="adbox">${id?"Banner Ad • "+esc(id):"Ad Space (320x50 / 320x100)"}</div>`;
+}
+function noticeBanner(screen){
+  const c = cfg();
+  if(!c.noticeOn || !c.noticeOn[screen] || !c.noticeText) return "";
+  return `<div class="card" style="background:linear-gradient(135deg,#dc2626,#7f1d1d);border:2px solid #fca5a5;text-align:center;margin-bottom:10px">
+    <div style="font-size:18px;font-weight:900;color:#fff;letter-spacing:.3px;line-height:1.4;text-shadow:0 1px 2px rgba(0,0,0,.4)">⚠️ ${esc(c.noticeText)}</div>
+  </div>`;
+}
+if(S && S.tours){
+  let fixed = false;
+  const enabled = cfg().gamesEnabled||{};
+  // add newly-enabled games that aren't owned yet
+  Object.values(GAME_CANON).forEach(c=>{
+    if(enabled[c.g]!==false && !S.tours.some(t=>t.id===c.id)){ S.tours.push({...c, pool:(cfg().gamePools&&cfg().gamePools[c.g])||c.pool, end:now()+(cfg().tourDurationMin||30)*MIN}); fixed = true; }
+  });
+  // remove games the admin turned off
+  const before = S.tours.length; S.tours = S.tours.filter(t=>enabled[t.g]!==false); if(S.tours.length!==before) fixed = true;
+  // admin changed the tournament duration -> apply it to all active tournaments' timers
+  if(S.tourDurApplied !== cfg().tourDurationMin){ S.tours.forEach(t=>{ t.end = now()+(cfg().tourDurationMin||30)*MIN; }); S.tourDurApplied = cfg().tourDurationMin; fixed = true; }
+  // admin changed a game's prize pool -> sync it onto the live tournament
+  S.tours.forEach(t=>{ const p = cfg().gamePools && cfg().gamePools[t.g]; if(p && t.pool!==p){ t.pool = p; fixed = true; } });
+  if(fixed) save();
+}
+function payoutTournament(t){
+  const my = S.best[t.id]||0; if(my<=0) return;
+  const list = genReport(t);
+  let rank = list.findIndex(e=>my>=e.score);
+  if(rank===-1) rank = list.length;
+  const tp = tourPrizes();
+  const reward = (rank<50 && tp[rank]) ? tp[rank] : Math.max(5, Math.floor(my/4));
+  S.rp = (S.rp||0) + reward;
+}
+function balText(){ return `🪙 ${S.coins} | 💜 ${S.rp||0} RP`; }
+const LB_TOTAL = 10000000, LB_TOP_N = 100, LB_MAX = 6200, LB_MID = 5500, LB_MIN = 5;
+const LB_K2 = Math.log(LB_MID/LB_MIN)/(LB_TOTAL-LB_TOP_N);
+function scoreAtRank(i){
+  if(i < LB_TOP_N) return Math.round(LB_MAX - i*(LB_MAX-LB_MID)/(LB_TOP_N-1));
+  return Math.max(LB_MIN, Math.round(LB_MID*Math.exp(-LB_K2*(i-LB_TOP_N))));
+}
+function estimateRank(myScore){
+  if(myScore >= LB_MAX) return 0;
+  if(myScore > LB_MID) return Math.round((LB_MAX-myScore)*(LB_TOP_N-1)/(LB_MAX-LB_MID));
+  if(myScore <= LB_MIN) return LB_TOTAL-1;
+  return Math.min(LB_TOTAL-1, Math.max(LB_TOP_N, Math.round(LB_TOP_N + Math.log(LB_MID/myScore)/LB_K2)));
+}
+function lbFmt(n){ return new Intl.NumberFormat("en",{notation:"compact",maximumFractionDigits:1}).format(n); }
+function lbPrizeTable(){ return cfg().lbPrizeTable || defaultConfig().lbPrizeTable; }
+function genLeaderboardTop(count){
+  const list = [];
+  for(let i=0;i<count;i++){
+    const base = NAMES[i%NAMES.length], name = i<NAMES.length ? base : base+Math.floor(i/NAMES.length+1);
+    list.push({name, score: scoreAtRank(i)});
+  }
+  return list;
+}
+
+let otpStep = 1, genOtp = "", pendingSignup = null;
+let admCountryQ = "";
+function sendOtp(){
+  const name = $("#ln").value.trim(), countryId = $("#lc").value, ph = $("#lp").value.replace(/\D/g,""), ref = $("#lr").value.trim();
+  const cObj0 = COUNTRIES.find(c=>c.id===countryId);
+  if(!name) return $("#lm").textContent = "Naam daalo";
+  if(!cObj0) return $("#lm").textContent = "Valid country select karo";
+  if((cfg().blockedLoginCountries||[]).includes(countryId)) return $("#lm").textContent = "Is country se login/signup abhi allowed nahi hai";
+  const cc = cObj0.code;
+  if(ph.length < 6 || ph.length > 12) return $("#lm").textContent = "Valid phone number daalo";
+  if(!$("#ltc").checked) return $("#lm").textContent = "Aage badhne ke liye Terms & Conditions aur Privacy Policy accept karna zaroori hai";
+  pendingSignup = {name, cc, countryId, ph, ref};
+  genOtp = String(Math.floor(100000+Math.random()*900000));
+  otpStep = 2; render();
+}
+function resendOtp(){
+  genOtp = String(Math.floor(100000+Math.random()*900000));
+  toast("Naya OTP bheja gaya (demo)");
+  render();
+}
+function backToPhone(){ otpStep = 1; render(); }
+function verifyOtp(){
+  const entered = $("#lo").value.trim();
+  if(!/^\d{6}$/.test(entered)) return $("#lm").textContent = "6 digit OTP daalo";
+  if(entered !== genOtp) return $("#lm").textContent = "Galat OTP, dobara try karo";
+  const {name, cc, countryId, ph, ref} = pendingSignup, fullPhone = cc+" "+ph;
+  if(loadBans().includes(fullPhone)){ $("#lm").textContent = "Yeh number banned hai, login nahi ho sakta"; return; }
+  S = {name, phone:fullPhone, cc, countryId, coins:100 + (ref?50:0), code:"ESP"+Math.floor(1000+Math.random()*9000), lastBonus:"", joined:{}, tours:seedT(), rp:0, best:{}, wd:[], streak:0,
+    config: defaultConfig(), adConfig:{on:true, id:"", bannerId:"", interstitialId:"", rewardedId:"", network:"mediation",
+      networks:{admob:{bannerId:"",interstitialId:"",rewardedId:""}, unity:{gameId:"",bannerId:"",interstitialId:"",rewardedId:""}, applovin:{bannerId:"",interstitialId:"",rewardedId:""}},
+      screens:{home:true,matches:true,promo:true,wallet:true,profile:true,game:true}}};
+  // Same phone number logging in again: restore the coins they already earned (RP/leaderboard always starts fresh)
+  const accounts = loadAccounts(), existing = accounts[fullPhone];
+  if(existing){ S.coins = existing.coins||0; S.code = existing.code || S.code; S.rp = 0; }
+  otpStep = 1; genOtp = ""; pendingSignup = null;
+  save(); tab="home"; render();
+  cloudRegister();
+}
+function loginAsGuest(){
+  S = {name:"Guest", phone:"", cc:"", isGuest:true, coins:100, code:"GUEST"+Math.floor(1000+Math.random()*9000), lastBonus:"", joined:{}, tours:seedT(), rp:0, best:{}, wd:[], streak:0,
+    config: defaultConfig(), adConfig:{on:true, id:"", bannerId:"", interstitialId:"", rewardedId:"", network:"mediation",
+      networks:{admob:{bannerId:"",interstitialId:"",rewardedId:""}, unity:{gameId:"",bannerId:"",interstitialId:"",rewardedId:""}, applovin:{bannerId:"",interstitialId:"",rewardedId:""}},
+      screens:{home:true,matches:true,promo:true,wallet:true,profile:true,game:true}}};
+  // Guest coins/progress sirf is device/session tak hi rehte hain — koi phone number nahi, isliye accounts registry mein save nahi hota
+  save(); tab="home"; render();
+}
+function toast(t,ok=true){ const m=$("#msg"); if(m){ m.textContent=t; m.className="msg "+(ok?"ok":"err"); } }
+
+function render(){
+  const r = $("#root");
+  if(!S){
+    if(otpStep===2){
+      const cObj = COUNTRIES.find(c=>c.id===pendingSignup.countryId) || COUNTRIES.find(c=>c.code===pendingSignup.cc);
+      r.innerHTML = `<div class="login"><div class="logo" style="font-size:26px;margin-bottom:6px">ESPORTS<span>REWARD</span></div>
+      <p class="mut">Mobile number verification</p>
+      <div class="mut" style="margin-bottom:10px">OTP bheja gaya: <b style="color:var(--text)">${cObj?cObj.flag:""} ${esc(pendingSignup.cc)} ${esc(pendingSignup.ph)}</b></div>
+      <input id="lo" placeholder="6-digit OTP" maxlength="6" inputmode="numeric" style="text-align:center;letter-spacing:6px;font-size:20px;font-weight:700">
+      <div class="mut" style="margin:-6px 0 10px">Demo mode (no SMS backend): OTP hai <b style="color:var(--acc)">${genOtp}</b></div>
+      <div class="msg err" id="lm"></div>
+      <button class="btn" onclick="verifyOtp()">Verify & Login (+100 coins)</button>
+      <div class="row" style="margin-top:10px"><button class="btn s sm" onclick="backToPhone()">‹ Number Badlo</button><button class="btn s sm" onclick="resendOtp()">Resend OTP</button></div>
+      </div>`; return;
+    }
+    r.innerHTML = `<div class="login"><div class="logo" style="font-size:26px;margin-bottom:6px">ESPORTS<span>REWARD</span></div>
+    <p class="mut">Games khelo, coins kamao, redeem karo.</p>
+    <input id="ln" placeholder="Aapka naam" value="${pendingSignup?esc(pendingSignup.name):""}">
+    <div class="msg err" id="lm" style="margin:-6px 0 10px"></div>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <select id="lc" style="flex:0 0 auto;width:auto;max-width:150px;padding:12px 8px;border-radius:10px;border:2px solid transparent;background:var(--in);color:var(--text);font-size:14px;outline:none">
+        ${COUNTRIES.filter(c=>!(cfg().blockedLoginCountries||[]).includes(c.id)).map(c=>`<option value="${c.id}" ${pendingSignup&&pendingSignup.countryId===c.id?"selected":(!pendingSignup&&c.id==="IN"?"selected":"")}>${c.flag} ${c.name} (${c.code})</option>`).join("")}
+      </select>
+      <input id="lp" placeholder="Phone number" inputmode="numeric" style="flex:1;margin-bottom:0" value="${pendingSignup?esc(pendingSignup.ph):""}">
+    </div>
+    <div class="mut" style="margin:-6px 0 10px">Apna country select karo aur phone number daalo</div>
+    <input id="lr" placeholder="Referral code (optional, +50 coins)" value="${pendingSignup?esc(pendingSignup.ref):""}">
+    <label style="display:flex;align-items:flex-start;gap:8px;margin:4px 0 14px;font-size:12.5px;color:var(--muted);text-align:left;cursor:pointer">
+      <input id="ltc" type="checkbox" style="width:auto;margin:2px 0 0;flex:0 0 auto">
+      <span>I agree to the <a href="#" onclick="event.preventDefault();legalBox('terms')" style="color:var(--acc);text-decoration:underline">Terms & Conditions</a> and <a href="#" onclick="event.preventDefault();legalBox('privacy')" style="color:var(--acc);text-decoration:underline">Privacy Policy</a></span>
+    </label>
+    <button class="btn" onclick="sendOtp()">Send OTP</button>
+    <div class="row" style="align-items:center;gap:10px;margin:14px 0"><div style="flex:1;height:1px;background:var(--in)"></div><span class="mut" style="font-size:12px">OR</span><div style="flex:1;height:1px;background:var(--in)"></div></div>
+    <button class="btn s" onclick="loginAsGuest()">👤 Continue as Guest</button>
+    <div class="mut" style="text-align:center;margin-top:6px;font-size:12px">Guest sirf games khel sakta hai — withdrawal ke liye real number se login zaroori hai</div>
+    <p class="mut" style="text-align:center;margin-top:14px">Mobile number 6-digit OTP se verify hoga. Demo mode: real SMS backend ke saath lagega.</p></div>`; return; }
+  r.innerHTML = `<header><div class="logo" onclick="logoTap()">ESPORTS<span>REWARD</span></div><div class="bal">${balText()}</div></header>
+    <main id="view"></main>
+    <nav>${[["home","🏠","Home"],["play","🎮","Matches"],["promo","🎟️","Promo"],["wallet","💰","Wallet"],["me","👤","Profile"]].map(t=>`<button class="${tab===t[0]?"on":""}" onclick="tab='${t[0]}';render()"><span>${t[1]}</span>${t[2]}</button>`).join("")}</nav>`;
+  ({home,play,promo,wallet,me}[tab])();
+}
+
+function maybeNotifyDaily(){
+  if(!("Notification" in window) || Notification.permission!=="granted") return;
+  const today = dailyPeriodKey();
+  if(S.lastNotifyDate===today) return;
+  const bonusLeft = bonusAvailable(), streakLeft = S.lastStreakClaim!==today;
+  if(bonusLeft || streakLeft){
+    S.lastNotifyDate = today; save();
+    try{ new Notification("🎁 Esports Reward", {body:"Aaj ka Daily Bonus aur Login Streak claim karna na bhoolo!"}); }catch(e){}
+  }
+}
+function enableNotifications(){
+  if(!("Notification" in window)) return alert("Yeh browser/device Notifications support nahi karta");
+  notifyPreBox(); // pre-permission disclosure pehle dikhao, uske baad hi real browser prompt
+}
+// Pre-Permission Disclosure modal: real browser permission popup se pehle user ko batao ye kis liye chahiye
+function notifyPreBox(){
+  const o = document.createElement("div"); o.id = "notifypre";
+  o.style.cssText = "position:fixed;inset:0;z-index:99;background:#000000a0;display:flex;align-items:center;justify-content:center;padding:20px";
+  o.onclick = e => { if(e.target===o) o.remove(); };
+  o.innerHTML = `<div style="background:var(--card);border-radius:16px;padding:20px;max-width:320px;width:100%;text-align:center">
+    <div style="font-size:34px;margin-bottom:6px">🔔</div>
+    <h3 style="margin:0 0 10px">Notifications On karein?</h3>
+    <div class="mut" style="margin-bottom:16px;text-align:left;line-height:1.5">Isse aapko milega:<br>• 🎁 Daily Bonus reminder<br>• 🔥 Login Streak chhoote nahi<br>• 💰 Withdrawal status update<br><br>Agar aap "Not Now" choose karte ho, app bilkul normal chalta rahega — kuch block nahi hoga.</div>
+    <div class="row" style="gap:8px"><button class="btn s" onclick="document.getElementById('notifypre').remove()">Not Now</button><button class="btn" onclick="notifyPreConfirm()">Allow</button></div></div>`;
+  document.body.appendChild(o);
+}
+function notifyPreConfirm(){
+  const o = $("#notifypre"); if(o) o.remove();
+  Notification.requestPermission().then(p=>{
+    S.notifyEnabled = p==="granted"; save(); me();
+    if(p==="granted") try{ new Notification("Esports Reward", {body:"Notifications ON! Daily streak aur bonus reminders milenge."}); }catch(e){}
+    else if(p==="denied") alert("Notifications block ho gaye — browser/app settings se allow karo. App waise hi chalta rahega.");
+  });
+}
+function home(){
+  maybeNotifyDaily();
+  const c = cfg(), intervalDone = !bonusIntervalOk(), inWindow = bonusInTimeWindow();
+  const claimed = intervalDone; // already claimed within the configured interval
+  const waitingForWindow = !claimed && c.dailyBonusTimeEnabled && !inWindow;
+  const fmtT = t=>{ const [h,m]=(t||"00:00").split(":").map(Number); const hh=h%12===0?12:h%12; return `${hh}:${String(m).padStart(2,"0")} ${h<12?"AM":"PM"}`; };
+  const bonusSub = claimed ? (c.dailyBonusIntervalDays>1 ? `Har ${c.dailyBonusIntervalDays} din mein ek baar free RP` : "Roz free RP claim karo")
+    : waitingForWindow ? `Sirf ${fmtT(c.dailyBonusTimeStart)} - ${fmtT(c.dailyBonusTimeEnd)} ke beech available`
+    : (c.dailyBonusIntervalDays>1 ? `Har ${c.dailyBonusIntervalDays} din mein ek baar free RP` : "Roz free RP claim karo");
+  $("#view").innerHTML = adBox('home') + noticeBanner('home')
+    + (("Notification" in window) ? `<div class="row" style="margin-bottom:8px"><span class="mut">🔔 Reminders ${(S.notifyEnabled && Notification.permission==="granted")?"ON ✅":"OFF"}</span>${(S.notifyEnabled && Notification.permission==="granted")?"":`<button class="btn s sm" onclick="enableNotifications()">Enable</button>`}</div>` : "")
+    + `<div class="card" style="background:linear-gradient(135deg,#3a1f78,#6d2fe0);display:flex;justify-content:space-between;align-items:center">
+      <div><h3 style="color:#fff;margin:0 0 2px">🎁 Daily Bonus</h3><div style="color:#e4d9ff;font-size:12px">${bonusSub}</div></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+        ${(claimed||waitingForWindow)?"":`<div style="background:#22c55e;color:#fff;font-size:10px;font-weight:800;padding:3px 8px;border-radius:8px;display:flex;align-items:center;gap:3px">🎬 WATCH AD</div>`}
+        <button class="btn sm" style="background:#ffd54a;color:#3a1f00;font-weight:800;white-space:nowrap" ${(claimed||waitingForWindow)?"disabled":""} onclick="claimBonus()">
+          ${claimed?"✅ Claimed":waitingForWindow?"⏰ Band":"Claim"}</button>
+      </div></div>
+    <h3>Game Categories</h3><div class="grid">${catCard("🏆","Tournaments","tab='play';render()")}${catCard("🎟️","Promo Code","tab='promo';render()")}${catCard("🕹️","Mini Games","tab='play';render()")}${catCard("📊","Leaderboard","tab='play';sub='board';render()")}</div>
+    ${streakCard()}<div class="msg" id="msg"></div>`;
+}
+function streakRewards(){ return cfg().streakRewards || defaultConfig().streakRewards; }
+function streakCard(){
+  const todayStr = dailyPeriodKey(), yStr = dailyPeriodKey(-86400000), SR = streakRewards();
+  if(!S.streakDay) S.streakDay = 1;
+  if(S.lastStreakClaim && S.lastStreakClaim!==todayStr && S.lastStreakClaim!==yStr){ S.streakDay = 1; save(); }
+  const claimedToday = S.lastStreakClaim === todayStr;
+  const boxes = SR.map((r,i)=>{
+    const day = i+1, done = day<S.streakDay, active = day===S.streakDay && !claimedToday, big = day===SR.length;
+    return `<div style="flex:0 0 auto;width:${big?"70px":"62px"};padding:${big?"12px 4px":"10px 4px"};border-radius:12px;text-align:center;
+      background:${active?"linear-gradient(160deg,#ffe488,#f5a300)":big?"linear-gradient(160deg,#ff8fd1,#c026d3)":done?"rgba(34,197,94,.18)":"var(--in)"};
+      border:${active?"2px solid #fff":big?"2px solid #ffd54a":"1px solid rgba(180,140,255,.18)"};
+      box-shadow:${big?"0 0 16px rgba(192,38,211,.5)":"none"};transform:${big?"scale(1.06)":"none"}">
+      <div style="font-size:${big?"12px":"11px"};font-weight:900;letter-spacing:.3px;color:${active||big?"#fff":"#fff"};text-shadow:${big?"0 0 6px rgba(0,0,0,.4)":"none"}">DAY ${day}${big?" 🎉":""}</div>
+      <div style="font-size:${big?"19px":"16px"};margin:4px 0">${done?"✅":active?"🎁":big?"💰":"🔒"}</div>
+      <div style="font-size:${big?"11px":"10px"};font-weight:900;color:${active?"#3a1f00":big?"#fff5d0":"var(--text)"}">${typeof r==="number"?r.toLocaleString()+" RP":r}</div></div>`;
+  }).join("");
+  return `<h3 style="margin-top:14px">🔥 Daily Login Streak</h3>
+    <div class="card">
+      <div style="display:flex;gap:8px;overflow-x:auto;margin-bottom:12px;padding-bottom:4px">${boxes}</div>
+      <button class="btn" style="background:linear-gradient(180deg,#ffe488,#f5a300);color:#3a1f00;font-weight:900" ${claimedToday?"disabled":""} onclick="claimStreak()">
+        ${claimedToday?"✅ Aaj Claim ho gaya":`📺 Day ${S.streakDay} Claim Karo (Ad)`}</button>
+      <div class="mut" style="margin-top:6px;text-align:center">Ek din miss kiya to Din 1 se dobara shuru hoga</div>
+    </div>`;
+}
+function claimStreak(){
+  const todayStr = dailyPeriodKey(), SR = streakRewards();
+  if(S.lastStreakClaim === todayStr) return;
+  const day = S.streakDay, reward = SR[day-1];
+  watchAd(`Ad khatam hone par Day ${day} ka reward milega`, ()=>{
+    if(S.lastStreakClaim === todayStr) return; // double-safe: already claimed today meanwhile
+    if(typeof reward === "number") S.rp = (S.rp||0) + reward;
+    else S.coins = (S.coins||0) + Math.round(parseFloat(String(reward).replace("$",""))*cfg().rate); // $ amount at current rate
+    S.lastStreakClaim = todayStr;
+    S.streakDay = day>=SR.length ? 1 : day+1;
+    save(); render();
+  });
+}
+function catCard(icon,label,onclick){
+  return `<div class="cat" onclick="${onclick}"><div class="ci">${icon}</div><div>${label}</div></div>`;
+}
+function dailyPeriodKey(offsetMs){
+  // resets at the admin-configured hour, same boundary as the leaderboard prize distribution
+  const d = new Date(now()+(offsetMs||0));
+  const p = new Date(d);
+  if(d.getHours() < cfg().lbResetHour) p.setDate(p.getDate()-1);
+  return p.toDateString();
+}
+function dailyPeriodDayNum(offsetMs){
+  const d = new Date(now()+(offsetMs||0));
+  const p = new Date(d);
+  if(d.getHours() < cfg().lbResetHour) p.setDate(p.getDate()-1);
+  return Math.floor(p.getTime()/86400000);
+}
+function bonusIntervalOk(){
+  const interval = cfg().dailyBonusIntervalDays || 1;
+  if(S.lastBonusDayNum===undefined || S.lastBonusDayNum===null) return true;
+  return (dailyPeriodDayNum() - S.lastBonusDayNum) >= interval;
+}
+function bonusInTimeWindow(){
+  const c = cfg();
+  if(!c.dailyBonusTimeEnabled) return true;
+  const d = new Date(), mins = d.getHours()*60 + d.getMinutes();
+  const [sh,sm] = (c.dailyBonusTimeStart||"00:00").split(":").map(Number);
+  const [eh,em] = (c.dailyBonusTimeEnd||"23:59").split(":").map(Number);
+  const startM = sh*60+sm, endM = eh*60+em;
+  if(startM<=endM) return mins>=startM && mins<=endM;
+  return mins>=startM || mins<=endM; // overnight window, e.g. 10PM-2AM
+}
+function bonusAvailable(){ return bonusIntervalOk() && bonusInTimeWindow(); }
+function claimBonus(){
+  if(!bonusIntervalOk() || !bonusInTimeWindow()) return;
+  const amt = cfg().dailyBonusRp;
+  watchAd(`Ad khatam hone par ${amt.toLocaleString()} RP mile`, ()=>{
+    S.rp = (S.rp||0) + amt; S.lastBonus = dailyPeriodKey(); S.lastBonusDayNum = dailyPeriodDayNum(); save(); render();
+  });
+}
+
+function left(end){ const s = Math.max(0, Math.floor((end-now())/1000)); return s>=3600 ? Math.floor(s/3600)+"h "+Math.floor(s%3600/60)+"m" : Math.floor(s/60)+"m "+(s%60)+"s"; }
+function play(){
+  const v = $("#view");
+  const chips = `<div class="chips"><button class="chip ${sub==="matches"?"on":""}" onclick="sub='matches';render()">Tournaments</button><button class="chip ${sub==="board"?"on":""}" onclick="sub='board';render()">Leaderboard</button></div>`;
+  if(sub==="board"){
+    const myRP = S.rp||0, rank = estimateRank(myRP);
+    const me = {name:S.name+" (You)", score:myRP, me:true};
+    const top = genLeaderboardTop(lbShown);
+    if(rank<lbShown) top.splice(rank,0,me);
+    const LB_PRIZE = lbPrizeTable();
+    const medal = {1:"👑",2:"🥈",3:"🥉"};
+    const rows = top.map((b,i)=>{ const rk=i+1, prize=LB_PRIZE[rk], gold = rk===1;
+      return `<div class="lb" style="${b.me?"border:1px solid var(--acc)":gold?"border:1px solid var(--gold);box-shadow:0 0 14px rgba(245,163,0,.35)":""}">
+        <b style="${gold?"color:var(--gold);font-size:17px":""}">${medal[rk]||rk}</b>
+        <span class="n">${esc(b.name)}</span>
+        <span style="display:flex;flex-direction:column;align-items:center;gap:2px">
+          <span class="p">💜 ${b.score}</span>
+          ${prize?`<span style="background:linear-gradient(135deg,#ffe488,#f5a300);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:900;font-size:14px;text-shadow:0 0 12px rgba(245,163,0,.5)">🪙 ${prize.toLocaleString()}</span>`:""}
+        </span></div>`;
+    }).join("");
+    const youRow = rank>=lbShown ? `<div class="lb" style="border:1px solid var(--acc);margin-top:6px"><b>#${(rank+1).toLocaleString()}</b><span class="n">${esc(S.name)} (You)</span><span class="p">💜 ${myRP}</span></div>` : "";
+    const loadMore = `<button class="btn s sm" style="width:100%;margin-top:10px" onclick="lbShown+=200;render()">Show More (${lbShown} of ${lbFmt(LB_TOTAL)})</button>`;
+    const payoutCard = `<div class="card" style="text-align:center">
+      <div class="mut" style="margin-bottom:4px">⏰ Next Prize Distribution</div>
+      <div id="lbCountdown" style="font-size:24px;font-weight:900;color:var(--gold)">${fmtCountdown(nextLbPayoutTime()-now())}</div>
+      <div class="mut" style="margin-top:4px">${cfg().lbResetMode==="days" ? ((cfg().lbResetDays||[]).map(i=>["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][i]).join(", ")||"Koi din select nahi") : cfg().lbResetMode==="interval" ? `Every ${cfg().lbResetIntervalDays||1} Day(s)` : "Daily"} ${String(cfg().lbResetHour).padStart(2,"0")}:00 • Top rank ka prize account mein add hota hai</div>
+    </div>`;
+    v.innerHTML = adBox('matches') + noticeBanner('matches') + chips + payoutCard + `<div class="mut" style="margin:10px 0 8px">Total ${lbFmt(LB_TOTAL)} Players • Your Rank: <b>#${(rank+1).toLocaleString()}</b></div>` + rows + youRow + loadMore; return; }
+  const ord = (cfg().gamesOrder&&cfg().gamesOrder.length)?cfg().gamesOrder:Object.keys(GAME_CANON);
+  const toursSorted = S.tours.slice().sort((a,b)=>ord.indexOf(a.g)-ord.indexOf(b.g));
+  const customLinks = (cfg().customGames||[]).map(cg=>`<div class="tc">
+    <div class="tb" style="background:linear-gradient(135deg,#475569,#1e293b)">🔗 ${esc(cg.name.toUpperCase())}</div>
+    <div style="padding:12px 14px 0;font-weight:800;color:var(--acc);font-size:18px">${esc(cg.name)}</div>
+    <div class="mut" style="padding:6px 14px 0">External game link</div>
+    <button class="btn play" style="margin:10px 14px 14px" onclick="window.open('${esc(cg.url)}','_blank')">Open Link ›</button></div>`).join("");
+  v.innerHTML = adBox('matches') + noticeBanner('matches') + chips + `<div class="hero"><b>24/7</b>TOURNAMENTS</div>` + toursSorted.map(t=>`<div class="tc">
+    <div class="tb" style="background:${TCONF[t.g].grad}">${TCONF[t.g].emoji} ${esc(t.name.toUpperCase())}</div>
+    <div style="padding:12px 14px 0;font-weight:800;color:var(--acc);font-size:18px">${esc(t.name)}</div>
+    <div class="tm"><div>Prize Split<b style="text-decoration:underline;cursor:pointer" onclick="showReport(${t.id})">${esc(t.split)}</b></div><div>Tournament Pool<b>💜 ${t.pool} RP</b></div><div>Time Left<b data-end="${t.end}">${left(t.end)}</b></div></div>
+    <div style="margin:0 14px 12px;background:var(--in);border-radius:10px;padding:10px;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:13px;color:var(--muted)">🎯 Aapka Score</span><span style="font-size:20px;font-weight:800;color:var(--acc)">${S.best[t.id]||0}</span></div>
+    <button class="btn play" onclick="playT(${t.id})">Play Now! ›</button><button class="btn s sm" style="margin:0 14px 14px" onclick="showReport(${t.id})">🏁 Winning Report</button></div>`).join("") + customLinks;
+}
+function nextLbPayoutTime(){
+  const c = cfg(), d = new Date();
+  let t = new Date(d.getFullYear(),d.getMonth(),d.getDate(),c.lbResetHour,0,0,0);
+  if(d >= t) t.setDate(t.getDate()+1);
+  if(c.lbResetMode==="days" && (c.lbResetDays||[]).length){
+    for(let i=0;i<8 && !(c.lbResetDays||[]).includes(t.getDay());i++) t.setDate(t.getDate()+1);
+  } else if(c.lbResetMode==="interval"){
+    const iv = Math.max(1, c.lbResetIntervalDays||1);
+    if(S.lastLbPayout){
+      const last = new Date(S.lastLbPayout);
+      let base = new Date(last.getFullYear(),last.getMonth(),last.getDate(),c.lbResetHour,0,0,0);
+      base.setDate(base.getDate()+iv);
+      if(base.getTime() > t.getTime()) t = base;
+    }
+  }
+  return t.getTime();
+}
+function fmtCountdown(ms){
+  if(!ms || ms<0) ms = 0;
+  const pad = n => (n<10?"0":"")+n;
+  const h = Math.floor(ms/3600000), m = Math.floor((ms%3600000)/60000), sc2 = Math.floor((ms%60000)/1000);
+  return pad(h)+":"+pad(m)+":"+pad(sc2);
+}
+setInterval(()=>{
+  if(!S || !S.tours) return; let ch = false;
+  S.tours.forEach(t=>{ if(t.end<=now()){ payoutTournament(t); S.best[t.id] = 0; if(S.playCount) S.playCount[t.id] = 0; if(S.reports) delete S.reports[t.id]; t.end = now()+(cfg().tourDurationMin||30)*MIN; ch = true; } });
+  const d = new Date(), todayStr = d.toDateString(), lbc = cfg();
+  let lbDayOk;
+  if(lbc.lbResetMode==="days"){
+    lbDayOk = (lbc.lbResetDays||[]).includes(d.getDay());
+  } else if(lbc.lbResetMode==="interval"){
+    const iv = Math.max(1, lbc.lbResetIntervalDays||1);
+    if(!S.lastLbPayout){ lbDayOk = true; }
+    else {
+      const last = new Date(S.lastLbPayout);
+      const lastMid = new Date(last.getFullYear(),last.getMonth(),last.getDate());
+      const todMid = new Date(d.getFullYear(),d.getMonth(),d.getDate());
+      lbDayOk = Math.round((todMid-lastMid)/86400000) >= iv;
+    }
+  } else { lbDayOk = true; }
+  if(lbDayOk && d.getHours()>=lbc.lbResetHour && S.lastLbPayout !== todayStr){
+    const rnk = estimateRank(S.rp||0), prize = lbPrizeTable()[rnk+1];
+    if(prize){ S.coins = (S.coins||0)+prize; }
+    S.rp = 0; // daily leaderboard reset: har din prize milne ke baad RP zero, rank dobara se shuru
+    S.lastLbPayout = todayStr; ch = true;
+  }
+  if(ch){ save(); if(!$("#gm")) render(); }
+  document.querySelectorAll("[data-end]").forEach(e=>e.textContent = left(+e.dataset.end));
+  const cd = $("#lbCountdown"); if(cd) cd.textContent = fmtCountdown(nextLbPayoutTime()-now());
+},1000);
+
+let G = null;
+function playT(id){
+  const t = S.tours.find(x=>x.id===id);
+  if(!S.playCount) S.playCount = {};
+  S.playCount[id] = (S.playCount[id]||0) + 1; save();
+  if(S.playCount[id] % 4 === 1) showRewardedAd(t); else openGame(t);
+}
+function showRewardedAd(t){ watchAd("Ad khatam hote hi game apne aap shuru hoga", ()=>openGame(t), {optional:true}); }
+// Real AdMob rewarded ad (Android app exposes window.AndroidAds); browser/preview falls back to the 5s placeholder.
+// opts.optional: if the ad can't load/show, continue anyway (used for the Play-button ad so gameplay is never blocked).
+// Reward callers (2x, daily bonus, streak) get NO reward unless the ad was actually completed.
+let adSeq = 0; const adCbs = {};
+window.__adResult = function(id, ok){ const c = adCbs[id]; delete adCbs[id]; if(c) c(!!ok); };
+function adFailToast(){
+  const d = document.createElement("div");
+  d.style.cssText = "position:fixed;left:50%;bottom:90px;transform:translateX(-50%);z-index:120;background:#2a1560;color:#fff;padding:10px 16px;border-radius:12px;font-size:13px;max-width:86vw;text-align:center";
+  d.textContent = "Ad abhi available nahi hai ya poora nahi dekha — thodi der baad dobara try karo";
+  document.body.appendChild(d); setTimeout(()=>d.remove(), 3500);
+}
+function watchAd(subtext, onDone, opts){
+  opts = opts || {};
+  if(window.AndroidAds){
+    const id = ++adSeq;
+    adCbs[id] = ok => {
+      if(ok || opts.optional) return onDone();
+      adFailToast(); if(opts.onFail) opts.onFail();
+    };
+    try{ window.AndroidAds.showRewarded(String(id)); }catch(e){ adCbs[id](false); }
+    return;
+  }
+  const o = document.createElement("div"); o.id = "rad";
+  o.style.cssText = "position:fixed;inset:0;z-index:100;background:#000;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:20px;text-align:center";
+  o.innerHTML = `<div style="font-size:13px;letter-spacing:1px;color:#aaa">📺 AD CHAL RAHA HAI</div>
+    <div style="width:min(280px,80vw);aspect-ratio:16/9;background:#1a1a1a;border:1px dashed #444;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:13px;color:#777">Ad Video Yahan Chalega</div>
+    <div style="width:min(280px,80vw);height:6px;background:#333;border-radius:4px;overflow:hidden"><div id="radBar" style="height:100%;width:0%;background:var(--acc,#6d2fe0);transition:width .2s linear"></div></div>
+    <div style="font-size:12px;color:#888">${subtext}</div>`;
+  document.body.appendChild(o);
+  const dur = 5000, start = now();
+  const iv = setInterval(()=>{
+    const bar = $("#radBar"); if(!bar){ clearInterval(iv); return; }
+    const pct = Math.min(100, ((now()-start)/dur)*100); bar.style.width = pct+"%";
+    if(pct >= 100){ clearInterval(iv); const box = $("#rad"); if(box) box.remove(); onDone(); }
+  },100);
+}
+function openGame(t){
+  const o = document.createElement("div"); o.id = "gm";
+  o.style.cssText = "position:fixed;inset:0;z-index:99;background:#140a2e;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:env(safe-area-inset-top,0px) 10px env(safe-area-inset-bottom,0px);overflow-y:auto";
+  const gameAdOn = S.adConfig && S.adConfig.on && (!S.adConfig.screens || S.adConfig.screens.game!==false);
+  const gameAdBox = gameAdOn ? `<div style="width:min(320px,92vw);min-height:50px;margin-top:4px;margin-bottom:2px;border:1px dashed #555;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#888;background:#ffffff0a">${S.adConfig.bannerId?"Banner Ad • "+esc(S.adConfig.bannerId):"Banner Ad (320x50)"}</div>` : "";
+  o.innerHTML = `<div style="width:min(320px,92vw);display:flex;justify-content:space-between;align-items:center;font-weight:700"><span>${esc(t.name)}</span><span id="gs">Score: 0</span><button onclick="closeGame()" style="background:#ffffff22;border:none;color:#fff;border-radius:8px;padding:6px 10px;font-size:16px">✕</button></div>
+    ${gameAdBox}
+    <div style="position:relative"><canvas id="gc" width="320" height="480" style="width:min(320px,92vw);height:auto;border-radius:14px;touch-action:none;display:block"></canvas><div id="gh" style="position:absolute;left:0;right:0;bottom:12px;text-align:center;font-size:13px;opacity:.9"></div></div>`;
+  document.body.appendChild(o);
+  const c = $("#gc");
+  G = {t, score:0, over:false, tx:160, ty:240, frame:0, ice:[], time:30, ball:null, raf:0, c, x:c.getContext("2d"), sx:160, sy:240, mt:0,
+       lane:1, obst:[], gems:[], target:null, left:true, colors:["#ff5c5c","#3ddc97","#3b82f6","#ffb020"],
+       startMs:now(), bullets:[], roids:[], knifeRot:0, knifeRotSpeed:0.028, stuck:[], grid:null, bmTime:60};
+  $("#gh").textContent = ({
+    hoop:"Tap karo jahan se ball fenkni hai • Hoop mein daalo (30s)",
+    arctic:"Screen par drag karo • Icebergs se bacho!",
+    loop:"Left/Right tap karo • Lane badlo, obstacles se bacho, gems lo!",
+    colorbounce:"Upar wale color se match karta hua side jaldi tap karo!",
+    bubble:"Drag karke meteors se bacho, bubble ko bachao!",
+    drive:"Left/Right tap karo • Traffic se bacho, fuel lo!",
+    shooter:"Drag karke spaceship move karo • Asteroids se bacho, auto-fire se shoot karo!",
+    knife:"Tap karo knife fenkne ke liye • Rotating log mein dusri knife se mat takrao!",
+    blockmatch:"Same color wale 2+ blocks ke group par tap karo • Clear karo, bade group = zyada score (60s)"
+  })[t.g];
+  const pos = e => { const r = c.getBoundingClientRect(); return (e.clientX-r.left)*320/r.width; };
+  const posY = e => { const r = c.getBoundingClientRect(); return (e.clientY-r.top)*480/r.height; };
+  c.onpointermove = e => { G.tx = pos(e); G.ty = posY(e); };
+  c.onpointerdown = e => {
+    G.tx = pos(e); G.ty = posY(e);
+    if(t.g==="hoop" && !G.ball && !G.over) G.ball = {x:G.tx,y:430,f:0};
+    if((t.g==="loop"||t.g==="drive") && !G.over) G.lane = G.tx < 107 ? 0 : (G.tx < 213 ? 1 : 2);
+    if(t.g==="colorbounce" && !G.over) checkColorTap(G.tx < 160 ? 0 : 1);
+    if(t.g==="knife" && !G.over) throwKnife();
+    if(t.g==="blockmatch" && !G.over) tapBlock(G.tx, G.ty);
+  };
+  loop();
+}
+function loop(){
+  if(!G || G.over) return; G.frame++; G.x.clearRect(0,0,320,480);
+  ({hoop:hoopStep, arctic:arcticStep, loop:loopStep, colorbounce:colorbounceStep, bubble:bubbleStep, drive:driveStep, shooter:shooterStep, knife:knifeStep, blockmatch:blockmatchStep})[G.t.g]();
+  const gs = $("#gs"); if(gs && G) gs.textContent = "Score: "+Math.floor(G.score);
+  if(G && !G.over) G.raf = requestAnimationFrame(loop);
+}
+function arcticStep(){
+  const x = G.x;
+  if(!G.bgGrad){ G.bgGrad = x.createLinearGradient(0,0,0,480); G.bgGrad.addColorStop(0,"#0e7490"); G.bgGrad.addColorStop(1,"#082f49"); }
+  x.fillStyle = G.bgGrad; x.fillRect(0,0,320,480);
+  G.tx = Math.max(24, Math.min(296, G.tx)); G.sx += (G.tx-G.sx)*0.2; G.sx = Math.max(24, Math.min(296, G.sx));
+  if(Math.random() < 0.014+Math.min(0.025,G.score/3000)) G.ice.push({x:20+Math.random()*280,y:-20,r:10+Math.random()*10,v:2+Math.random()*1.2+G.score/400});
+  G.ice.forEach(i=>{ i.y += i.v; x.fillStyle = "#e0f7ff"; x.beginPath(); x.arc(i.x,i.y,i.r,0,7); x.fill(); if(Math.hypot(i.x-G.sx,i.y-430) < i.r+12) G.over = true; });
+  G.ice = G.ice.filter(i=>i.y<520); G.score += 0.1;
+  x.font = "32px serif"; x.textAlign = "center"; x.fillText("🚢",G.sx,440);
+  if(G.over) setTimeout(()=>{ if(G) gameOver(); }, 1000);
+}
+function loopStep(){
+  const x = G.x; x.fillStyle = "#0a2a33"; x.fillRect(0,0,320,480);
+  const lanesX = [70,160,250];
+  x.strokeStyle = "#1e4550"; [95,225].forEach(lx=>{ x.beginPath(); x.moveTo(lx,0); x.lineTo(lx,480); x.lineWidth=2; x.stroke(); });
+  if(G.spawnCd===undefined) G.spawnCd = 0;
+  G.spawnCd--;
+  if(G.spawnCd <= 0 && Math.random() < 0.5){
+    const ln = Math.floor(Math.random()*3);
+    if(Math.random() < 0.35) G.gems.push({lane:ln,y:-20}); else G.obst.push({lane:ln,y:-20});
+    G.spawnCd = Math.max(22, 34 - Math.floor(G.score/60));
+  }
+  const spd = 2.4+Math.min(3,G.score/500);
+  G.obst.forEach(o=>o.y+=spd); G.gems.forEach(o=>o.y+=spd);
+  G.obst = G.obst.filter(o=>{
+    x.fillStyle = "#ff7a1a"; x.beginPath(); x.moveTo(lanesX[o.lane],o.y-14); x.lineTo(lanesX[o.lane]-14,o.y+10); x.lineTo(lanesX[o.lane]+14,o.y+10); x.closePath(); x.fill();
+    if(o.lane===G.lane && Math.abs(o.y-420)<26) G.over = true;
+    return o.y<520;
+  });
+  G.gems = G.gems.filter(o=>{
+    x.fillStyle = "#a78bfa"; x.beginPath(); x.arc(lanesX[o.lane],o.y,8,0,7); x.fill();
+    if(o.lane===G.lane && Math.abs(o.y-420)<26){ G.score += 5; return false; }
+    return o.y<520;
+  });
+  x.font = "32px serif"; x.textAlign = "center"; x.fillText("🐝",lanesX[G.lane],432);
+  G.score += 0.06;
+  if(G.over) setTimeout(()=>{ if(G) gameOver(); }, 3000);
+}
+function newColorRound(){
+  G.target = G.colors[Math.floor(Math.random()*G.colors.length)];
+  let other = G.colors[Math.floor(Math.random()*G.colors.length)];
+  while(other===G.target) other = G.colors[Math.floor(Math.random()*G.colors.length)];
+  G.left = Math.random()<0.5;
+  G.leftColor = G.left ? G.target : other;
+  G.rightColor = G.left ? other : G.target;
+  G.roundStart = now(); G.roundDur = Math.max(650, 1500 - G.score*12);
+}
+function checkColorTap(side){
+  if(!G || G.over || !G.target) return;
+  const correct = (side===0 && G.left) || (side===1 && !G.left);
+  if(correct){ G.score += 3; newColorRound(); } else { G.over = true; gameOver(); }
+}
+function colorbounceStep(){
+  const x = G.x;
+  if(!G.target) newColorRound();
+  const elapsed = now()-G.roundStart;
+  if(elapsed > G.roundDur){ G.over = true; return gameOver(); }
+  x.fillStyle = "#1b1240"; x.fillRect(0,0,320,480);
+  x.fillStyle = G.leftColor; x.fillRect(0,60,160,420);
+  x.fillStyle = G.rightColor; x.fillRect(160,60,160,420);
+  x.fillStyle = "#fff"; x.textAlign = "center"; x.font = "bold 13px sans-serif"; x.fillText("Is color ko tap karo:",160,26);
+  x.fillStyle = G.target; x.beginPath(); x.arc(160,44,13,0,7); x.fill(); x.strokeStyle = "#fff"; x.lineWidth=2; x.stroke();
+  const pct = Math.max(0,1-(elapsed/G.roundDur));
+  x.fillStyle = "#ffffff66"; x.fillRect(20,470,280*pct,4);
+  if(G.over) setTimeout(()=>{ if(G) gameOver(); }, 3000);
+}
+function bubbleStep(){
+  const x = G.x;
+  if(!G.bgGrad2){ G.bgGrad2 = x.createLinearGradient(0,0,0,480); G.bgGrad2.addColorStop(0,"#1e3a8a"); G.bgGrad2.addColorStop(1,"#4c1d95"); }
+  x.fillStyle = G.bgGrad2; x.fillRect(0,0,320,480);
+  G.tx = Math.max(24,Math.min(296,G.tx)); G.sx += (G.tx-G.sx)*0.2; G.sx = Math.max(24,Math.min(296,G.sx));
+  if(Math.random() < 0.025+Math.min(0.03,G.score/1800)) G.ice.push({x:20+Math.random()*280,y:-20,r:10+Math.random()*12,v:2.2+Math.random()*1.3+G.score/350});
+  G.ice = G.ice.filter(i=>{
+    i.y += i.v; x.fillStyle = "#f87171"; x.beginPath(); x.arc(i.x,i.y,i.r,0,7); x.fill();
+    if(Math.hypot(i.x-G.sx,i.y-430) < i.r+13) G.over = true;
+    return i.y<520;
+  });
+  x.font = "34px serif"; x.textAlign = "center"; x.fillText("🫧",G.sx,440);
+  G.score += 0.1;
+  if(G.over) setTimeout(()=>{ if(G) gameOver(); }, 3000);
+}
+function driveStep(){
+  const x = G.x; x.fillStyle = "#2b2b2b"; x.fillRect(0,0,320,480);
+  const lanesX = [70,160,250];
+  x.strokeStyle = "#666"; x.setLineDash([14,14]); [95,225].forEach(lx=>{ x.beginPath(); x.moveTo(lx,0); x.lineTo(lx,480); x.lineWidth=3; x.stroke(); }); x.setLineDash([]);
+  if(G.spawnCd2===undefined) G.spawnCd2 = 0;
+  G.spawnCd2--;
+  if(!G.obst2) G.obst2 = []; if(!G.gems2) G.gems2 = [];
+  if(G.spawnCd2<=0 && Math.random()<0.5){
+    const ln = Math.floor(Math.random()*3);
+    if(Math.random()<0.3) G.gems2.push({lane:ln,y:-30}); else G.obst2.push({lane:ln,y:-30});
+    G.spawnCd2 = Math.max(24, 36-Math.floor(G.score/60));
+  }
+  const spd = 2.6+Math.min(3.4,G.score/450);
+  G.obst2.forEach(o=>o.y+=spd); G.gems2.forEach(o=>o.y+=spd);
+  x.textAlign = "center";
+  G.obst2 = G.obst2.filter(o=>{
+    x.font = "28px serif"; x.fillText("🚙",lanesX[o.lane],o.y);
+    if(o.lane===G.lane && Math.abs(o.y-420)<28) G.over = true;
+    return o.y<520;
+  });
+  G.gems2 = G.gems2.filter(o=>{
+    x.font = "22px serif"; x.fillText("🛢️",lanesX[o.lane],o.y);
+    if(o.lane===G.lane && Math.abs(o.y-420)<28){ G.score += 5; return false; }
+    return o.y<520;
+  });
+  x.font = "30px serif"; x.fillText("🚗",lanesX[G.lane],432);
+  G.score += 0.06;
+  if(G.over) setTimeout(()=>{ if(G) gameOver(); }, 3000);
+}
+function hoopStep(){
+  const x = G.x; G.time -= 1/60; if(G.time <= 0){ G.over = true; return gameOver(); }
+  x.fillStyle = "#1b1240"; x.fillRect(0,0,320,480);
+  G.hx = 160+Math.sin(G.frame/40)*(100+Math.min(40,G.score*2));
+  x.fillStyle = "#fff"; x.fillRect(G.hx-34,50,68,40); x.fillStyle = "#ff7a1a"; x.fillRect(G.hx-30,92,60,6);
+  x.strokeStyle = "#ffffff88"; for(let i=-24;i<=24;i+=12){ x.beginPath(); x.moveTo(G.hx+i,98); x.lineTo(G.hx+i/2,124); x.stroke(); }
+  x.font = "30px serif"; x.textAlign = "center";
+  if(G.ball){ const b = G.ball; b.f++; b.y = 430-(b.f/22)*332;
+    if(b.f >= 22){ if(Math.abs(G.hx-b.x) < 28){ G.score += 2; G.msg = "🏀 Swish! +2"; } else G.msg = "Miss!"; G.mt = 35; G.ball = null; }
+    else x.fillText("🏀",b.x,b.y); }
+  else x.fillText("🏀",G.tx,430);
+  x.fillStyle = "#fff"; x.font = "bold 16px sans-serif"; x.textAlign = "left"; x.fillText(Math.ceil(G.time)+"s",10,24);
+  if(G.mt > 0){ G.mt--; x.textAlign = "center"; x.font = "bold 22px sans-serif"; x.fillText(G.msg,160,250); }
+}
+function shooterStep(){
+  const x = G.x;
+  if(!G.bgGrad3){ G.bgGrad3 = x.createLinearGradient(0,0,0,480); G.bgGrad3.addColorStop(0,"#1e1b4b"); G.bgGrad3.addColorStop(1,"#0a0a1a"); }
+  x.fillStyle = G.bgGrad3; x.fillRect(0,0,320,480);
+  if(!G.stars) G.stars = Array.from({length:24},()=>({x:Math.random()*320,y:Math.random()*480,r:Math.random()*1.6}));
+  x.fillStyle = "#ffffff99"; G.stars.forEach(s=>{ s.y += 1.5; if(s.y>480) s.y=0; x.beginPath(); x.arc(s.x,s.y,s.r,0,7); x.fill(); });
+  // ship follows the touch/drag position directly (snappy, no lag)
+  G.tx = Math.max(24, Math.min(296, G.tx)); G.sx = G.tx;
+  G.shootCd = (G.shootCd||0) - 1;
+  if(G.shootCd<=0){ G.bullets.push({x:G.sx,y:420}); G.shootCd = 14; }
+  G.bullets.forEach(b=>b.y-=9); G.bullets = G.bullets.filter(b=>b.y>-10);
+  if(Math.random() < 0.02+Math.min(0.035,G.score/3500)) G.roids.push({x:20+Math.random()*280,y:-20,r:12+Math.random()*10,v:1.6+Math.random()*1.2+G.score/450});
+  G.roids.forEach(r=>r.y+=r.v);
+  // single-pass bullet↔asteroid collision check (avoids repeated array rebuilds that caused frame-rate lag)
+  const deadBullets = new Set(), deadRoids = new Set();
+  for(let ri=0; ri<G.roids.length; ri++){
+    const r = G.roids[ri];
+    for(let bi=0; bi<G.bullets.length; bi++){
+      if(deadBullets.has(bi)) continue;
+      const b = G.bullets[bi];
+      if(Math.hypot(b.x-r.x,b.y-r.y) < r.r+4){ deadBullets.add(bi); deadRoids.add(ri); G.score += 10; break; }
+    }
+  }
+  if(deadBullets.size) G.bullets = G.bullets.filter((b,i)=>!deadBullets.has(i));
+  x.fillStyle = "#ffe488"; G.bullets.forEach(b=>{ x.fillRect(b.x-2,b.y-8,4,10); });
+  G.roids = G.roids.filter((r,i)=>{
+    if(deadRoids.has(i)) return false;
+    x.font = (r.r*2)+"px serif"; x.textAlign = "center"; x.fillText("☄️",r.x,r.y+r.r*0.4);
+    if(Math.hypot(r.x-G.sx,r.y-440) < r.r+14) G.over = true;
+    return r.y<520;
+  });
+  x.font = "30px serif"; x.textAlign = "center"; x.fillText("🚀",G.sx,440);
+  G.score += 0.03;
+  if(G.over) setTimeout(()=>{ if(G) gameOver(); }, 1000);
+}
+function throwKnife(){
+  if(!G || G.over) return;
+  const absAngle = G.knifeRot - Math.PI/2; // current angle at the "top" (12 o'clock) point where a thrown knife lands
+  const norm = a => { a = a % (Math.PI*2); if(a<0) a += Math.PI*2; return a; };
+  const hit = G.stuck.some(s => { let d = Math.abs(norm(s) - norm(absAngle)); d = Math.min(d, Math.PI*2-d); return d < 0.26; });
+  if(hit){
+    G.over = true; G.knifeHitFx = 18;
+    cancelAnimationFrame(G.raf);
+    knifeStep(); // render the final frame showing the collision
+    setTimeout(()=>{ if(G) gameOver(); }, 900);
+    return;
+  }
+  G.stuck.push(absAngle);
+  G.score += 1;
+  G.knifeRotSpeed = Math.min(0.09, G.knifeRotSpeed + 0.0028);
+  G.knifeThrowFx = 8;
+}
+function knifeStep(){
+  const x = G.x;
+  if(!G.bgGrad4){ G.bgGrad4 = x.createLinearGradient(0,0,0,480); G.bgGrad4.addColorStop(0,"#3f3f46"); G.bgGrad4.addColorStop(1,"#18181b"); }
+  x.fillStyle = G.bgGrad4; x.fillRect(0,0,320,480);
+  const cx = 160, cy = 190, R = 70;
+  if(!G.over) G.knifeRot += G.knifeRotSpeed;
+  x.save(); x.translate(cx,cy); x.rotate(G.knifeRot);
+  x.fillStyle = "#8a5a2b"; x.beginPath(); x.arc(0,0,R,0,7); x.fill();
+  x.strokeStyle = "#5c3a1a"; x.lineWidth = 6; x.beginPath(); x.arc(0,0,R-4,0,7); x.stroke();
+  x.restore();
+  G.stuck.forEach(a=>{
+    const kx = cx+Math.cos(a)*R, ky = cy+Math.sin(a)*R;
+    x.save(); x.translate(kx,ky); x.rotate(a+Math.PI/2); x.font = "22px serif"; x.textAlign = "center"; x.fillText("🔪",0,7); x.restore();
+  });
+  x.font = "26px serif"; x.textAlign = "center";
+  if(G.knifeThrowFx>0){ G.knifeThrowFx--; }
+  x.fillText("🔪",cx,445);
+  if(G.knifeHitFx>0){ G.knifeHitFx--; x.fillStyle="#ff5c5c"; x.font="bold 20px sans-serif"; x.fillText("💥 TAKRAYA!",cx,300); }
+  x.fillStyle = "#fff"; x.font = "bold 14px sans-serif"; x.textAlign="left"; x.fillText("🔪 x"+G.stuck.length,10,24);
+}
+function initBlockGrid(){
+  const cols=6, rows=7, colorsN = G.colors.length;
+  G.grid = Array.from({length:rows},()=>Array.from({length:cols},()=>Math.floor(Math.random()*colorsN)));
+}
+function blockCluster(r0,c0){
+  const rows=G.grid.length, cols=G.grid[0].length, col=G.grid[r0][c0];
+  if(col===null) return [];
+  const seen = new Set(), stack=[[r0,c0]], out=[];
+  while(stack.length){
+    const [r,c] = stack.pop(), key=r+","+c;
+    if(seen.has(key)||r<0||c<0||r>=rows||c>=cols||G.grid[r][c]!==col) continue;
+    seen.add(key); out.push([r,c]);
+    stack.push([r-1,c],[r+1,c],[r,c-1],[r,c+1]);
+  }
+  return out;
+}
+function blockGravity(){
+  const rows=G.grid.length, cols=G.grid[0].length;
+  for(let c=0;c<cols;c++){
+    let write = rows-1;
+    for(let r=rows-1;r>=0;r--){ if(G.grid[r][c]!==null){ G.grid[write][c]=G.grid[r][c]; if(write!==r) G.grid[r][c]=null; write--; } }
+    for(let r=write;r>=0;r--) G.grid[r][c] = Math.floor(Math.random()*G.colors.length);
+  }
+}
+function tapBlock(px,py){
+  if(!G.grid) return;
+  const gx=10, gy=60, cell=50, rows=G.grid.length, cols=G.grid[0].length;
+  const col = Math.floor((px-gx)/cell), row = Math.floor((py-gy)/cell);
+  if(row<0||col<0||row>=rows||col>=cols) return;
+  const cluster = blockCluster(row,col);
+  if(cluster.length < 2) return;
+  cluster.forEach(([r,c])=>G.grid[r][c]=null);
+  G.score += cluster.length*cluster.length*2;
+  blockGravity();
+}
+function blockmatchStep(){
+  const x = G.x;
+  if(!G.grid) initBlockGrid();
+  G.bmTime -= 1/60; if(G.bmTime<=0){ G.over = true; return gameOver(); }
+  x.fillStyle = "#0f2a22"; x.fillRect(0,0,320,480);
+  const gx=10, gy=60, cell=50;
+  for(let r=0;r<G.grid.length;r++) for(let c=0;c<G.grid[0].length;c++){
+    const col = G.grid[r][c]; if(col===null) continue;
+    x.fillStyle = G.colors[col];
+    const px=gx+c*cell, py=gy+r*cell;
+    x.beginPath(); x.roundRect ? x.roundRect(px+2,py+2,cell-4,cell-4,8) : x.rect(px+2,py+2,cell-4,cell-4); x.fill();
+  }
+  x.fillStyle = "#fff"; x.font = "bold 16px sans-serif"; x.textAlign = "left"; x.fillText(Math.ceil(G.bmTime)+"s",10,24);
+  x.textAlign = "right"; x.fillText("🧩 "+Math.floor(G.score),310,24);
+}
+function bank(){
+  const rawSc = Math.max(0, Math.floor(G.score)||0), id = G.t.id;
+  // Anti-cheat: cap the banked score to a plausible max based on real elapsed play time,
+  // so a tampered/injected G.score (e.g. via devtools) can't produce an absurd result.
+  const elapsedSec = Math.max(0.5, (now() - (G.startMs||now())) / 1000);
+  const MAX_RATE = {arctic:9, hoop:7, loop:15, colorbounce:9, bubble:9, drive:15, shooter:16, knife:4, blockmatch:34};
+  const cap = Math.ceil(elapsedSec * (MAX_RATE[G.t.g]||12)) + 25;
+  const sc = Math.min(rawSc, cap);
+  S.best[id] = Math.max(S.best[id]||0, sc); save();
+  G.elapsedSec = elapsedSec; cloudScore(G.t, sc, 1, elapsedSec);
+  return sc;
+}
+function gameOver(){
+  const t = G.t, sc = bank(), gh = $("#gh");
+  gh.style.bottom = "auto"; gh.style.top = "30px";
+  const list = genReport(t);
+  let rank = list.findIndex(e=>sc>=e.score); if(rank===-1) rank = list.length;
+  const confetti = [0,1,2,3,4,5].map(i=>`<div style="position:absolute;top:${5+i*4}%;left:${8+i*15}%;font-size:18px;transform:rotate(${i*35}deg)">${["🎈","🎊","⭐","🎶","🎉","✨"][i]}</div>`).join("");
+  gh.innerHTML = `<div style="position:relative;background:linear-gradient(180deg,#7c3aed,#3a1578);border-radius:20px;padding:20px 16px 16px;margin:0 14px;text-align:center;overflow:hidden">
+    ${confetti}
+    <button onclick="closeGame()" style="position:absolute;top:10px;right:10px;background:#ffffff22;border:none;color:#fff;border-radius:8px;width:30px;height:30px;font-size:16px">✕</button>
+    <div style="font-size:26px;font-weight:900;color:#ffd54a;text-shadow:0 2px 0 #7c3f00,0 0 16px rgba(255,213,74,.6);margin:8px 0 16px">🎉 NICE GAME! 🎉</div>
+    <div style="display:flex;gap:10px;margin-bottom:16px">
+      <div style="flex:1;background:#dbeafe;border-radius:12px;padding:10px"><div style="font-size:10px;color:#1e3a8a;font-weight:800;letter-spacing:.5px">YOU SCORED</div><div style="font-size:22px;font-weight:900;color:#1e3a8a">🏅 ${sc}</div></div>
+      <div style="flex:1;background:#bbf7d0;border-radius:12px;padding:10px"><div style="font-size:10px;color:#14532d;font-weight:800;letter-spacing:.5px">TOURNAMENT RANK</div><div style="font-size:22px;font-weight:900;color:#14532d">🏆 #${rank+1}</div></div>
+    </div>
+    ${sc>0?`<div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:4px">
+      <button class="btn" id="boostBtn" style="background:linear-gradient(180deg,#ffe488,#f5a300);color:#3a1f00;font-weight:900;font-size:20px;flex:1;max-width:180px" onclick="claim2x(${sc},${t.id})">2×</button>
+      <div style="background:#22c55e;color:#fff;font-size:11px;font-weight:800;padding:5px 10px;border-radius:8px;display:flex;align-items:center;gap:3px">🎬 ADS</div>
+    </div>`:""}
+    <button class="btn s" style="width:100%;margin-top:10px;background:#ffffff22;color:#fff" onclick="closeGame();playT(${t.id})">Play Again</button>
+  </div>`;
+  rpAdTick();
+}
+function rpAdLeft(){ return Math.max(0, ((S.lastRpAd||0) + (cfg().rpAdCooldownMin||3)*MIN) - now()); }
+let rpAdIv = null;
+function rpAdTick(){
+  clearInterval(rpAdIv);
+  const upd = ()=>{
+    const b = $("#boostBtn"); if(!b){ clearInterval(rpAdIv); return; }
+    if(b.dataset.done) return;
+    const l = rpAdLeft();
+    if(l>0){ b.disabled = true; const sec = Math.ceil(l/1000); b.textContent = "⏳ "+Math.floor(sec/60)+":"+String(sec%60).padStart(2,"0"); }
+    else { b.disabled = false; b.textContent = "2×"; clearInterval(rpAdIv); }
+  };
+  upd(); rpAdIv = setInterval(upd, 1000);
+}
+function claim2x(sc, id){
+  if(rpAdLeft()>0) return;
+  const mult = 2;
+  const el0 = (G && G.elapsedSec) || 0.5;
+  const btn = $("#boostBtn"); if(btn){ btn.disabled = true; btn.textContent = "..."; }
+  watchAd(`Ad khatam hone par x${mult} reward milega`, ()=>{
+    S.lastRpAd = now();
+    const newScore = sc*mult, extra = newScore - sc;
+    S.best[id] = Math.max(S.best[id]||0, newScore); S.rp = (S.rp||0) + extra; save();
+    { const tt = S.tours.find(x=>x.id===id); if(tt) cloudScore(tt, newScore, 2, el0); }
+    const bl = $(".bal"); if(bl) bl.textContent = balText();
+    const b = $("#boostBtn"); if(b){ b.dataset.done = "1"; b.textContent = `✅ x${mult}! +${extra} RP mile`; b.style.background = "linear-gradient(180deg,#86efac,#22c55e)"; b.style.color = "#06290f"; }
+  }, {onFail: ()=>{ const b = $("#boostBtn"); if(b){ b.disabled = false; b.textContent = "2×"; } }});
+}
+function closeGame(){
+  if(G){ cancelAnimationFrame(G.raf); if(!G.over && G.score > 0){ G.over = true; bank(); } }
+  const o = $("#gm"); if(o) o.remove(); G = null; render();
+}
+
+function promo(){
+  $("#view").innerHTML = adBox('promo') + `<div class="card"><h3>🎟️ Promo Code</h3><div class="mut" style="margin-bottom:10px">6-digit code daalo aur RP paao</div>
+    <input id="pc" placeholder="123456" maxlength="6" inputmode="numeric" style="text-align:center;letter-spacing:4px;font-size:20px;font-weight:700">
+    <div class="msg" id="msg"></div><button class="btn g" onclick="redeemPromo()">Redeem</button></div>
+    ${supportLinksCard()}
+    ${(S.usedPromos&&S.usedPromos.length)?`<h3>Used Codes</h3>${S.usedPromos.slice().reverse().map(c=>`<div class="lb"><span class="n">${esc(c)}</span><span class="p">✓ Redeemed</span></div>`).join("")}`:""}`;
+}
+function redeemPromo(){
+  const code = $("#pc").value.trim();
+  if(!/^\d{6}$/.test(code)) return toast("6 digit code daalo", false);
+  if(!S.usedPromos) S.usedPromos = [];
+  if(S.usedPromos.includes(code)) return toast("Ye code pehle hi use ho chuka hai", false);
+  const reward = (S.promos||{})[code];
+  if(!reward) return toast("Galat ya expired code", false);
+  S.rp = (S.rp||0) + reward; S.usedPromos.push(code); save();
+  $(".bal").textContent = balText(); toast(`✅ +${reward} RP mile!`); promo();
+}
+
+function wallet(){
+  if(S.isGuest){
+    $("#view").innerHTML = adBox('wallet') + `<div class="card" style="text-align:center">
+      <div style="font-size:40px">🔒</div>
+      <h3>Guest Account</h3>
+      <div class="mut" style="margin:8px 0 16px">Guest account se withdrawal allowed nahi hai. Apne earned coins withdraw karne ke liye real mobile number se login/signup karo — tumhare abhi tak ke coins is device par safe rahenge jab tak tum login nahi karte.</div>
+      <button class="btn g" onclick="logoutBox()">📱 Real Number se Login Karo</button>
+    </div>`;
+    return;
+  }
+  const notify = S.wdNotify, c = cfg();
+  const upiOn = c.upiEnabled!==false, paypalOn = c.paypalEnabled!==false, paytmOn = c.paytmEnabled!==false, phonepeOn = c.phonepeEnabled!==false, binanceOn = c.binanceEnabled!==false;
+  const enabledOpts = [upiOn&&1, paypalOn&&2, paytmOn&&3, phonepeOn&&4, binanceOn&&5].filter(Boolean);
+  if(!window.opt || !enabledOpts.includes(window.opt)) window.opt = enabledOpts[0] || 1;
+  const presets = (c.presetAmounts&&c.presetAmounts.length) ? c.presetAmounts : defaultConfig().presetAmounts;
+  const isINR = !isFeeOpt(window.opt);
+  const domesticWrap = (o, label) => `<div id="wm${WD_ID[o]}Wrap" style="display:${window.opt==o?"flex":"none"};flex-direction:column;gap:6px;margin-bottom:10px">
+      <div style="display:flex;gap:8px">
+        <div style="flex:0 0 auto;padding:12px 10px;border-radius:10px;background:var(--in);font-size:14px;display:flex;align-items:center">🇮🇳 +91</div>
+        <input id="wm${WD_ID[o]}" placeholder="Mobile Number" inputmode="numeric" style="flex:1;margin-bottom:0" oninput="resetWdOtp(${o})">
+        <button class="btn s sm" style="flex:0 0 auto" onclick="sendWdOtp(${o})">Verify</button>
+      </div>
+      <div id="wm${WD_ID[o]}OtpBox" style="display:none;gap:6px"><input id="wm${WD_ID[o]}Otp" placeholder="6-digit OTP" maxlength="6" inputmode="numeric" style="flex:1;margin-bottom:0"><button class="btn g sm" style="flex:0 0 auto" onclick="verifyWdOtp(${o})">Confirm</button></div>
+      <div class="mut" id="wm${WD_ID[o]}Status"></div>
+    </div>`;
+  const internationalWrap = o => `<div id="wm${WD_ID[o]}Wrap" style="display:${window.opt==o?"flex":"none"};flex-direction:column;gap:6px;margin-bottom:10px">
+      <div style="display:flex;gap:8px">
+        <select id="wmc${WD_ID[o]}" style="flex:0 0 auto;width:auto;max-width:150px;padding:12px 8px;border-radius:10px;border:2px solid transparent;background:var(--in);color:var(--text);font-size:14px;outline:none">
+          ${COUNTRIES.filter(cn=>cn.id!=="IN" && !(cfg().blockedWithdrawCountries||[]).includes(cn.id)).map(cn=>`<option value="${cn.id}" ${cn.id===S.countryId?"selected":""}>${cn.flag} ${cn.name} (${cn.code})</option>`).join("")}
+        </select>
+        <input id="wm${WD_ID[o]}" placeholder="Mobile Number" inputmode="numeric" style="flex:1;margin-bottom:0" oninput="resetWdOtp(${o})">
+        <button class="btn s sm" style="flex:0 0 auto" onclick="sendWdOtp(${o})">Verify</button>
+      </div>
+      <div id="wm${WD_ID[o]}OtpBox" style="display:none;gap:6px"><input id="wm${WD_ID[o]}Otp" placeholder="6-digit OTP" maxlength="6" inputmode="numeric" style="flex:1;margin-bottom:0"><button class="btn g sm" style="flex:0 0 auto" onclick="verifyWdOtp(${o})">Confirm</button></div>
+      <div class="mut" id="wm${WD_ID[o]}Status"></div>
+    </div>`;
+  $("#view").innerHTML = adBox('wallet') + noticeBanner('wallet')
+    + (notify?`<div class="card" style="background:linear-gradient(135deg,#0f766e,#14532d);color:#fff;text-align:center"><b>✅ ${esc(notify)}</b></div>`:"")
+    + `<div class="card" style="text-align:center"><div class="mut">Balance</div><div style="font-size:30px;font-weight:800;color:var(--gold)">🪙 ${S.coins}</div><div class="mut">${c.rate.toLocaleString()} coins = $1 • Min $${c.minWithdrawUsd} • Max $${c.maxWithdrawUsd} per withdrawal</div></div>
+    <div class="card"><h3>Redeem</h3>
+    ${(upiOn||paytmOn||phonepeOn)?`<div class="mut" style="margin-bottom:6px">🇮🇳 Domestic (India)</div>
+    <div class="chips" style="flex-wrap:wrap;margin-bottom:12px">
+      ${upiOn?`<button class="chip ${window.opt==1?"on":""}" id="o1" onclick="setOpt(1)" style="display:flex;align-items:center;gap:5px"><span style="background:#fff;color:#1a1a1a;font-weight:900;font-size:12px;padding:1px 6px;border-radius:4px;letter-spacing:.5px"><span style="color:#ed7a1c">U</span><span style="color:#097d3c">P</span><span style="color:#ed7a1c">I</span></span></button>`:""}
+      ${paytmOn?`<button class="chip ${window.opt==3?"on":""}" id="o3" onclick="setOpt(3)" style="display:flex;align-items:center;gap:5px"><span style="background:#002e6e;color:#00baf2;font-weight:900;font-style:italic;font-size:12px;padding:1px 6px;border-radius:4px">Paytm</span></button>`:""}
+      ${phonepeOn?`<button class="chip ${window.opt==4?"on":""}" id="o4" onclick="setOpt(4)" style="display:flex;align-items:center;gap:5px"><span style="background:#5f259f;color:#fff;font-weight:900;font-size:12px;padding:1px 6px;border-radius:4px">Phone<span style="color:#ffe082">Pe</span></span></button>`:""}
+    </div>`:""}
+    ${(paypalOn||binanceOn)?`<div class="mut" style="margin-bottom:6px">🌍 International</div>
+    <div class="chips" style="flex-wrap:wrap">
+      ${paypalOn?`<button class="chip ${window.opt==2?"on":""}" id="o2" onclick="setOpt(2)" style="display:flex;align-items:center;gap:5px"><span style="background:#003087;color:#fff;font-weight:900;font-style:italic;font-size:12px;padding:1px 5px;border-radius:4px">Pay<span style="color:#009cde">Pal</span></span> (Processing Fee ${c.paypalFeePct}%)</button>`:""}
+      ${binanceOn?`<button class="chip ${window.opt==5?"on":""}" id="o5" onclick="setOpt(5)" style="display:flex;align-items:center;gap:5px"><span style="background:#0B0E11;color:#F3BA2F;font-weight:900;font-size:12px;padding:1px 6px;border-radius:4px">Binance</span> (Processing Fee ${c.binanceFeePct}%)</button>`:""}
+    </div>`:""}
+    <input id="wa" placeholder="${({1:"UPI ID (name@upi)",2:"PayPal Email",3:"Paytm Number / UPI ID",4:"PhonePe Number / UPI ID",5:"Binance Pay ID / Email"})[window.opt]}">
+    ${domesticWrap(1)}
+    ${internationalWrap(2)}
+    ${domesticWrap(3)}
+    ${domesticWrap(4)}
+    ${internationalWrap(5)}
+    <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">${presets.map(d=>{
+      const label = isINR ? `₹${Math.round(d*c.usdToInr).toLocaleString("en-IN")}` : (window.opt===5?`USDT ${d}`:`$${d}`);
+      return `<button class="chip" style="flex:1 1 auto;min-width:56px;text-align:center" onclick="setAmt(${d})">${label}</button>`;
+    }).join("")}</div>
+    <input id="wc" placeholder="Upar se ek amount choose karo" readonly style="cursor:not-allowed;opacity:.85">
+    <input type="hidden" id="wcCoins" value="0">
+    <div class="mut" id="wcUsd" style="margin:-4px 0 8px;text-align:right">≈ $0.00</div>
+    <div class="msg" id="msg"></div><button class="btn" ${wdAvailable()?"":"disabled"} onclick="withdraw()">${wdAvailable()?"Withdraw Request":(wdCountLeft()<=0?"✅ Aaj ki limit khatam":"⏰ Abhi Band")}</button>
+    <div class="mut" style="margin-top:6px;text-align:center">Din mein max ${c.wdMaxPerDay||1} withdrawal${(c.wdMaxPerDay||1)>1?"s":""} allowed hai (${wdCountLeft()} bache hain)${c.wdTimeEnabled?` • Timing: ${wdWindowFmt()}`:""}${c.wdDaysEnabled?` • Din: ${(c.wdDays||[]).map(i=>["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][i]).join(", ")||"Koi nahi"}`:""}</div></div>
+    <h3>History</h3>${S.wd.length?S.wd.slice().reverse().map(w=>{
+      const badge = {PENDING:["⏳ Pending","#8a93a8"],APPROVED:["✔️ Approved","#38bdf8"],SUCCESS:["✅ Success","#1fa971"],REJECTED:["❌ Rejected","#ff5c5c"]}[w.status]||["",w.status];
+      const inr = usd => Math.round(parseFloat(usd)*cfg().usdToInr).toLocaleString("en-IN");
+      const mainLine = !isFeeMethod(w.method)
+        ? `${esc(w.method)} • ₹${inr(w.net)} net <span class="mut">(req ₹${inr(w.requested)}, TDS ${tdsPctForMethod(w.method)}%: ₹${inr(w.tds)})</span>`
+        : `${esc(w.method)} • ${w.method==="Binance"?"USDT ":"$"}${w.net} net <span class="mut">(req ${w.method==="Binance"?"USDT ":"$"}${w.requested}, TDS: N/A)</span>`;
+      return `<div class="lb" style="flex-wrap:wrap"><span class="n">${mainLine}${w.mobile?`<br><span class="mut">📱 ${esc(w.mobile)}</span>`:""}${w.utr?`<br><span class="mut">UTR: ${esc(w.utr)}</span>`:""}</span><span style="color:${badge[1]};font-weight:700;font-size:12px">${badge[0]}</span></div>`;
+    }).join(""):`<div class="mut">Abhi koi request nahi.</div>`}`;
+  if(notify){ S.wdNotify = null; save(); }
+}
+function setOpt(n){
+  window.opt = n;
+  wallet(); // full re-render: preset amounts & calculator switch currency (₹ for UPI/Paytm/PhonePe, $ for PayPal, USDT for Binance)
+}
+function sendWdOtp(opt){
+  const numEl = $("#wm"+WD_ID[opt]);
+  const num = numEl.value.trim().replace(/\D/g,"");
+  const status = $("#wm"+WD_ID[opt]+"Status");
+  if(!num || num.length<6 || num.length>12){ if(status){ status.style.color="#ff5c5c"; status.textContent = "Pehle valid mobile number daalo"; } return; }
+  if(!window.wdOtp) window.wdOtp = {};
+  const code = String(Math.floor(100000+Math.random()*900000));
+  window.wdOtp[opt] = {code, verifiedNum:""};
+  const box = $("#wm"+WD_ID[opt]+"OtpBox");
+  if(box) box.style.display = "flex";
+  if(status){ status.style.color="var(--muted)"; status.textContent = `OTP bheja gaya (demo, no SMS backend): ${code}`; }
+}
+function verifyWdOtp(opt){
+  const otpEl = $("#wm"+WD_ID[opt]+"Otp");
+  const numEl = $("#wm"+WD_ID[opt]);
+  const entered = otpEl.value.trim();
+  const rec = (window.wdOtp||{})[opt];
+  const status = $("#wm"+WD_ID[opt]+"Status");
+  if(!rec || !/^\d{6}$/.test(entered) || entered!==rec.code){ if(status){ status.style.color="#ff5c5c"; status.textContent = "Galat OTP, dobara try karo"; } return; }
+  rec.verifiedNum = numEl.value.trim().replace(/\D/g,"");
+  if(status){ status.style.color="var(--ok)"; status.textContent = "✅ Mobile number verified"; }
+  const box = $("#wm"+WD_ID[opt]+"OtpBox");
+  if(box) box.style.display = "none";
+}
+function resetWdOtp(opt){
+  if(window.wdOtp && window.wdOtp[opt]) window.wdOtp[opt].verifiedNum = "";
+  const status = $("#wm"+WD_ID[opt]+"Status");
+  if(status){ status.style.color="var(--muted)"; status.textContent = ""; }
+}
+function setAmt(d){
+  const coins = Math.round(d*cfg().rate), isINR = !isFeeOpt(window.opt);
+  $("#wcCoins").value = coins;
+  $("#wc").value = isINR ? `₹${Math.round(d*cfg().usdToInr).toLocaleString("en-IN")} (${coins} coins)` : `${window.opt===5?"USDT "+d:"$"+d} (${coins} coins)`;
+  updateWcUsd();
+}
+function updateWcUsd(){
+  const c = parseInt($("#wcCoins").value,10)||0, gross = c/cfg().rate, el = $("#wcUsd");
+  if(!el) return;
+  if(isFeeOpt(window.opt)){
+    const feePct = feePctFor(window.opt), net = gross*(1-feePct/100), sym = window.opt===5?"USDT ":"$";
+    el.textContent = `≈ ${sym}${gross.toFixed(2)} − Processing Fee ${feePct}% = ${sym}${net.toFixed(2)} milega`;
+  } else {
+    const tdsPct = tdsPctFor(window.opt), grossInr = gross*cfg().usdToInr, tdsInr = grossInr*(tdsPct/100), netInr = grossInr-tdsInr;
+    el.textContent = `≈ ₹${grossInr.toLocaleString("en-IN",{maximumFractionDigits:0})} − TDS ${tdsPct}% (₹${tdsInr.toLocaleString("en-IN",{maximumFractionDigits:0})}) = ₹${netInr.toLocaleString("en-IN",{maximumFractionDigits:0})} milega`;
+  }
+}
+function withdraw(){
+  if(S.isGuest) return toast("Guest account withdrawal nahi kar sakta — real number se login karo", false);
+  const a = $("#wa").value.trim(), c = parseInt($("#wcCoins").value,10), todayStr = new Date().toDateString();
+  if(!a) return toast("Details daalo", false);
+  if(!c) return toast("Upar se ek amount choose karo", false);
+  const mobileRaw = $("#wm"+WD_ID[window.opt]).value.trim().replace(/\D/g,"");
+  const wmcId = isFeeOpt(window.opt) ? $("#wmc"+WD_ID[window.opt]).value : "IN";
+  if(isFeeOpt(window.opt) && (cfg().blockedWithdrawCountries||[]).includes(wmcId)) return toast("Is country ke liye withdrawal abhi allowed nahi hai", false);
+  const mobileCc = isFeeOpt(window.opt) ? ((COUNTRIES.find(c=>c.id===wmcId)||{}).code || "") : "+91";
+  if(!mobileRaw || mobileRaw.length < 6 || mobileRaw.length > 12) return toast("Valid mobile number daalo", false);
+  const wdOtpRec = (window.wdOtp||{})[window.opt];
+  if(!wdOtpRec || wdOtpRec.verifiedNum !== mobileRaw) return toast("Mobile number OTP se verify karo pehle", false);
+  const mobile = mobileCc + " " + mobileRaw;
+  if(S.wdCountDate !== todayStr){ S.wdCountDate = todayStr; S.wdCountToday = 0; }
+  const maxPerDay = cfg().wdMaxPerDay || 1;
+  if((S.wdCountToday||0) >= maxPerDay) return toast(`Din mein sirf ${maxPerDay} withdrawal${maxPerDay>1?"s":""} allowed hai${maxPerDay>1?"n":""}`, false);
+  if(!wdDayOk()) return toast("Aaj ke din withdrawal allowed nahi hai", false);
+  if(!wdInTimeWindow()) return toast(`Withdrawal sirf ${wdWindowFmt()} ke beech allowed hai`, false);
+  if(!c || c < minCoins()) return toast(`Minimum $${cfg().minWithdrawUsd} (${minCoins()} coins) chahiye`, false);
+  if(c > maxCoins()) return toast(`Maximum $${cfg().maxWithdrawUsd} (${maxCoins()} coins) ek baar mein`, false);
+  if(c > S.coins) return toast("Itne coins nahi hain", false);
+  const gross = c/cfg().rate;
+  const tds = isFeeOpt(window.opt) ? 0 : gross*(tdsPctFor(window.opt)/100); // PayPal/Binance: no TDS, only processing fee. UPI/Paytm/PhonePe: each has its own admin-set TDS %.
+  const net = isFeeOpt(window.opt) ? gross*(1-feePctFor(window.opt)/100) : gross-tds;
+  const method = WD_METHOD[window.opt] || "UPI";
+  S.coins -= c; S.lastWithdraw = todayStr; S.wdCountDate = todayStr; S.wdCountToday = (S.wdCountToday||0)+1; // requested amount freezes instantly so user can't double-withdraw
+  S.wdSeq = (S.wdSeq||1000)+1;
+  const wdRec = {id:"WD"+S.wdSeq, user_id:S.phone, method, to:a, mobile, coins:c,
+    requested:gross.toFixed(2), tds:tds.toFixed(2), net:net.toFixed(2), status:"PENDING", utr:"", created:now()};
+  S.wd.push(wdRec);
+  save(); render();
+  if(cfg().payoutAutoMode && cfg().payoutWebhookUrl && (cfg().payoutProviders||[]).length) sendWdToBackend(wdRec);
+}
+// Posts a withdrawal request to the admin-configured backend webhook (Payout API Setup).
+// Payload field names are the DTO/schema the backend should expect — keep this in sync if fields change.
+async function sendWdToBackend(w){
+  const url = cfg().payoutWebhookUrl;
+  if(!url) return;
+  const payload = {
+    requestId: w.id,                 // our internal withdrawal ID, e.g. "WD1001"
+    userId: w.user_id,               // user's phone number (app's user identifier), e.g. "+91 9876543210"
+    userName: S.name || "",
+    method: w.method,                // "UPI" | "PayPal" | "Paytm" | "PhonePe" | "Binance"
+    payoutAddress: w.to,             // UPI ID / PayPal email / Paytm-PhonePe number, as entered by user
+    mobile: w.mobile || "",          // verified mobile with country code, e.g. "+91 9876543210"
+    coins: w.coins,                  // coins deducted for this withdrawal
+    requestedAmount: parseFloat(w.requested), // gross amount before TDS/fee (in base currency below)
+    tdsAmount: parseFloat(w.tds),    // TDS withheld (0 for PayPal/Binance)
+    netAmount: parseFloat(w.net),    // amount to actually pay out
+    currency: w.method==="PayPal" ? "USD" : w.method==="Binance" ? "USDT" : "INR",
+    status: w.status,                // "PENDING" at the point this is sent
+    provider: (cfg().payoutProviders||[])[0] || "",   // first selected provider; providersAll has the full list
+    providersAll: cfg().payoutProviders || [],
+    merchantId: cfg().payoutMerchantId || "",
+    createdAt: w.created             // epoch ms
+  };
+  try{
+    const res = await fetch(url, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(payload) });
+    w.backendSent = res.ok; w.backendStatus = res.status; w.backendError = "";
+  }catch(e){
+    w.backendSent = false; w.backendStatus = 0; w.backendError = (e && e.message) ? e.message : "network error";
+  }
+  save();
+  if(adminOn && tab==="me") me();
+}
+
+function me(){
+  $("#view").innerHTML = adBox('profile') + noticeBanner('profile') + `<div class="card" style="text-align:center"><div style="font-size:40px">🎯</div><h3>${esc(S.name)}${S.isGuest?' <span style="font-size:11px;background:var(--in);color:var(--muted);padding:2px 8px;border-radius:20px;vertical-align:middle">GUEST</span>':''}</h3><div class="mut">${S.isGuest?'Withdrawal ke liye real number se login karo':'📱 '+esc(S.phone)}</div></div>
+    ${S.isGuest?'':`<div class="card"><h3>👥 Referral Code</h3><div class="row"><b style="font-size:20px;color:var(--gold)">${S.code}</b><button class="btn sm" onclick="navigator.clipboard&&navigator.clipboard.writeText('${S.code}');this.textContent='Copied'">Copy</button></div>
+    <div class="mut" style="margin-top:6px">Dost ko code do — signup par +50 coins aur aapko commission.</div></div>`}
+    <div class="card"><h3>☁️ Cloud Sync</h3><div class="mut" id="cloudStat">${cloudStatText()}</div></div>
+    ${supportLinksCard()}
+    ${legalLinksCard()}
+    ${adminOn?`<div class="card"><h3>🛠 Admin Panel</h3>${adminUI()}</div>`:""}
+    <button class="btn s" onclick="logoutBox()">Logout</button>`;
+}
+let logoTaps = 0, logoTapT = 0;
+function logoTap(){
+  const t = now();
+  logoTaps = (t - logoTapT < 2500) ? logoTaps+1 : 1; logoTapT = t;
+  if(logoTaps >= 10){ logoTaps = 0; pinBox(); }
+}
+const PIN_MAX_TRIES = 5, PIN_LOCK_MS = 50*60*1000; // 5 galat tries ke baad 50 minute ka lockout
+function pinLockLeftMs(){
+  if(!S || !S.pinLockUntil) return 0;
+  return Math.max(0, S.pinLockUntil - now());
+}
+function pinBox(){
+  const o = document.createElement("div"); o.id = "pinbox";
+  o.style.cssText = "position:fixed;inset:0;z-index:99;background:#000000a0;display:flex;align-items:center;justify-content:center;padding:20px";
+  o.onclick = e => { if(e.target===o) o.remove(); };
+  const lockedMs = pinLockLeftMs();
+  if(lockedMs > 0){
+    const mm = Math.floor(lockedMs/60000), ss = Math.floor((lockedMs%60000)/1000);
+    o.innerHTML = `<div style="background:var(--card);border-radius:16px;padding:20px;max-width:300px;width:100%;text-align:center">
+      <h3 style="margin:0 0 12px">🔒 Admin PIN Locked</h3>
+      <div class="mut">5 galat attempts ho chuke hain. Dubara try karne ke liye wait karo:</div>
+      <div id="pinLockT" style="font-size:24px;font-weight:900;color:#ff5c5c;margin:12px 0">${mm}:${String(ss).padStart(2,"0")}</div>
+      <button class="btn s" onclick="document.getElementById('pinbox').remove()">Close</button></div>`;
+    document.body.appendChild(o);
+    const iv = setInterval(()=>{
+      const t = $("#pinLockT"); const left = pinLockLeftMs();
+      if(!t || left<=0){ clearInterval(iv); const bx=$("#pinbox"); if(bx) bx.remove(); return; }
+      const m2 = Math.floor(left/60000), s2 = Math.floor((left%60000)/1000);
+      t.textContent = `${m2}:${String(s2).padStart(2,"0")}`;
+    },1000);
+    return;
+  }
+  o.innerHTML = `<div style="background:var(--card);border-radius:16px;padding:20px;max-width:300px;width:100%;text-align:center">
+    <h3 style="margin:0 0 12px">🔒 Admin PIN</h3>
+    <input id="pinIn" type="password" placeholder="PIN daalo" style="margin-bottom:10px">
+    <div id="pinErr" class="msg err"></div>
+    <div class="row" style="gap:8px"><button class="btn s" onclick="document.getElementById('pinbox').remove()">Cancel</button><button class="btn" onclick="pinCheck()">Open</button></div></div>`;
+  document.body.appendChild(o);
+  const inp = $("#pinIn"); if(inp){ inp.focus(); inp.onkeydown = e => { if(e.key==="Enter") pinCheck(); }; }
+}
+function pinCheck(){
+  if(pinLockLeftMs() > 0) return pinBox();
+  const v = $("#pinIn").value;
+  if(v === "@Praveen7411111949"){
+    S.pinFailCount = 0; S.pinLockUntil = 0; save();
+    document.getElementById("pinbox").remove(); adminOn = true; tab = "me"; render();
+  } else {
+    S.pinFailCount = (S.pinFailCount||0) + 1;
+    if(S.pinFailCount >= PIN_MAX_TRIES){
+      S.pinLockUntil = now() + PIN_LOCK_MS; S.pinFailCount = 0; save();
+      document.getElementById("pinbox").remove(); pinBox();
+      return;
+    }
+    save();
+    $("#pinErr").textContent = `Galat PIN (${S.pinFailCount}/${PIN_MAX_TRIES} attempts, 5 galat par 50 min lock hoga)`;
+  }
+}
+function logoutBox(){
+  const o = document.createElement("div"); o.id = "lgbox";
+  o.style.cssText = "position:fixed;inset:0;z-index:99;background:#000000a0;display:flex;align-items:center;justify-content:center;padding:20px";
+  o.onclick = e => { if(e.target===o) o.remove(); };
+  o.innerHTML = `<div style="background:var(--card);border-radius:16px;padding:20px;max-width:300px;width:100%;text-align:center">
+    <h3 style="margin:0 0 10px">🚪 Logout</h3>
+    <div class="mut" style="margin-bottom:16px">Logout aur data reset karna hai?</div>
+    <div class="row" style="gap:8px"><button class="btn s" onclick="document.getElementById('lgbox').remove()">Cancel</button><button class="btn" onclick="doLogout()">Logout</button></div></div>`;
+  document.body.appendChild(o);
+}
+function doLogout(){
+  const o = $("#lgbox"); if(o) o.remove();
+  if(S && S.phone){
+    // save earned coins against this phone number before wiping the session, so a re-login restores them
+    const accounts = loadAccounts();
+    accounts[S.phone] = {coins:S.coins||0, name:S.name, code:S.code};
+    saveAccounts(accounts);
+  }
+  try{ localStorage.removeItem("esp_app"); }catch(e){}
+  S = null; tab = "home"; sub = "matches"; adminOn = false;
+  render();
+}
+function adminUI(){
+  const c = cfg();
+  const gameNames = {arctic:"Arctic Voyage",hoop:"Hoop Challenge",loop:"Infinity Loop",colorbounce:"Colour Bounce Match Up",bubble:"Guardian of the Bubble",drive:"Car Driving School Simulator",shooter:"Space Shooter",knife:"Knife Hit",blockmatch:"Color Block Match"};
+  const order = (c.gamesOrder&&c.gamesOrder.length)?c.gamesOrder:Object.keys(GAME_CANON);
+  const bans = loadBans();
+  return `
+  <h3>1️⃣ Tournaments & Games Control</h3>
+  <div class="mut" style="margin-bottom:6px">Tournament Duration & Timer (minutes)</div>
+  <div class="row" style="gap:6px;margin-bottom:12px"><input id="admDur" type="number" value="${c.tourDurationMin}" placeholder="Minutes" style="margin-bottom:0"><button class="btn sm" onclick="setTourDuration()">Set & Reset Timer</button></div>
+  <div class="mut" style="margin-bottom:6px">Prize Pool per Game (RP coins)</div>
+  ${order.map(g=>GAME_CANON[g]?`<div class="row" style="gap:6px;margin-bottom:6px"><span class="mut" style="flex:1">${gameNames[g]}</span><input id="pool_${g}" type="number" value="${(c.gamePools&&c.gamePools[g])||GAME_CANON[g].pool}" style="margin-bottom:0;width:90px"><button class="btn s sm" onclick="setGamePool('${g}')">Save</button></div>`:"").join("")}
+  <div class="row" style="gap:6px;margin:8px 0 12px"><span class="mut" style="flex:1">Prize Split — Top N Players</span><input id="admTopN" type="number" min="1" max="50" value="${c.topN||50}" style="margin-bottom:0;width:70px"><button class="btn s sm" onclick="setTopN()">Save</button></div>
+  <div class="mut" style="margin-bottom:6px">Game Management — ON/OFF + Reorder</div>
+  ${order.map((g,i)=>GAME_CANON[g]?`<div class="row" style="gap:6px;margin-bottom:6px">
+    <span style="flex:1">${gameNames[g]}</span>
+    <button class="btn s sm" onclick="moveGame('${g}',-1)" ${i===0?"disabled":""}>↑</button>
+    <button class="btn s sm" onclick="moveGame('${g}',1)" ${i===order.length-1?"disabled":""}>↓</button>
+    <button class="btn ${c.gamesEnabled[g]!==false?"g":"s"} sm" onclick="toggleGame('${g}')">${c.gamesEnabled[g]!==false?"ON ✅":"OFF ❌"}</button>
+  </div>`:"").join("")}
+  <div class="mut" style="margin:12px 0 6px">Add New Game Link (external promo card)</div>
+  <input id="ngName" placeholder="Game name"><input id="ngUrl" placeholder="https://...">
+  <button class="btn g" onclick="addGameLink()">Add Game Link</button>
+  ${(c.customGames&&c.customGames.length)?c.customGames.map(cg=>`<div class="lb"><span class="n">🔗 ${esc(cg.name)}</span><button class="btn s sm" onclick="delGameLink('${cg.id}')">✕</button></div>`).join(""):""}
+
+  <h3 style="margin-top:18px">🏆 Tournament Prize Split — Top 50 (RP per rank)</h3>
+  <div class="mut" style="margin-bottom:6px">Har tournament ke "Prize Split: Top 50" popup mein yehi rank-wise RP dikhega (results/winner ranking ke hisab se)</div>
+  ${Array.from({length:50},(_,i)=>i+1).map(r=>{ const v=(c.tourPrizeTable&&c.tourPrizeTable[r])||0; return `<div class="row" style="gap:6px;margin-bottom:6px"><span class="mut" style="width:62px">Rank #${r}</span><input id="tpz_${r}" type="number" value="${v}" style="margin-bottom:0"></div>`; }).join("")}
+  <div class="row" style="gap:6px;margin:10px 0;padding:10px;background:var(--in);border-radius:10px"><span style="font-weight:800;flex:1">Total (Rank 1-50)</span><span style="font-weight:800;color:var(--gold)">💜 ${Array.from({length:50},(_,i)=>(c.tourPrizeTable&&c.tourPrizeTable[i+1])||0).reduce((a,b)=>a+b,0).toLocaleString()} RP</span></div>
+  <button class="btn g" onclick="saveTourPrizeTable()">Tournament Prize Split Save Karo</button>
+
+  <h3 style="margin-top:18px">2️⃣ Leaderboard & Prize Distribution</h3>
+  <div class="row" style="gap:6px;margin-bottom:12px"><span class="mut" style="flex:1">Daily Reset Hour</span>
+    <select id="admLbHour" style="background:#ffffff14;color:#fff;border:1px solid #ffffff2a;border-radius:8px;padding:6px 8px">
+      ${Array.from({length:24},(_,h)=>{ const label = h===0?"12:00 AM":h<12?`${h}:00 AM`:h===12?"12:00 PM":`${h-12}:00 PM`; return `<option value="${h}" ${c.lbResetHour===h?"selected":""}>${label}</option>`; }).join("")}
+    </select>
+    <button class="btn sm" onclick="setLbHour()">Set</button></div>
+  <div class="row" style="gap:6px;margin-bottom:6px"><span class="mut" style="flex:1">Reset Frequency</span>
+    <select id="admLbMode" onchange="setLbMode()" style="background:#ffffff14;color:#fff;border:1px solid #ffffff2a;border-radius:8px;padding:6px 8px">
+      <option value="daily" ${(c.lbResetMode!=="days"&&c.lbResetMode!=="interval")?"selected":""}>Daily (har din)</option>
+      <option value="days" ${c.lbResetMode==="days"?"selected":""}>Specific Days (chuni hui weekdays)</option>
+      <option value="interval" ${c.lbResetMode==="interval"?"selected":""}>Fix Days (har N din baad)</option>
+    </select></div>
+  ${c.lbResetMode==="days" ? `<div class="mut" style="margin-bottom:6px">Reset in din par hoga (jitne chaho utne select karo)</div>
+  <div class="row" style="flex-wrap:wrap;gap:6px;margin-bottom:12px">
+    ${["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map((lbl,i)=>`<button class="btn ${((c.lbResetDays||[]).includes(i))?"g":"s"} sm" onclick="toggleLbDay(${i})">${lbl}</button>`).join("")}
+  </div>` : ""}
+  ${c.lbResetMode==="interval" ? `<div class="mut" style="margin-bottom:6px">Kitne din ke baad reset ho (1 = har din, 2 = ek din chhod kar, etc.)</div>
+  <div class="row" style="gap:6px;margin-bottom:12px"><span class="mut" style="flex:1">Reset har</span>
+    <input id="admLbInterval" type="number" min="1" max="30" value="${c.lbResetIntervalDays||1}" style="margin-bottom:0;width:80px">
+    <span class="mut">din mein</span>
+    <button class="btn sm" onclick="saveLbInterval()">Set</button></div>` : ""}
+  <div class="mut" style="margin-bottom:6px">Rank Reward Structure — Top 50 (RP/coins)</div>
+  ${Array.from({length:50},(_,i)=>i+1).map(r=>{ const v=(c.lbPrizeTable&&c.lbPrizeTable[r])||0; return `<div class="row" style="gap:6px;margin-bottom:6px"><span class="mut" style="width:62px">Rank #${r}</span><input id="lbp_${r}" type="number" value="${v}" oninput="updateLbVal(${r})" style="margin-bottom:0"><span class="mut" id="lbpv_${r}" style="width:60px;text-align:right">≈ $${(v/c.rate).toFixed(2)}</span></div>`; }).join("")}
+  <div class="row" style="gap:6px;margin:10px 0;padding:10px;background:var(--in);border-radius:10px"><span style="font-weight:800;flex:1">Total (Rank 1-50)</span><span id="lbpvTotal" style="font-weight:800;color:var(--gold)">≈ $${(Array.from({length:50},(_,i)=>(c.lbPrizeTable&&c.lbPrizeTable[i+1])||0).reduce((a,b)=>a+b,0)/c.rate).toFixed(2)}</span></div>
+  <button class="btn g" onclick="saveLbPrizes()">Save Rank Rewards</button>
+  <div class="mut" style="margin:12px 0 6px">Manual Override</div>
+  <button class="btn s" onclick="resetMyRp()">Reset My RP to 0</button>
+  <div class="row" style="gap:6px;margin-top:8px"><input id="banPhoneIn" placeholder="+91 9876543210 (ban karo)" style="margin-bottom:0"><button class="btn sm" onclick="banPhone()">Ban</button></div>
+  ${bans.length?bans.map(p=>`<div class="lb"><span class="n">🚫 ${esc(p)}</span><button class="btn s sm" onclick="unbanPhone('${esc(p)}')">✕</button></div>`).join(""):""}
+  <div class="mut" style="margin-top:4px">Single-device demo hai — ban sirf isi device par naya signup rokta hai. Real multi-user ban/hide ke liye backend chahiye.</div>
+
+  <h3 style="margin-top:18px">3️⃣ Wallet & Withdrawal Controls</h3>
+  <div class="row" style="gap:6px;margin-bottom:8px"><span class="mut" style="flex:1">Coin Rate (coins = $1)</span><input id="admRate" type="number" value="${c.rate}" style="margin-bottom:0;width:90px"></div>
+  <div class="row" style="gap:6px;margin-bottom:8px"><span class="mut" style="flex:1">Min Withdraw ($)</span><input id="admMin" type="number" step="0.01" value="${c.minWithdrawUsd}" style="margin-bottom:0;width:90px"></div>
+  <div class="row" style="gap:6px;margin-bottom:10px"><span class="mut" style="flex:1">Max Withdraw ($)</span><input id="admMax" type="number" step="0.01" value="${c.maxWithdrawUsd}" style="margin-bottom:0;width:90px"></div>
+  <button class="btn g" onclick="saveWalletLimits()">Save Rate & Limits</button>
+  <div class="row" style="gap:6px;margin:12px 0 12px"><span class="mut" style="flex:1">Max Withdrawals Per Day</span><input id="admWdMax" type="number" min="1" value="${c.wdMaxPerDay||1}" style="margin-bottom:0;width:70px"><button class="btn sm" onclick="saveWdMaxPerDay()">Save</button></div>
+  <div class="row" style="margin:12px 0 6px"><span class="mut" style="flex:1">Withdrawal Timing Window</span><button class="btn s sm" onclick="toggleWdTimeWindow()">${c.wdTimeEnabled?"ON ✅":"OFF ❌"}</button></div>
+  ${c.wdTimeEnabled ? `<div class="row" style="gap:6px;margin-bottom:12px">
+    <span class="mut">Start</span><input id="admWdStart" type="time" value="${c.wdTimeStart||"18:00"}" style="margin-bottom:0">
+    <span class="mut">End</span><input id="admWdEnd" type="time" value="${c.wdTimeEnd||"22:00"}" style="margin-bottom:0">
+    <button class="btn sm" onclick="saveWdTimeWindow()">Save</button>
+  </div>` : ""}
+  <div class="row" style="margin-bottom:6px"><span class="mut" style="flex:1">Withdrawal Allowed Days</span><button class="btn s sm" onclick="toggleWdDays()">${c.wdDaysEnabled?"ON ✅":"OFF ❌"}</button></div>
+  ${c.wdDaysEnabled ? `<div class="row" style="flex-wrap:wrap;gap:6px;margin-bottom:12px">
+    ${["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map((lbl,i)=>`<button class="btn ${((c.wdDays||[]).includes(i))?"g":"s"} sm" onclick="toggleWdDay(${i})">${lbl}</button>`).join("")}
+  </div>` : ""}
+  <div class="mut" style="margin:12px 0 6px">Preset Withdrawal Amounts (comma se alag karo)</div>
+  <input id="admPresets" value="${(c.presetAmounts||[]).join(",")}">
+  <button class="btn s" onclick="savePresets()">Save Presets</button>
+  <div class="row" style="margin:12px 0 6px"><span class="mut" style="flex:1">UPI Enabled</span><button class="btn s sm" onclick="toggleUpi()">${c.upiEnabled!==false?"ON ✅":"OFF ❌"}</button></div>
+  <div class="row" style="gap:6px;margin-bottom:8px"><span class="mut" style="flex:1">UPI TDS (%)</span><input id="admUpiTds" type="number" value="${c.upiTdsPct}" style="margin-bottom:0;width:70px"><button class="btn sm" onclick="saveUpiTds()">Save</button></div>
+  <div class="row" style="margin-bottom:8px"><span class="mut" style="flex:1">PayPal Enabled</span><button class="btn s sm" onclick="togglePaypal()">${c.paypalEnabled!==false?"ON ✅":"OFF ❌"}</button></div>
+  <div class="row" style="gap:6px;margin-bottom:8px"><span class="mut" style="flex:1">PayPal Processing Fee (%)</span><input id="admFee" type="number" value="${c.paypalFeePct}" style="margin-bottom:0;width:70px"><button class="btn sm" onclick="saveFee()">Save</button></div>
+  <div class="row" style="margin-bottom:8px"><span class="mut" style="flex:1">Paytm Enabled</span><button class="btn s sm" onclick="togglePaytm()">${c.paytmEnabled!==false?"ON ✅":"OFF ❌"}</button></div>
+  <div class="row" style="gap:6px;margin-bottom:8px"><span class="mut" style="flex:1">Paytm TDS (%)</span><input id="admPaytmTds" type="number" value="${c.paytmTdsPct}" style="margin-bottom:0;width:70px"><button class="btn sm" onclick="savePaytmTds()">Save</button></div>
+  <div class="row" style="margin-bottom:8px"><span class="mut" style="flex:1">PhonePe Enabled</span><button class="btn s sm" onclick="togglePhonepe()">${c.phonepeEnabled!==false?"ON ✅":"OFF ❌"}</button></div>
+  <div class="row" style="gap:6px;margin-bottom:8px"><span class="mut" style="flex:1">PhonePe TDS (%)</span><input id="admPhonepeTds" type="number" value="${c.phonepeTdsPct}" style="margin-bottom:0;width:70px"><button class="btn sm" onclick="savePhonepeTds()">Save</button></div>
+  <div class="mut" style="margin-bottom:8px;font-size:11px">Paytm aur PhonePe dono ₹ (INR) mein chalte hain, par ab inka TDS % UPI se alag-alag set kar sakte ho</div>
+  <div class="row" style="gap:6px;margin-bottom:8px"><span class="mut" style="flex:1">USD → INR Rate (UPI display)</span><input id="admInr" type="number" value="${c.usdToInr}" style="margin-bottom:0;width:70px"><button class="btn sm" onclick="saveInrRate()">Save</button></div>
+  <div class="row" style="margin-bottom:8px"><span class="mut" style="flex:1">Binance Enabled</span><button class="btn s sm" onclick="toggleBinance()">${c.binanceEnabled!==false?"ON ✅":"OFF ❌"}</button></div>
+  <div class="row" style="gap:6px;margin-bottom:8px"><span class="mut" style="flex:1">Binance Processing Fee (%)</span><input id="admBinanceFee" type="number" value="${c.binanceFeePct}" style="margin-bottom:0;width:70px"><button class="btn sm" onclick="saveBinanceFee()">Save</button></div>
+  <div class="mut" style="margin-bottom:8px;font-size:11px">Binance USDT/crypto mein chalta hai (PayPal jaisa — koi TDS nahi, sirf Processing Fee)</div>
+
+  <div class="mut" style="margin:16px 0 6px">💸 Auto-Payout (Payout API) Setup</div>
+  <div class="row" style="margin-bottom:8px"><span class="mut" style="flex:1">Payout Mode</span><button class="btn s sm" onclick="togglePayoutMode()">${c.payoutAutoMode?"⚡ Auto":"🖐 Manual"}</button></div>
+  <div class="mut" style="margin-bottom:6px">Payout Provider(s) — jitne chaho utne select karo (ek, do, teen ya chaaron)</div>
+  ${[["upi","UPI Payout Gateway (Razorpay/Cashfree etc.)"],["phonepe","PhonePe Business (Payouts)"],["paytm","Paytm for Business (Payouts)"],["paypal","PayPal Payouts (Mass Pay API)"],["binance","Binance Pay / Withdrawal API"]].map(([val,label])=>`<div class="row" style="margin-bottom:6px"><span class="mut" style="flex:1">${label}</span><button class="btn s sm" onclick="togglePayoutProvider('${val}')">${(c.payoutProviders||[]).includes(val)?"ON ✅":"OFF ❌"}</button></div>`).join("")}
+  <input id="admPayoutMerchant" placeholder="Merchant / Client ID" value="${esc(c.payoutMerchantId||"")}">
+  <input id="admPayoutWebhook" placeholder="Webhook URL (backend endpoint)" value="${esc(c.payoutWebhookUrl||"")}">
+  <button class="btn s" onclick="savePayoutSettings()">Payout Settings Save Karo</button>
+  <div class="mut" style="margin-top:8px;font-size:11px;line-height:1.5">⚠️ API Secret Key/Credentials <b>kabhi yahan ya kisi bhi client-side (browser) file mein na daalo</b> — yeh file sirf frontend hai, iska code kisi bhi user ke browser mein khulkar dikh sakta hai, isliye secret key chori ho sakti hai. Yeh baat UPI, PayPal, PhonePe, Paytm aur Binance — in sabhi payout providers par barabar laagu hoti hai, kisi ek tak limited nahi. Real automatic payout ke liye tumhe ek secure <b>backend server</b> banwana hoga jo UPI Payout Gateway / PayPal Payouts API / PhonePe / Paytm Payout API / Binance Pay API ko server-se-server call kare (secret keys sirf backend ke .env/environment variables mein). Is app se sirf withdrawal request ka basic data (User ID, Coins, UPI ID/mobile/email/Binance ID) uss backend ko bhejna hai — jaisa <code>sendWdToBackend()</code> function abhi karta hai. Yeh fields (Merchant/Client ID, Webhook URL) sirf provider/merchant ID note karne ke liye hain, taaki developer ko sahi integration ka context mile — koi secret yahan save nahi hota.</div>
+
+  <h3 style="margin-top:18px">4️⃣ Daily Bonus & Login Streak</h3>
+  <div class="row" style="gap:6px;margin-bottom:12px"><span class="mut" style="flex:1">Daily Bonus (RP)</span><input id="admBonus" type="number" value="${c.dailyBonusRp}" style="margin-bottom:0;width:90px"><button class="btn sm" onclick="saveDailyBonus()">Save</button></div>
+  <div class="row" style="gap:6px;margin-bottom:12px"><span class="mut" style="flex:1">Bonus Video Frequency</span>
+    <select id="admBonusInterval" style="background:#ffffff14;color:#fff;border:1px solid #ffffff2a;border-radius:8px;padding:6px 8px">
+      ${[1,2,3,4,5,6,7].map(n=>`<option value="${n}" ${c.dailyBonusIntervalDays===n?"selected":""}>${n===1?"Har Din (1 din)":`Har ${n} din mein ek baar`}</option>`).join("")}
+    </select>
+    <button class="btn sm" onclick="saveBonusInterval()">Set</button></div>
+  <div class="row" style="margin-bottom:8px"><span class="mut" style="flex:1">Timing Window (sirf is time par video dikhe)</span><button class="btn s sm" onclick="toggleBonusTimeWindow()">${c.dailyBonusTimeEnabled?"ON ✅":"OFF ❌"}</button></div>
+  ${c.dailyBonusTimeEnabled ? `<div class="row" style="gap:6px;margin-bottom:12px">
+    <span class="mut">Start</span><input id="admBonusStart" type="time" value="${c.dailyBonusTimeStart||"18:00"}" style="margin-bottom:0">
+    <span class="mut">End</span><input id="admBonusEnd" type="time" value="${c.dailyBonusTimeEnd||"22:00"}" style="margin-bottom:0">
+    <button class="btn sm" onclick="saveBonusTimeWindow()">Save</button>
+  </div>` : ""}
+  <div class="mut" style="margin-bottom:6px">Login Streak Rewards (Day 1-${(c.streakRewards||[]).length})</div>
+  ${(c.streakRewards||[]).map((r,i)=>`<div class="row" style="gap:6px;margin-bottom:6px"><span class="mut" style="width:52px">Day ${i+1}</span><input id="str_${i}" value="${esc(String(r))}" style="margin-bottom:0"></div>`).join("")}
+  <button class="btn g" onclick="saveStreakRewards()">Save Streak Rewards</button>
+
+  <h3 style="margin-top:18px">5️⃣ Ad Control & Monetization</h3>
+  <div class="row" style="margin-bottom:10px"><span>All Ads</span><button class="btn s sm" onclick="toggleAds()">${S.adConfig.on?"ON ✅":"OFF ❌"}</button></div>
+  <div class="row" style="margin-bottom:10px"><span>Ad Network Mode / Strategy</span>
+    <select id="adNetworkSel" style="background:#ffffff14;color:#fff;border:1px solid #ffffff2a;border-radius:8px;padding:6px 8px">
+      <option value="mediation" ${(S.adConfig.network||"mediation")==="mediation"?"selected":""}>Auto Fallback / Mediation (AdMob ➔ Unity ➔ AppLovin)</option>
+      <option value="admob" ${S.adConfig.network==="admob"?"selected":""}>AdMob Only</option>
+      <option value="unity" ${S.adConfig.network==="unity"?"selected":""}>Unity Ads Only</option>
+      <option value="applovin" ${S.adConfig.network==="applovin"?"selected":""}>AppLovin MAX Only</option>
+    </select>
+  </div>
+  <div class="mut" style="margin-bottom:10px">Mediation mode mein: pehle AdMob try hoga, AdMob fail/khaali hone par Unity, Unity bhi fail/khaali hone par AppLovin ka ad dikhega — fill-rate 100% ke paas rahega.</div>
+  <div class="mut" style="margin-bottom:4px">📱 AdMob — Ad Unit IDs</div>
+  <input id="ad_admob_banner" placeholder="AdMob Banner Ad Unit ID" value="${esc((S.adConfig.networks&&S.adConfig.networks.admob&&S.adConfig.networks.admob.bannerId)||"")}">
+  <input id="ad_admob_inter" placeholder="AdMob Interstitial Ad Unit ID" value="${esc((S.adConfig.networks&&S.adConfig.networks.admob&&S.adConfig.networks.admob.interstitialId)||"")}">
+  <input id="ad_admob_rew" placeholder="AdMob Rewarded Ad Unit ID" value="${esc((S.adConfig.networks&&S.adConfig.networks.admob&&S.adConfig.networks.admob.rewardedId)||"")}">
+  <div class="mut" style="margin:14px 0 4px">🎮 Unity Ads — Game ID & Ad Unit IDs</div>
+  <div class="mut" style="margin-bottom:6px;font-size:11px">Unity Dashboard → your project → Game ID (6-7 digit number, Android/iOS ke liye alag hota hai) + har placement ki Ad Unit ID</div>
+  <input id="ad_unity_gameid" placeholder="Unity Game ID (6-7 digit number)" inputmode="numeric" value="${esc((S.adConfig.networks&&S.adConfig.networks.unity&&S.adConfig.networks.unity.gameId)||"")}">
+  <input id="ad_unity_banner" placeholder="Unity Banner Ad Unit ID" value="${esc((S.adConfig.networks&&S.adConfig.networks.unity&&S.adConfig.networks.unity.bannerId)||"")}">
+  <input id="ad_unity_inter" placeholder="Unity Interstitial Ad Unit ID" value="${esc((S.adConfig.networks&&S.adConfig.networks.unity&&S.adConfig.networks.unity.interstitialId)||"")}">
+  <input id="ad_unity_rew" placeholder="Unity Rewarded Ad Unit ID" value="${esc((S.adConfig.networks&&S.adConfig.networks.unity&&S.adConfig.networks.unity.rewardedId)||"")}">
+  <div class="mut" style="margin:14px 0 4px">🦁 AppLovin — Ad Unit IDs</div>
+  <div class="mut" style="margin-bottom:6px;font-size:11px">AppLovin MAX Dashboard se generate ki gayi Ad Unit ID 16-character alphanumeric code hoti hai (e.g. a1b2c3d4e5f6g7h8)</div>
+  <input id="ad_applovin_banner" placeholder="AppLovin Banner Ad Unit ID (16-char)" maxlength="16" value="${esc((S.adConfig.networks&&S.adConfig.networks.applovin&&S.adConfig.networks.applovin.bannerId)||"")}">
+  <input id="ad_applovin_inter" placeholder="AppLovin Interstitial Ad Unit ID (16-char)" maxlength="16" value="${esc((S.adConfig.networks&&S.adConfig.networks.applovin&&S.adConfig.networks.applovin.interstitialId)||"")}">
+  <input id="ad_applovin_rew" placeholder="AppLovin Rewarded Ad Unit ID (16-char)" maxlength="16" value="${esc((S.adConfig.networks&&S.adConfig.networks.applovin&&S.adConfig.networks.applovin.rewardedId)||"")}">
+  <button class="btn g" style="margin-top:10px" onclick="saveAllAdSettings()">Save All Monetization Settings</button>
+  <div class="mut" style="margin:12px 0 6px">Per-Screen Ad Toggle (320x50 / 320x100)</div>
+  ${["home","matches","promo","wallet","profile","game"].map(sc=>`<div class="row" style="margin-bottom:6px"><span class="mut" style="flex:1;text-transform:capitalize">${sc}</span><button class="btn s sm" onclick="toggleAdScreen('${sc}')">${(!S.adConfig.screens||S.adConfig.screens[sc]!==false)?"ON ✅":"OFF ❌"}</button></div>`).join("")}
+
+  <h3 style="margin-top:18px">6️⃣ Important Notice Banner</h3>
+  <div class="mut" style="margin-bottom:6px">Yahan jo text likhoge woh bade, bold, red banner mein user ko dikhega (jin screens par ON kiya hoga)</div>
+  <textarea id="admNoticeText" placeholder="Important note likho (e.g. Server maintenance 2AM-4AM, withdrawals delay ho sakte hain)" style="width:100%;min-height:70px;background:var(--in);color:var(--text);border:none;border-radius:10px;padding:10px;font-size:14px;margin-bottom:10px;box-sizing:border-box">${esc(c.noticeText||"")}</textarea>
+  <div class="mut" style="margin-bottom:6px">Kin screens par dikhna chahiye:</div>
+  ${[["home","🏠 Home"],["matches","🎮 Matches"],["wallet","💰 Withdrawal (Wallet)"],["profile","👤 Profile"]].map(([sc,label])=>`<div class="row" style="margin-bottom:6px"><span class="mut" style="flex:1">${label}</span><button class="btn s sm" onclick="toggleNoticeScreen('${sc}')">${(c.noticeOn&&c.noticeOn[sc])?"ON ✅":"OFF ❌"}</button></div>`).join("")}
+  <button class="btn g" style="margin-top:6px" onclick="saveNotice()">Notice Save Karo</button>
+
+  <h3 style="margin-top:18px">7️⃣ Support Team / Social Links</h3>
+  <div class="mut" style="margin-bottom:6px">Yahan jo links add karoge woh Promo aur Profile screen par "Support Team" card mein users ko dikhenge</div>
+  <div class="row" style="gap:6px;margin-bottom:8px">
+    <select id="admSuppPlatform" style="background:#ffffff14;color:#fff;border:1px solid #ffffff2a;border-radius:8px;padding:6px 8px">
+      ${Object.entries(SUPPORT_PLATFORMS).map(([k,p])=>`<option value="${k}">${p.icon} ${p.label}</option>`).join("")}
+    </select>
+    <input id="admSuppUrl" placeholder="Link/URL (https://...)" style="flex:1;margin-bottom:0">
+    <button class="btn g sm" onclick="addSupportLink()">Add</button>
+  </div>
+  ${(c.supportLinks&&c.supportLinks.length) ? c.supportLinks.map(l=>{ const p = SUPPORT_PLATFORMS[l.platform]||SUPPORT_PLATFORMS.website;
+    return `<div class="lb"><span class="n">${p.icon} ${esc(p.label)}<br><span class="mut">${esc(l.url)}</span></span><button class="btn s sm" onclick="delSupportLink('${l.id}')">✕</button></div>`; }).join("") : `<div class="mut">Koi support link add nahi kiya abhi tak.</div>`}
+
+  <h3 style="margin-top:18px">📄 Terms & Privacy — Hosted URL</h3>
+  <div class="mut" style="margin-bottom:6px">Play Console submission ke liye public hosted T&C/Privacy Policy page ka link (app ke "Legal" card aur popup mein bhi dikhega)</div>
+  <div class="row" style="gap:6px;margin-bottom:12px">
+    <input id="admLegalUrl" placeholder="https://..." value="${esc(c.legalUrl||"")}" style="flex:1;margin-bottom:0">
+    <button class="btn g sm" onclick="saveLegalUrl()">Save</button>
+  </div>
+
+  <h3 style="margin-top:18px">☁️ Cloud Backend</h3>
+  <div class="mut" style="margin-bottom:6px">Deployed esports-backend ka PUBLIC URL (jaise https://your-api.example.com). Yahan koi secret key mat daalo — SMS/payout keys sirf server ke environment variables mein rehti hain.</div>
+  <div class="row" style="gap:6px;margin-bottom:12px">
+    <input id="admCloudUrl" placeholder="https://..." value="${esc(c.cloudApiUrl||"")}" style="flex:1;margin-bottom:0">
+    <button class="btn g sm" onclick="saveCloudUrl()">Save</button>
+  </div>
+
+  <h3 style="margin-top:18px">🌍 Country Blocking (Login aur Withdrawal)</h3>
+  <div class="mut" style="margin-bottom:6px">Ab sabhi ${COUNTRIES.length} countries login/signup aur PayPal/Binance verification mein available hain. Jis country ko block karna hai usse list mein se select karo — login block aur withdrawal block dono alag-alag set kar sakte ho.</div>
+  <input id="admCountryQ" placeholder="Country search karo..." value="${esc(admCountryQ)}" oninput="admCountrySearch(this.value)" style="margin-bottom:8px">
+  <div style="max-height:260px;overflow-y:auto;border:1px solid #ffffff1f;border-radius:10px;padding:6px">
+    ${COUNTRIES.filter(cn=>!admCountryQ || cn.name.toLowerCase().includes(admCountryQ.toLowerCase()) || cn.code.includes(admCountryQ)).map(cn=>{
+      const lb = (c.blockedLoginCountries||[]).includes(cn.id), wb = (c.blockedWithdrawCountries||[]).includes(cn.id);
+      return `<div class="lb" style="padding:6px 4px"><span class="n">${cn.flag} ${esc(cn.name)} <span class="mut">(${cn.code})</span></span>
+        <span style="display:flex;gap:6px;flex:0 0 auto">
+          <button class="btn ${lb?"g":"s"} sm" onclick="toggleBlockedLoginCountry('${cn.id}')">${lb?"Login: Blocked":"Login: OK"}</button>
+          <button class="btn ${wb?"g":"s"} sm" onclick="toggleBlockedWithdrawCountry('${cn.id}')">${wb?"WD: Blocked":"WD: OK"}</button>
+        </span></div>`;
+    }).join("") || `<div class="mut">Koi country match nahi hua.</div>`}
+  </div>
+  ${(c.blockedLoginCountries||[]).length || (c.blockedWithdrawCountries||[]).length ? `<div class="mut" style="margin-top:6px">Login blocked: ${(c.blockedLoginCountries||[]).length} • Withdrawal blocked: ${(c.blockedWithdrawCountries||[]).length}</div>` : ""}
+
+  <h3 style="margin-top:18px">Naya tournament banao (manual)</h3>
+  <div class="mut">Naya tournament banao</div><input id="ag" placeholder="Game: arctic ya hoop"><input id="ap2" placeholder="Tournament pool (coins)" inputmode="numeric"><input id="am" placeholder="Kitne minute chalega?" inputmode="numeric">
+  <button class="btn g" onclick="addMatch()">Tournament Add Karo</button>
+  <h3 style="margin-top:14px">💵 UPI Withdrawals (₹ INR)</h3>
+  ${(()=>{ const upiWd = S.wd.filter(w=>w.method==="UPI");
+    return upiWd.length?["PENDING","APPROVED","SUCCESS","REJECTED"].map(st=>{
+      const list = upiWd.filter(w=>w.status===st);
+      if(!list.length) return "";
+      return `<div class="mut" style="margin:10px 0 4px;font-weight:800">${st} (${list.length})</div>` + list.map(wdRow).join("");
+    }).join(""):`<div class="mut">Koi UPI request nahi.</div>`; })()}
+  <h3 style="margin-top:14px">💳 PayPal Withdrawals ($ USD)</h3>
+  ${(()=>{ const ppWd = S.wd.filter(w=>w.method==="PayPal");
+    return ppWd.length?["PENDING","APPROVED","SUCCESS","REJECTED"].map(st=>{
+      const list = ppWd.filter(w=>w.status===st);
+      if(!list.length) return "";
+      return `<div class="mut" style="margin:10px 0 4px;font-weight:800">${st} (${list.length})</div>` + list.map(wdRow).join("");
+    }).join(""):`<div class="mut">Koi PayPal request nahi.</div>`; })()}
+  <h3 style="margin-top:14px">💙 Paytm Withdrawals (₹ INR)</h3>
+  ${(()=>{ const ptWd = S.wd.filter(w=>w.method==="Paytm");
+    return ptWd.length?["PENDING","APPROVED","SUCCESS","REJECTED"].map(st=>{
+      const list = ptWd.filter(w=>w.status===st);
+      if(!list.length) return "";
+      return `<div class="mut" style="margin:10px 0 4px;font-weight:800">${st} (${list.length})</div>` + list.map(wdRow).join("");
+    }).join(""):`<div class="mut">Koi Paytm request nahi.</div>`; })()}
+  <h3 style="margin-top:14px">💜 PhonePe Withdrawals (₹ INR)</h3>
+  ${(()=>{ const ppeWd = S.wd.filter(w=>w.method==="PhonePe");
+    return ppeWd.length?["PENDING","APPROVED","SUCCESS","REJECTED"].map(st=>{
+      const list = ppeWd.filter(w=>w.status===st);
+      if(!list.length) return "";
+      return `<div class="mut" style="margin:10px 0 4px;font-weight:800">${st} (${list.length})</div>` + list.map(wdRow).join("");
+    }).join(""):`<div class="mut">Koi PhonePe request nahi.</div>`; })()}
+  <h3 style="margin-top:14px">🟡 Binance Withdrawals (USDT)</h3>
+  ${(()=>{ const bnWd = S.wd.filter(w=>w.method==="Binance");
+    return bnWd.length?["PENDING","APPROVED","SUCCESS","REJECTED"].map(st=>{
+      const list = bnWd.filter(w=>w.status===st);
+      if(!list.length) return "";
+      return `<div class="mut" style="margin:10px 0 4px;font-weight:800">${st} (${list.length})</div>` + list.map(wdRow).join("");
+    }).join(""):`<div class="mut">Koi Binance request nahi.</div>`; })()}
+  <h3 style="margin-top:14px">📊 UPI TDS Report</h3>
+  <button class="btn s" onclick="exportUpiTdsCsv()">Export Monthly UPI TDS Report (CSV)</button>
+  <div class="mut" style="margin-top:6px">Is mahine ke UPI SUCCESS payouts ka Requested(₹), TDS (admin-set %) aur Net Payout(₹) ek CSV mein export hoga — Challan 281 bharne ke liye</div>
+  <h3 style="margin-top:14px">📊 Paytm TDS Report</h3>
+  <button class="btn s" onclick="exportPaytmTdsCsv()">Export Monthly Paytm TDS Report (CSV)</button>
+  <div class="mut" style="margin-top:6px">Is mahine ke Paytm SUCCESS payouts ka Requested(₹), TDS (admin-set %) aur Net Payout(₹) ek CSV mein export hoga — Challan 281 bharne ke liye</div>
+  <h3 style="margin-top:14px">📊 PhonePe TDS Report</h3>
+  <button class="btn s" onclick="exportPhonepeTdsCsv()">Export Monthly PhonePe TDS Report (CSV)</button>
+  <div class="mut" style="margin-top:6px">Is mahine ke PhonePe SUCCESS payouts ka Requested(₹), TDS (admin-set %) aur Net Payout(₹) ek CSV mein export hoga — Challan 281 bharne ke liye</div>
+  <h3 style="margin-top:14px">📊 PayPal Report</h3>
+  <button class="btn s" onclick="exportPaypalCsv()">Export Monthly PayPal Report (CSV)</button>
+  <div class="mut" style="margin-top:6px">Is mahine ke PayPal SUCCESS payouts ka Requested($), Processing Fee aur Net Payout($) ek CSV mein export hoga (TDS yahan nahi lagta)</div>
+  <h3 style="margin-top:14px">📊 Binance Report</h3>
+  <button class="btn s" onclick="exportBinanceCsv()">Export Monthly Binance Report (CSV)</button>
+  <div class="mut" style="margin-top:6px">Is mahine ke Binance SUCCESS payouts ka Requested(USDT), Processing Fee aur Net Payout(USDT) ek CSV mein export hoga (TDS yahan nahi lagta)</div>
+  <h3 style="margin-top:14px">Promo Codes</h3>
+  <input id="pcCode" placeholder="6-digit code" maxlength="6" inputmode="numeric"><input id="pcRp" placeholder="RP value" inputmode="numeric">
+  <button class="btn g" onclick="addPromo()">Code Add Karo</button>
+  ${Object.keys(S.promos||{}).length?Object.entries(S.promos).map(([c2,v])=>`<div class="lb"><span class="n">${esc(c2)}</span><span class="p">💜 ${v} RP</span><button class="btn s sm" onclick="delPromo('${c2}')">✕</button></div>`).join(""):`<div class="mut">Koi code nahi.</div>`}
+  <h3 style="margin-top:14px">User Details (is device ka)</h3>
+  <div class="lb"><span class="n">Naam</span><span class="p">${esc(S.name)}</span></div>
+  <div class="lb"><span class="n">Phone</span><span class="p">${esc(S.phone)}</span></div>
+  <div class="lb"><span class="n">Coins</span><span class="p">${S.coins}</span></div>
+  <div class="lb"><span class="n">RP</span><span class="p">${S.rp||0}</span></div>
+  <div class="lb"><span class="n">Referral Code</span><span class="p">${S.code}</span></div>
+  <div class="lb"><span class="n">Matches Joined</span><span class="p">${Object.keys(S.joined||{}).length}</span></div>
+  <div class="lb"><span class="n">Withdrawal Requests</span><span class="p">${S.wd.length}</span></div>
+  <div class="mut" style="margin:8px 0">Sirf isi device ka data dikh raha hai. Sab users ka data dekhne ke liye backend (server) chahiye.</div>
+  <button class="btn s" style="margin-top:8px" onclick="adminOn=false;me()">Close Admin</button>`;
+}
+function toggleAds(){ S.adConfig.on = !S.adConfig.on; save(); me(); }
+function syncActiveAdIds(){
+  const nets = S.adConfig.networks || {}, mode = S.adConfig.network || "mediation";
+  let net, used;
+  if(mode==="mediation"){
+    // Auto Fallback: AdMob -> Unity -> AppLovin (pehla network jiska banner ID bhara ho use karo)
+    if(nets.admob && nets.admob.bannerId){ net = nets.admob; used = "admob"; }
+    else if(nets.unity && nets.unity.bannerId){ net = nets.unity; used = "unity"; }
+    else if(nets.applovin && nets.applovin.bannerId){ net = nets.applovin; used = "applovin"; }
+    else { net = nets.admob||{}; used = "admob"; }
+  } else {
+    net = nets[mode] || {}; used = mode;
+  }
+  S.adConfig.bannerId = net.bannerId||""; S.adConfig.interstitialId = net.interstitialId||""; S.adConfig.rewardedId = net.rewardedId||"";
+  S.adConfig.activeNetworkUsed = used;
+}
+function saveAllAdSettings(){
+  const admob = {bannerId:$("#ad_admob_banner").value.trim(), interstitialId:$("#ad_admob_inter").value.trim(), rewardedId:$("#ad_admob_rew").value.trim()};
+  const unity = {gameId:$("#ad_unity_gameid").value.trim(), bannerId:$("#ad_unity_banner").value.trim(), interstitialId:$("#ad_unity_inter").value.trim(), rewardedId:$("#ad_unity_rew").value.trim()};
+  const applovin = {bannerId:$("#ad_applovin_banner").value.trim(), interstitialId:$("#ad_applovin_inter").value.trim(), rewardedId:$("#ad_applovin_rew").value.trim()};
+  const re = /^[a-zA-Z0-9]{16}$/, bad = [["Banner",applovin.bannerId],["Interstitial",applovin.interstitialId],["Rewarded",applovin.rewardedId]].filter(([,v])=>v && !re.test(v));
+  if(bad.length) return alert("AppLovin "+bad.map(([n])=>n).join(", ")+" ID galat hai — AppLovin MAX Dashboard ka Ad Unit ID 16-character alphanumeric code hota hai (sirf a-z, A-Z, 0-9)");
+  if(unity.gameId && !/^\d{6,7}$/.test(unity.gameId)) return alert("Unity Game ID galat hai — yeh 6-7 digit ka number hona chahiye");
+  if(!S.adConfig.networks) S.adConfig.networks = {};
+  S.adConfig.networks.admob = admob; S.adConfig.networks.unity = unity; S.adConfig.networks.applovin = applovin;
+  S.adConfig.network = $("#adNetworkSel").value;
+  syncActiveAdIds();
+  save(); alert("Saari Monetization Settings save ho gayi! Active mode: "+$("#adNetworkSel").selectedOptions[0].textContent); me();
+}
+function toggleAdScreen(sc){
+  if(!S.adConfig.screens) S.adConfig.screens = {home:true,matches:true,promo:true,wallet:true,profile:true,game:true};
+  S.adConfig.screens[sc] = S.adConfig.screens[sc]===false ? true : false;
+  save(); me();
+}
+function saveNotice(){
+  S.config.noticeText = $("#admNoticeText").value.trim();
+  save(); alert("Notice save ho gaya"); me();
+}
+function toggleNoticeScreen(sc){
+  if(!S.config.noticeOn) S.config.noticeOn = {home:false,matches:false,wallet:false,profile:false};
+  S.config.noticeOn[sc] = !S.config.noticeOn[sc];
+  save(); me();
+}
+function addSupportLink(){
+  const platform = $("#admSuppPlatform").value, url = $("#admSuppUrl").value.trim();
+  if(!url) return alert("Pehle link/URL daalo");
+  if(!/^https?:\/\//i.test(url)) return alert("Valid link daalo (http:// ya https:// se shuru hona chahiye)");
+  if(!S.config.supportLinks) S.config.supportLinks = [];
+  S.config.supportLinks.push({id:"sl"+Date.now(), platform, url});
+  save(); $("#admSuppUrl").value = ""; me();
+}
+function delSupportLink(id){
+  S.config.supportLinks = (S.config.supportLinks||[]).filter(l=>l.id!==id);
+  save(); me();
+}
+function saveCloudUrl(){
+  const url = $("#admCloudUrl").value.trim();
+  if(url && !/^https:\/\/[^\s]+$/i.test(url)) return alert("https:// se shuru hone wala valid URL daalo");
+  S.config.cloudApiUrl = url; save(); cloudStatus = "idle"; alert(url?"Cloud URL save ho gaya":"Cloud URL hata diya"); if(url) cloudPull(); me();
+}
+function saveLegalUrl(){
+  const url = $("#admLegalUrl").value.trim();
+  if(url && !/^https?:\/\//i.test(url)) return alert("Valid link daalo (http:// ya https:// se shuru hona chahiye)");
+  S.config.legalUrl = url; save(); alert("Legal URL save ho gaya"); me();
+}
+function setTourDuration(){
+  const v = parseInt($("#admDur").value,10);
+  if(isNaN(v)||v<=0) return alert("Valid minutes daalo");
+  S.config.tourDurationMin = v;
+  S.tours.forEach(t=>t.end = now()+v*MIN);
+  S.tourDurApplied = v;
+  save(); alert("Tournament duration update ho gaya"); me();
+}
+function setGamePool(g){
+  const v = parseInt($("#pool_"+g).value,10);
+  if(isNaN(v)||v<=0) return alert("Valid pool amount daalo");
+  if(!S.config.gamePools) S.config.gamePools = {};
+  S.config.gamePools[g] = v;
+  const t = S.tours.find(x=>x.g===g); if(t) t.pool = v;
+  save(); alert("Pool update ho gaya"); me();
+}
+function setTopN(){
+  const v = parseInt($("#admTopN").value,10);
+  if(isNaN(v)||v<=0||v>50) return alert("1-50 ke beech value daalo");
+  S.config.topN = v; save(); me();
+}
+function toggleGame(g){
+  if(!S.config.gamesEnabled) S.config.gamesEnabled = {};
+  const on = S.config.gamesEnabled[g]===false;
+  S.config.gamesEnabled[g] = on;
+  if(on){ if(!S.tours.some(t=>t.g===g)) S.tours.push({...GAME_CANON[g], pool:(S.config.gamePools&&S.config.gamePools[g])||GAME_CANON[g].pool, end:now()+(S.config.tourDurationMin||30)*MIN}); }
+  else { S.tours = S.tours.filter(t=>t.g!==g); }
+  save(); me();
+}
+function moveGame(g,dir){
+  if(!S.config.gamesOrder||!S.config.gamesOrder.length) S.config.gamesOrder = Object.keys(GAME_CANON);
+  const arr = S.config.gamesOrder, i = arr.indexOf(g), j = i+dir;
+  if(i<0||j<0||j>=arr.length) return;
+  [arr[i],arr[j]] = [arr[j],arr[i]];
+  save(); me();
+}
+function addGameLink(){
+  const name = $("#ngName").value.trim(), url = $("#ngUrl").value.trim();
+  if(!name || !/^https?:\/\//.test(url)) return alert("Naam aur valid URL (http/https) daalo");
+  if(!S.config.customGames) S.config.customGames = [];
+  S.config.customGames.push({id:"cg"+now(), name, url});
+  save(); alert("Game link add ho gaya"); me();
+}
+function delGameLink(id){ S.config.customGames = (S.config.customGames||[]).filter(g=>g.id!==id); save(); me(); }
+function setLbHour(){
+  const v = parseInt($("#admLbHour").value,10);
+  if(isNaN(v)||v<0||v>23) return alert("0-23 ke beech hour daalo");
+  S.config.lbResetHour = v; save(); alert("Reset hour update ho gaya"); me();
+}
+function setLbMode(){
+  const v = $("#admLbMode").value;
+  S.config.lbResetMode = v; save(); me();
+}
+function toggleLbDay(i){
+  if(!S.config.lbResetDays) S.config.lbResetDays = [0,1,2,3,4,5,6];
+  const arr = S.config.lbResetDays;
+  const pos = arr.indexOf(i);
+  if(pos>=0) arr.splice(pos,1); else arr.push(i);
+  save(); me();
+}
+function admCountrySearch(v){ admCountryQ = v; me(); }
+function toggleBlockedLoginCountry(id){
+  if(!S.config.blockedLoginCountries) S.config.blockedLoginCountries = [];
+  const arr = S.config.blockedLoginCountries, pos = arr.indexOf(id);
+  if(pos>=0) arr.splice(pos,1); else arr.push(id);
+  save(); me();
+}
+function toggleBlockedWithdrawCountry(id){
+  if(!S.config.blockedWithdrawCountries) S.config.blockedWithdrawCountries = [];
+  const arr = S.config.blockedWithdrawCountries, pos = arr.indexOf(id);
+  if(pos>=0) arr.splice(pos,1); else arr.push(id);
+  save(); me();
+}
+function saveLbInterval(){
+  const v = parseInt($("#admLbInterval").value,10);
+  if(isNaN(v)||v<1||v>30) return alert("1-30 ke beech din daalo");
+  S.config.lbResetIntervalDays = v; save(); alert("Reset interval update ho gaya"); me();
+}
+function updateLbVal(r){
+  const v = parseInt($("#lbp_"+r).value,10)||0, el = $("#lbpv_"+r), rate = cfg().rate;
+  if(el) el.textContent = `≈ $${(v/rate).toFixed(2)}`;
+  let total = 0;
+  for(let i=1;i<=50;i++){ const iv = parseInt($("#lbp_"+i).value,10); total += isNaN(iv)?0:iv; }
+  const tEl = $("#lbpvTotal"); if(tEl) tEl.textContent = `≈ $${(total/rate).toFixed(2)}`;
+}
+function saveLbPrizes(){
+  const t = {};
+  for(let r=1;r<=50;r++){ const v = parseInt($("#lbp_"+r).value,10); t[r] = isNaN(v)?0:v; }
+  S.config.lbPrizeTable = t; save(); alert("Rank rewards save ho gaye"); me();
+}
+function saveTourPrizeTable(){
+  const t = {};
+  for(let r=1;r<=50;r++){ const v = parseInt($("#tpz_"+r).value,10); t[r] = isNaN(v)?0:v; }
+  S.config.tourPrizeTable = t; save(); alert("Tournament Prize Split save ho gaya"); me();
+}
+function resetMyRp(){ S.rp = 0; save(); alert("RP reset ho gaya"); me(); }
+function banPhone(){
+  const p = $("#banPhoneIn").value.trim();
+  if(!p) return alert("Phone daalo (jaise +91 9876543210)");
+  const b = loadBans();
+  if(!b.includes(p)) b.push(p);
+  saveBans(b); me();
+}
+function unbanPhone(p){ saveBans(loadBans().filter(x=>x!==p)); me(); }
+function saveWalletLimits(){
+  const rate = parseFloat($("#admRate").value), mn = parseFloat($("#admMin").value), mx = parseFloat($("#admMax").value);
+  if(!rate || !mn || !mx || mn>=mx) return alert("Valid rate aur limits daalo (min < max)");
+  S.config.rate = rate; S.config.minWithdrawUsd = mn; S.config.maxWithdrawUsd = mx;
+  save(); alert("Wallet settings save ho gaye"); me();
+}
+function saveWdMaxPerDay(){
+  const v = parseInt($("#admWdMax").value,10);
+  if(isNaN(v)||v<1) return alert("Valid number daalo (1 ya usse zyada)");
+  S.config.wdMaxPerDay = v; save(); alert("Max withdrawals/day save ho gaya"); me();
+}
+function toggleWdTimeWindow(){ S.config.wdTimeEnabled = !S.config.wdTimeEnabled; save(); me(); }
+function saveWdTimeWindow(){
+  const st = $("#admWdStart").value, en = $("#admWdEnd").value;
+  if(!st || !en) return alert("Start aur End time dono daalo");
+  S.config.wdTimeStart = st; S.config.wdTimeEnd = en; save(); alert("Withdrawal timing window save ho gaya"); me();
+}
+function toggleWdDays(){ S.config.wdDaysEnabled = !S.config.wdDaysEnabled; save(); me(); }
+function toggleWdDay(i){
+  if(!S.config.wdDays) S.config.wdDays = [0,1,2,3,4,5,6];
+  const arr = S.config.wdDays, pos = arr.indexOf(i);
+  if(pos>=0) arr.splice(pos,1); else arr.push(i);
+  save(); me();
+}
+function savePresets(){
+  const vals = $("#admPresets").value.split(",").map(s=>parseFloat(s.trim())).filter(n=>!isNaN(n)&&n>0);
+  if(!vals.length) return alert("Valid comma-separated amounts daalo");
+  S.config.presetAmounts = vals; save(); alert("Presets save ho gaye"); me();
+}
+function toggleUpi(){ S.config.upiEnabled = S.config.upiEnabled===false ? true : false; save(); me(); }
+function togglePaypal(){ S.config.paypalEnabled = S.config.paypalEnabled===false ? true : false; save(); me(); }
+function togglePaytm(){ S.config.paytmEnabled = S.config.paytmEnabled===false ? true : false; save(); me(); }
+function togglePhonepe(){ S.config.phonepeEnabled = S.config.phonepeEnabled===false ? true : false; save(); me(); }
+function toggleBinance(){ S.config.binanceEnabled = S.config.binanceEnabled===false ? true : false; save(); me(); }
+function saveFee(){
+  const v = parseFloat($("#admFee").value);
+  if(isNaN(v)||v<0||v>100) return alert("0-100 ke beech fee % daalo");
+  S.config.paypalFeePct = v; save(); alert("Processing fee save ho gaya"); me();
+}
+function saveBinanceFee(){
+  const v = parseFloat($("#admBinanceFee").value);
+  if(isNaN(v)||v<0||v>100) return alert("0-100 ke beech fee % daalo");
+  S.config.binanceFeePct = v; save(); alert("Binance Processing fee save ho gaya"); me();
+}
+function saveInrRate(){
+  const v = parseFloat($("#admInr").value);
+  if(isNaN(v)||v<=0) return alert("Valid USD-INR rate daalo");
+  S.config.usdToInr = v; save(); alert("INR rate save ho gaya"); me();
+}
+function togglePayoutMode(){ S.config.payoutAutoMode = !S.config.payoutAutoMode; save(); me(); }
+function togglePayoutProvider(val){
+  if(!S.config.payoutProviders) S.config.payoutProviders = [];
+  const i = S.config.payoutProviders.indexOf(val);
+  if(i===-1) S.config.payoutProviders.push(val); else S.config.payoutProviders.splice(i,1);
+  save(); me();
+}
+function savePayoutSettings(){
+  S.config.payoutMerchantId = $("#admPayoutMerchant").value.trim();
+  S.config.payoutWebhookUrl = $("#admPayoutWebhook").value.trim();
+  save(); alert("Payout settings save ho gaye (yaad rakho: real auto-transfer ke liye backend chahiye)"); me();
+}
+function saveUpiTds(){
+  const v = parseFloat($("#admUpiTds").value);
+  if(isNaN(v)||v<0||v>100) return alert("0-100 ke beech TDS % daalo");
+  S.config.upiTdsPct = v; save(); alert("UPI TDS % save ho gaya"); me();
+}
+function savePaytmTds(){
+  const v = parseFloat($("#admPaytmTds").value);
+  if(isNaN(v)||v<0||v>100) return alert("0-100 ke beech TDS % daalo");
+  S.config.paytmTdsPct = v; save(); alert("Paytm TDS % save ho gaya"); me();
+}
+function savePhonepeTds(){
+  const v = parseFloat($("#admPhonepeTds").value);
+  if(isNaN(v)||v<0||v>100) return alert("0-100 ke beech TDS % daalo");
+  S.config.phonepeTdsPct = v; save(); alert("PhonePe TDS % save ho gaya"); me();
+}
+function saveDailyBonus(){
+  const v = parseInt($("#admBonus").value,10);
+  if(isNaN(v)||v<=0) return alert("Valid RP amount daalo");
+  S.config.dailyBonusRp = v; save(); alert("Daily bonus save ho gaya"); me();
+}
+function saveBonusInterval(){
+  const v = parseInt($("#admBonusInterval").value,10);
+  S.config.dailyBonusIntervalDays = v; save(); alert("Bonus video frequency set ho gaya"); me();
+}
+function toggleBonusTimeWindow(){
+  S.config.dailyBonusTimeEnabled = !S.config.dailyBonusTimeEnabled; save(); me();
+}
+function saveBonusTimeWindow(){
+  const st = $("#admBonusStart").value, en = $("#admBonusEnd").value;
+  if(!st || !en) return alert("Start aur End time dono daalo");
+  S.config.dailyBonusTimeStart = st; S.config.dailyBonusTimeEnd = en; save(); alert("Timing window save ho gaya"); me();
+}
+function saveStreakRewards(){
+  const arr = [];
+  for(let i=0;i<(S.config.streakRewards||[]).length;i++){
+    const raw = $("#str_"+i).value.trim();
+    const num = parseFloat(raw);
+    arr.push(raw.startsWith("$") ? raw : (isNaN(num)?raw:num));
+  }
+  S.config.streakRewards = arr; save(); alert("Streak rewards save ho gaye"); me();
+}
+function addPromo(){
+  const c = $("#pcCode").value.trim(), v = parseInt($("#pcRp").value,10);
+  if(!/^\d{6}$/.test(c)) return alert("6 digit code daalo");
+  if(isNaN(v) || v<=0) return alert("RP value daalo");
+  if(!S.promos) S.promos = {};
+  S.promos[c] = v; save(); me();
+}
+function delPromo(c){ delete S.promos[c]; save(); me(); }
+function addMatch(){
+  const g = $("#ag").value.trim().toLowerCase(), p = parseInt($("#ap2").value,10), m = parseInt($("#am").value,10)||60;
+  if(!["arctic","hoop"].includes(g) || isNaN(p)) return alert("Game mein 'arctic' ya 'hoop' likho aur pool bharo");
+  S.tours.push({id:now(),g,name:g==="hoop"?"Hoop Challenge":"Arctic Voyage",split:"Top 50",pool:p,end:now()+m*MIN}); save(); alert("Tournament add ho gaya"); me();
+}
+function wdFraudFlag(w){
+  // Single-device demo app, so this only checks within this device's own request history.
+  // A real fraud check (duplicate UPI/PayPal across accounts, fake-coin detection) needs a backend.
+  const sameId = S.wd.filter(x=>x.to===w.to && x.id!==w.id).length;
+  return sameId>0 ? `⚠️ Yeh UPI/PayPal ID ${sameId} aur request(s) mein bhi use hui hai — manually review karo` : "";
+}
+function wdRow(w){
+  const flag = w.status==="PENDING" ? wdFraudFlag(w) : "";
+  const inr = usd => Math.round(parseFloat(usd)*cfg().usdToInr).toLocaleString("en-IN");
+  const amtLine = !isFeeMethod(w.method)
+    ? `₹${inr(w.net)} net (req ₹${inr(w.requested)}, TDS ₹${inr(w.tds)})`
+    : `${w.method==="Binance"?"USDT ":"$"}${w.net} net (req ${w.method==="Binance"?"USDT ":"$"}${w.requested}, TDS N/A)`;
+  const backendOn = !!cfg().payoutWebhookUrl;
+  const backendBadge = backendOn ? (
+    w.backendSent===true ? `<br><span style="color:#22c55e;font-size:11px">📤 Backend: Sent (${w.backendStatus})</span>`
+    : w.backendSent===false ? `<br><span style="color:#ff5c5c;font-size:11px">📤 Backend: Failed${w.backendError?" — "+esc(w.backendError):""}</span>`
+    : `<br><span class="mut" style="font-size:11px">📤 Backend: Not sent</span>`
+  ) : "";
+  return `<div class="lb" style="flex-wrap:wrap">
+    <span class="n">${esc(w.user_id)} • ${amtLine} • ${esc(w.method)}<br>
+    <span class="mut">${esc(w.to)}</span>${w.mobile?`<br><span class="mut">📱 ${esc(w.mobile)}</span>`:""}${w.utr?`<br><span class="mut">UTR: ${esc(w.utr)}</span>`:""}${flag?`<br><span style="color:#ffb020;font-size:11px">${flag}</span>`:""}${backendBadge}</span>
+    <span class="mut">${w.status}${w.status==="PENDING"&&cfg().payoutAutoMode&&(cfg().payoutProviders||[]).length>0?` <span style="color:#22c55e">⚡ Auto</span>`:""}</span>
+    ${w.status==="PENDING"?`<button class="btn g sm" onclick="approveWd('${w.id}')">✓ Approve</button><button class="btn sm" onclick="rejectWd('${w.id}')">✗ Reject</button>`:""}
+    ${backendOn&&(w.status==="PENDING"||w.status==="APPROVED")?`<button class="btn s sm" onclick="sendWdToBackend(S.wd.find(x=>x.id==='${w.id}'))">📤 ${w.backendSent===undefined?"Send":"Resend"} to Backend</button>`:""}
+    ${w.status==="APPROVED"?`<div style="width:100%;display:flex;gap:6px;margin-top:6px"><input id="utr_${w.id}" placeholder="12-digit UTR number" style="margin-bottom:0;flex:1"><button class="btn g sm" onclick="markPaid('${w.id}')">Mark as Paid</button></div>`:""}
+  </div>`;
+}
+function approveWd(id){ const w=S.wd.find(x=>x.id===id); if(!w) return; w.status="APPROVED"; save(); me(); }
+function rejectWd(id){ const w=S.wd.find(x=>x.id===id); if(!w) return; S.coins=(S.coins||0)+w.coins; w.status="REJECTED"; save(); me(); }
+function markPaid(id){
+  const w=S.wd.find(x=>x.id===id); if(!w) return;
+  const inp = $("#utr_"+id), utr = inp?inp.value.trim():"";
+  if(!/^\d{10,16}$/.test(utr)) return alert("Valid UTR number daalo (10-16 digit)");
+  w.status="SUCCESS"; w.utr=utr;
+  S.wdNotify = `$${w.net} sent successfully! UTR: ${utr}`;
+  save(); me();
+}
+async function saveCsv(filename, csv){
+  try{
+    const downloads = window.claude ? await window.claude.use("downloads") : null;
+    if(!downloads){ alert("Download yahan available nahi hai is view mein"); return; }
+    await downloads.save({filename, data: csv});
+  }catch(e){
+    if(e && e.code === "declined") return; // user cancelled, no error needed
+    alert("Download fail ho gaya: " + (e && e.message ? e.message : "unknown error"));
+  }
+}
+async function exportUpiTdsCsv(){
+  const d = new Date(), ym = d.toISOString().slice(0,7), rate = cfg().usdToInr, tdsPct = cfg().upiTdsPct;
+  const rows = S.wd.filter(w=>w.method==="UPI" && w.status==="SUCCESS" && new Date(w.created).toISOString().slice(0,7)===ym);
+  if(!rows.length){ alert("Is mahine koi UPI SUCCESS payout nahi hai"); return; }
+  let totalReq=0, totalTds=0, totalNet=0;
+  let csv = "ID,User,UPI ID,Mobile,Requested(₹),TDS %,TDS(₹),Net Payout(₹),UTR,Date\n";
+  rows.forEach(w=>{
+    const req = Math.round(parseFloat(w.requested)*rate), tds = Math.round(parseFloat(w.tds)*rate), net = Math.round(parseFloat(w.net)*rate);
+    totalReq+=req; totalTds+=tds; totalNet+=net;
+    csv += `${w.id},${w.user_id},${w.to},${w.mobile||""},${req},${tdsPct}%,${tds},${net},${w.utr},${new Date(w.created).toLocaleDateString()}\n`;
+  });
+  csv += `\nTOTAL,,,,${totalReq},,${totalTds},${totalNet},,\n`;
+  csv += `\nMonth: ${ym}\nTotal UPI SUCCESS Payouts: ${rows.length}\nTotal TDS (${tdsPct}%) payable to Govt: ₹${totalTds} — Challan 281 bharne ke liye\n`;
+  await saveCsv(`UPI_TDS_Report_${ym}.csv`, csv);
+}
+async function exportPaytmTdsCsv(){
+  const d = new Date(), ym = d.toISOString().slice(0,7), rate = cfg().usdToInr, tdsPct = cfg().paytmTdsPct;
+  const rows = S.wd.filter(w=>w.method==="Paytm" && w.status==="SUCCESS" && new Date(w.created).toISOString().slice(0,7)===ym);
+  if(!rows.length){ alert("Is mahine koi Paytm SUCCESS payout nahi hai"); return; }
+  let totalReq=0, totalTds=0, totalNet=0;
+  let csv = "ID,User,Paytm ID,Mobile,Requested(₹),TDS %,TDS(₹),Net Payout(₹),UTR,Date\n";
+  rows.forEach(w=>{
+    const req = Math.round(parseFloat(w.requested)*rate), tds = Math.round(parseFloat(w.tds)*rate), net = Math.round(parseFloat(w.net)*rate);
+    totalReq+=req; totalTds+=tds; totalNet+=net;
+    csv += `${w.id},${w.user_id},${w.to},${w.mobile||""},${req},${tdsPct}%,${tds},${net},${w.utr},${new Date(w.created).toLocaleDateString()}\n`;
+  });
+  csv += `\nTOTAL,,,,${totalReq},,${totalTds},${totalNet},,\n`;
+  csv += `\nMonth: ${ym}\nTotal Paytm SUCCESS Payouts: ${rows.length}\nTotal TDS (${tdsPct}%) payable to Govt: ₹${totalTds} — Challan 281 bharne ke liye\n`;
+  await saveCsv(`Paytm_TDS_Report_${ym}.csv`, csv);
+}
+async function exportPhonepeTdsCsv(){
+  const d = new Date(), ym = d.toISOString().slice(0,7), rate = cfg().usdToInr, tdsPct = cfg().phonepeTdsPct;
+  const rows = S.wd.filter(w=>w.method==="PhonePe" && w.status==="SUCCESS" && new Date(w.created).toISOString().slice(0,7)===ym);
+  if(!rows.length){ alert("Is mahine koi PhonePe SUCCESS payout nahi hai"); return; }
+  let totalReq=0, totalTds=0, totalNet=0;
+  let csv = "ID,User,PhonePe ID,Mobile,Requested(₹),TDS %,TDS(₹),Net Payout(₹),UTR,Date\n";
+  rows.forEach(w=>{
+    const req = Math.round(parseFloat(w.requested)*rate), tds = Math.round(parseFloat(w.tds)*rate), net = Math.round(parseFloat(w.net)*rate);
+    totalReq+=req; totalTds+=tds; totalNet+=net;
+    csv += `${w.id},${w.user_id},${w.to},${w.mobile||""},${req},${tdsPct}%,${tds},${net},${w.utr},${new Date(w.created).toLocaleDateString()}\n`;
+  });
+  csv += `\nTOTAL,,,,${totalReq},,${totalTds},${totalNet},,\n`;
+  csv += `\nMonth: ${ym}\nTotal PhonePe SUCCESS Payouts: ${rows.length}\nTotal TDS (${tdsPct}%) payable to Govt: ₹${totalTds} — Challan 281 bharne ke liye\n`;
+  await saveCsv(`PhonePe_TDS_Report_${ym}.csv`, csv);
+}
+async function exportPaypalCsv(){
+  const d = new Date(), ym = d.toISOString().slice(0,7), feePct = cfg().paypalFeePct;
+  const rows = S.wd.filter(w=>w.method==="PayPal" && w.status==="SUCCESS" && new Date(w.created).toISOString().slice(0,7)===ym);
+  if(!rows.length){ alert("Is mahine koi PayPal SUCCESS payout nahi hai"); return; }
+  let totalReq=0, totalFee=0, totalNet=0;
+  let csv = "ID,User,PayPal Email,Mobile,Requested($),Processing Fee %,Fee($),Net Payout($),UTR,Date\n";
+  rows.forEach(w=>{
+    const req = parseFloat(w.requested), net = parseFloat(w.net), fee = (req-net);
+    totalReq+=req; totalFee+=fee; totalNet+=net;
+    csv += `${w.id},${w.user_id},${w.to},${w.mobile||""},${req.toFixed(2)},${feePct}%,${fee.toFixed(2)},${net.toFixed(2)},${w.utr},${new Date(w.created).toLocaleDateString()}\n`;
+  });
+  csv += `\nTOTAL,,,,${totalReq.toFixed(2)},,${totalFee.toFixed(2)},${totalNet.toFixed(2)},,\n`;
+  csv += `\nMonth: ${ym}\nTotal PayPal SUCCESS Payouts: ${rows.length}\nTDS: N/A (PayPal par TDS nahi lagta)\n`;
+  await saveCsv(`PayPal_Report_${ym}.csv`, csv);
+}
+async function exportBinanceCsv(){
+  const d = new Date(), ym = d.toISOString().slice(0,7), feePct = cfg().binanceFeePct;
+  const rows = S.wd.filter(w=>w.method==="Binance" && w.status==="SUCCESS" && new Date(w.created).toISOString().slice(0,7)===ym);
+  if(!rows.length){ alert("Is mahine koi Binance SUCCESS payout nahi hai"); return; }
+  let totalReq=0, totalFee=0, totalNet=0;
+  let csv = "ID,User,Binance Pay ID/Email,Mobile,Requested(USDT),Processing Fee %,Fee(USDT),Net Payout(USDT),UTR,Date\n";
+  rows.forEach(w=>{
+    const req = parseFloat(w.requested), net = parseFloat(w.net), fee = (req-net);
+    totalReq+=req; totalFee+=fee; totalNet+=net;
+    csv += `${w.id},${w.user_id},${w.to},${w.mobile||""},${req.toFixed(2)},${feePct}%,${fee.toFixed(2)},${net.toFixed(2)},${w.utr},${new Date(w.created).toLocaleDateString()}\n`;
+  });
+  csv += `\nTOTAL,,,,${totalReq.toFixed(2)},,${totalFee.toFixed(2)},${totalNet.toFixed(2)},,\n`;
+  csv += `\nMonth: ${ym}\nTotal Binance SUCCESS Payouts: ${rows.length}\nTDS: N/A (Binance par TDS nahi lagta)\n`;
+  await saveCsv(`Binance_Report_${ym}.csv`, csv);
+}
+render();
+cloudPull();
+</script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+*.jks
+*.keystore
+*keystore*.zip
+release-key*
+passwords.txt
+local.properties
+.gradle/
+/build
+*.iml
+.idea/
