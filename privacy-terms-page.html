@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Terms & Privacy</title>
+<style>
+  :root{
+    --bg:#0b0f1a; --card:#141a2a; --text:#f1f3f8; --muted:#9aa4bd; --acc:#8b5cf6; --gold:#ffd54a; --line:#ffffff1f;
+  }
+  @media (prefers-color-scheme: light){
+    :root:not([data-theme="dark"]){ --bg:#f5f6fb; --card:#ffffff; --text:#141927; --muted:#5b6478; --acc:#7c3aed; --gold:#b8860b; --line:#00000014; }
+  }
+  :root[data-theme="dark"]{ --bg:#0b0f1a; --card:#141a2a; --text:#f1f3f8; --muted:#9aa4bd; --acc:#8b5cf6; --gold:#ffd54a; --line:#ffffff1f; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.6}
+  .wrap{max-width:720px;margin:0 auto;padding:24px 16px 64px}
+  header{padding:18px 0 10px;border-bottom:1px solid var(--line);margin-bottom:18px}
+  .logo{font-size:20px;font-weight:900}
+  .logo span{color:var(--acc)}
+  .sub{color:var(--muted);font-size:13px;margin-top:4px}
+  .tabs{display:flex;gap:8px;margin:18px 0 20px;position:sticky;top:0;background:var(--bg);padding:10px 0;z-index:2}
+  .tab{flex:1;text-align:center;padding:10px;border-radius:10px;background:var(--card);border:1px solid var(--line);font-weight:700;font-size:14px;cursor:pointer;color:var(--text)}
+  .tab.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+  section{display:none}
+  section.on{display:block}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:14px}
+  h1{font-size:22px;margin:0 0 4px}
+  h2{font-size:16px;margin:18px 0 6px;color:var(--acc)}
+  h2:first-child{margin-top:0}
+  p{font-size:14.5px;color:var(--text);margin:0 0 10px}
+  .muted{color:var(--muted);font-size:12.5px}
+  footer{text-align:center;color:var(--muted);font-size:12px;margin-top:30px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">ESPORTS<span>REWARD</span></div>
+    <div class="sub">Terms & Conditions and Privacy Policy</div>
+  </header>
+
+  <div class="tabs">
+    <div class="tab on" id="tabT" onclick="show('terms')">📜 Terms & Conditions</div>
+    <div class="tab" id="tabP" onclick="show('privacy')">🔒 Privacy Policy</div>
+  </div>
+
+  <section id="terms" class="on">
+    <div class="card">
+      <h1>Terms & Conditions</h1>
+      <p class="muted">Last updated: 8 October 2026</p>
+
+      <h2>1. Eligibility & Account Rules</h2>
+      <p>Use of this app requires the user to be at least 18 years of age (or to use the app under parental guidance if younger). Each user is permitted only one (1) account. Creating multiple accounts, using fake details, or using bots/automation tools is strictly prohibited and may result in account suspension or ban.</p>
+
+      <h2>2. RP Points & Reward Policy</h2>
+      <p>RP (Reward Points) are a virtual in-app currency. RP has no real-world cash value unless and until it is claimed as a reward (coins/cash/gift). The right to change, adjust, or void Rewards, Leaderboard Ranks, and RP points at any time is reserved by the Admin/Management.</p>
+
+      <h2>3. Anti-Fraud & Cheating Policy</h2>
+      <p>The use of auto-clickers, VPNs, proxies, emulators, or any form of app modification/hacking/cheating tools is strictly forbidden. If fraud or cheating is detected, the Admin may suspend or permanently ban the account without prior warning, and all earned RP/rewards may be voided.</p>
+
+      <h2>4. Taxation & Compliance (India)</h2>
+      <p>In accordance with applicable Government regulations (including Section 194BA / Income Tax rules), applicable TDS or taxes may be deducted from the user's net earnings/rewards. Each user is solely responsible for their own individual tax liability — the app/company is not responsible for any personal tax filing.</p>
+
+      <h2>5. Ad Serving & Third-Party Services</h2>
+      <p>Users may be required to view third-party rewarded ads (such as Google AdMob, AppLovin MAX, Unity Ads) in order to claim rewards. The app is not responsible for any downtime, failure, or malfunction of these third-party ad networks.</p>
+
+      <h2>6. Service Termination & Modifications</h2>
+      <p>Management reserves the right to update, modify, or discontinue the app's features, RP allocation rates, reward structure, or leaderboard rules at any time, without prior notice.</p>
+
+      <h2>7. Agreement</h2>
+      <p>By installing, using, or signing up for this app, the user agrees to these Terms & Conditions and our Privacy Policy.</p>
+    </div>
+  </section>
+
+  <section id="privacy">
+    <div class="card">
+      <h1>Privacy Policy</h1>
+      <p class="muted">Last updated: 8 October 2026</p>
+
+      <h2>1. Information We Collect</h2>
+      <p>At signup we collect basic information: name, mobile number (for OTP verification), and country. During gameplay we also store scores, coins, RP, tournament history, and withdrawal requests.</p>
+
+      <h2>2. How We Use Your Information</h2>
+      <p>Collected data is used for account verification, calculating rewards/leaderboard standing, processing withdrawals, fraud prevention, and improving the app's services. Your data is not sold or shared with any third party except where necessary to operate the app.</p>
+
+      <h2>3. Third-Party Services</h2>
+      <p>The app uses third-party ad networks (Google AdMob, AppLovin MAX, Unity Ads) to show rewarded ads — these networks have their own separate privacy policies and may collect device/ad data.</p>
+
+      <h2>4. Data Security</h2>
+      <p>We use reasonable security measures to protect your data, but no internet-based service can guarantee 100% security.</p>
+
+      <h2>5. Payout Information</h2>
+      <p>The UPI ID / mobile number / email / wallet ID provided for withdrawal is used solely to process payouts and is handled via a secure backend.</p>
+
+      <h2>6. Your Rights</h2>
+      <p>You may contact our Support Team at any time to delete your account or to ask questions about your data.</p>
+
+      <h2>7. Policy Changes</h2>
+      <p>This Privacy Policy may be updated from time to time. Continued use of the app signifies agreement with the updated policy.</p>
+    </div>
+  </section>
+
+  <footer>© 2026 Esports Reward. All rights reserved.</footer>
+</div>
+<script>
+function show(id){
+  document.getElementById('terms').classList.toggle('on', id==='terms');
+  document.getElementById('privacy').classList.toggle('on', id==='privacy');
+  document.getElementById('tabT').classList.toggle('on', id==='terms');
+  document.getElementById('tabP').classList.toggle('on', id==='privacy');
+  window.scrollTo(0,0);
+}
+</script>
+</body>
+</html>
