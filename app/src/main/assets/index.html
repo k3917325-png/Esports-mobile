@@ -364,8 +364,8 @@ function defaultConfig(){ return {
   binanceEnabled: true, binanceFeePct: 6,
   paytmEnabled: true, phonepeEnabled: true, paytmTdsPct: 30, phonepeTdsPct: 30,
   tourDurationMin: 30,
-  gamesEnabled: {arctic:true,hoop:true,loop:true,colorbounce:true,bubble:true,drive:true,shooter:true,knife:true,blockmatch:true,dollar:true},
-  gamesOrder: ["arctic","hoop","loop","colorbounce","bubble","drive","shooter","knife","blockmatch","dollar"],
+  gamesEnabled: {arctic:true,hoop:true,loop:true,colorbounce:true,bubble:true,drive:true,shooter:true,knife:true,blockmatch:true,dollar:true,candle:true},
+  gamesOrder: ["arctic","hoop","loop","colorbounce","bubble","drive","shooter","knife","blockmatch","dollar","candle"],
   lbResetHour: 5,
   lbResetMode: "daily", lbResetDays: [0,1,2,3,4,5,6], lbResetIntervalDays: 1, // mode: "daily" (har din), "days" (sirf selected weekdays par; 0=Sun...6=Sat), ya "interval" (har N din mein ek baar)
   lbPrizeTable: (()=>{ const t = {1:7500,2:4500,3:3750,4:1500,5:1500,6:750,7:750,8:750,9:150,10:150};
@@ -385,7 +385,7 @@ function defaultConfig(){ return {
   dailyBonusTimeEnabled: false, dailyBonusTimeStart: "18:00", dailyBonusTimeEnd: "22:00", // sirf is window mein claim available
   streakRewards: [2000,4000,4500,5000,6000,7500,8500,9000,10000,20000,50000,"$0.10"],
   topN: 50,
-  gamePools: {arctic:20000,hoop:20000,loop:20000,colorbounce:20000,bubble:20000,drive:20000,shooter:20000,knife:20000,blockmatch:20000,dollar:20000},
+  gamePools: {arctic:20000,hoop:20000,loop:20000,colorbounce:20000,bubble:20000,drive:20000,shooter:20000,knife:20000,blockmatch:20000,dollar:20000,candle:20000},
   customGames: [],
   noticeText: "",
   noticeOn: {home:false, matches:false, wallet:false, profile:false},
@@ -544,7 +544,8 @@ const GAME_CANON = {
   shooter:{id:9,g:"shooter",name:"Space Shooter",split:"Top 50",pool:20000},
   knife:{id:10,g:"knife",name:"Knife Hit",split:"Top 50",pool:20000},
   blockmatch:{id:11,g:"blockmatch",name:"Color Block Match",split:"Top 50",pool:20000},
-  dollar:{id:12,g:"dollar",name:"Dollar Catch",split:"Top 50",pool:20000}
+  dollar:{id:12,g:"dollar",name:"Dollar Catch",split:"Top 50",pool:20000},
+  candle:{id:13,g:"candle",name:"Candle Jump",split:"Top 50",pool:20000}
 };
 function seedT(){
   const t = now(), c = cfg(), dur = (c.tourDurationMin||30)*MIN;
@@ -561,7 +562,8 @@ const TCONF = {
   shooter:{emoji:"🚀",grad:"linear-gradient(135deg,#1e1b4b,#4c1d95)"},
   knife:{emoji:"🔪",grad:"linear-gradient(135deg,#3f3f46,#18181b)"},
   blockmatch:{emoji:"🧩",grad:"linear-gradient(135deg,#059669,#065f46)"},
-  dollar:{emoji:"💲",grad:"linear-gradient(135deg,#047857,#0b1d3a)"}
+  dollar:{emoji:"💲",grad:"linear-gradient(135deg,#047857,#0b1d3a)"},
+  candle:{emoji:"🕯️",grad:"linear-gradient(135deg,#16a34a,#7f1d1d)"}
 };
 function tourPrizes(){
   const t = cfg().tourPrizeTable || defaultConfig().tourPrizeTable;
@@ -577,7 +579,7 @@ function genReport(t){
   if(!S.reports[t.id]){
     let seed = t.id%1000+1;
     const rnd = () => { seed = (seed*9301+49297)%233280; return seed/233280; };
-    const base = ({hoop:40,arctic:180,loop:150,colorbounce:35,bubble:170,drive:150,shooter:220,knife:22,blockmatch:650,dollar:45})[t.g] || 150;
+    const base = ({hoop:40,arctic:180,loop:150,colorbounce:35,bubble:170,drive:150,shooter:220,knife:22,blockmatch:650,dollar:45,candle:120})[t.g] || 150;
     let sc = base + Math.floor(rnd()*30);
     const list = [];
     for(let i=0;i<50;i++){ list.push({name:NAMES[i], score:sc}); sc = Math.max(1, sc - Math.ceil(1+rnd()*(base/22))); }
@@ -1099,7 +1101,8 @@ function openGame(t){
     shooter:"Drag karke spaceship move karo • Asteroids se bacho, auto-fire se shoot karo!",
     knife:"Tap karo knife fenkne ke liye • Rotating log mein dusri knife se mat takrao!",
     blockmatch:"Same color wale 2+ blocks ke group par tap karo • Clear karo, bade group = zyada score (60s)",
-    dollar:"💲 ko left/right drag karo • 🟢 green pakdo (+1) • 🔴 red se mat takrao, warna game over!"
+    dollar:"💲 ko left/right drag karo • 🟢 green pakdo (+1) • 🔴 red se mat takrao, warna game over!",
+    candle:"Left/Right drag karo • Green candle par jump karke upar jao • Red candle par land mat karo, neeche mat girna!"
   })[t.g];
   const pos = e => { const r = c.getBoundingClientRect(); return (e.clientX-r.left)*320/r.width; };
   const posY = e => { const r = c.getBoundingClientRect(); return (e.clientY-r.top)*480/r.height; };
@@ -1112,7 +1115,7 @@ function openGame(t){
     if(t.g==="knife" && !G.over) throwKnife();
     if(t.g==="blockmatch" && !G.over) tapBlock(G.tx, G.ty);
   };
-  if(t.g==="dollar"){
+  if(t.g==="dollar"||t.g==="candle"){
     G.kd = e => { if(e.key==="ArrowLeft"||e.key==="a") G.keyL = true; if(e.key==="ArrowRight"||e.key==="d") G.keyR = true; };
     G.ku = e => { if(e.key==="ArrowLeft"||e.key==="a") G.keyL = false; if(e.key==="ArrowRight"||e.key==="d") G.keyR = false; };
     addEventListener("keydown", G.kd); addEventListener("keyup", G.ku);
@@ -1121,7 +1124,7 @@ function openGame(t){
 }
 function loop(){
   if(!G || G.over) return; G.frame++; G.x.clearRect(0,0,320,480);
-  ({hoop:hoopStep, arctic:arcticStep, loop:loopStep, colorbounce:colorbounceStep, bubble:bubbleStep, drive:driveStep, shooter:shooterStep, knife:knifeStep, blockmatch:blockmatchStep, dollar:dollarStep})[G.t.g]();
+  ({hoop:hoopStep, arctic:arcticStep, loop:loopStep, colorbounce:colorbounceStep, bubble:bubbleStep, drive:driveStep, shooter:shooterStep, knife:knifeStep, blockmatch:blockmatchStep, dollar:dollarStep, candle:candleStep})[G.t.g]();
   const gs = $("#gs"); if(gs && G) gs.textContent = "Score: "+Math.floor(G.score);
   if(G && !G.over) G.raf = requestAnimationFrame(loop);
 }
@@ -1401,6 +1404,73 @@ function dollarStep(){
   x.fillStyle = "#cfe3ff"; x.font = "bold 12px sans-serif"; x.textAlign = "left"; x.fillText("🟢 pakdo +1   🔴 bacho!", 10, 20);
   if(G.over) setTimeout(()=>{ if(G) gameOver(); }, 1000);
 }
+function candleStep(){
+  // Candle Jump: bull character auto-bounces on GREEN candles (stock-chart pillars) and climbs; landing on a RED candle
+  // or falling off the bottom = game over. Score = height climbed.
+  const x = G.x;
+  if(!G.cj){
+    G.cj = {px:160, py:410, vy:-10.8, plats:[{x:160,y:450,w:70,red:false}], climb:0, minY:450, grid:0};
+    cjFill(G.cj);
+  }
+  const D = G.cj;
+  if(!G.bgCj){ G.bgCj = x.createLinearGradient(0,0,0,480); G.bgCj.addColorStop(0,"#0b1d3a"); G.bgCj.addColorStop(1,"#050d1c"); }
+  x.fillStyle = G.bgCj; x.fillRect(0,0,320,480);
+  x.strokeStyle = "rgba(120,170,255,.07)"; x.lineWidth = 1;
+  const off = (D.climb % 48);
+  for(let gy=off; gy<480; gy+=48){ x.beginPath(); x.moveTo(0,gy); x.lineTo(320,gy); x.stroke(); }
+  for(let gx=0; gx<=320; gx+=64){ x.beginPath(); x.moveTo(gx,0); x.lineTo(gx,480); x.stroke(); }
+  if(!G.over){
+    if(G.keyL) G.tx -= 6; if(G.keyR) G.tx += 6;
+    G.tx = Math.max(16, Math.min(304, G.tx));
+    D.px += (G.tx-D.px)*0.22; D.px = Math.max(14, Math.min(306, D.px));
+    const prevBottom = D.py + 14;
+    D.vy += 0.38; D.py += D.vy;
+    if(D.vy > 0){
+      for(const p of D.plats){
+        if(prevBottom <= p.y+1 && D.py+14 >= p.y && Math.abs(D.px-p.x) < p.w/2+8){
+          if(p.red){ G.over = true; G.hit = {x:D.px, y:p.y}; D.py = p.y-14; }
+          else { D.vy = -10.8; p.pulse = 8; }
+          break;
+        }
+      }
+    }
+    if(!G.over && D.py < 190){ const d = 190 - D.py; D.py = 190; D.plats.forEach(p=>p.y += d); D.minY += d; D.climb += d; }
+    G.score = Math.floor(D.climb/12);
+    cjFill(D);
+    D.plats = D.plats.filter(p=>p.y < 520);
+    if(!G.over && D.py > 500){ G.over = true; G.fell = true; }
+  }
+  // draw candles (wick + body)
+  D.plats.forEach(p=>{
+    const c = p.red ? "#e23b3b" : "#16c172", top = p.y;
+    x.strokeStyle = c; x.lineWidth = 2; x.beginPath(); x.moveTo(p.x, top-14); x.lineTo(p.x, top+28); x.stroke();
+    x.fillStyle = c; const grow = p.pulse>0 ? (p.pulse--, 2) : 0;
+    x.fillRect(p.x-p.w/2, top-grow, p.w, 14+grow);
+    x.fillStyle = "rgba(255,255,255,.22)"; x.fillRect(p.x-p.w/2, top-grow, p.w, 3);
+  });
+  x.font = "28px serif"; x.textAlign = "center"; x.fillText("🐂", D.px, D.py+10);
+  x.fillStyle = "#cfe3ff"; x.font = "bold 12px sans-serif"; x.textAlign = "left"; x.fillText("🟩 jump  🟥 mat utro", 10, 20);
+  if(G.over){
+    x.fillStyle = "#ff5c5c"; x.font = "bold 18px sans-serif"; x.textAlign = "center";
+    x.fillText(G.fell ? "📉 Market gir gaya!" : "🐻 BEARISH! Red candle", 160, 240);
+    setTimeout(()=>{ if(G) gameOver(); }, 1000);
+  }
+}
+// keep generating rows above the screen; every row has >=1 reachable GREEN candle (jump height ~145px, max gap 108px)
+function cjFill(D){
+  while(D.minY > -20){
+    const climbScore = D.climb/12;
+    const gap = Math.min(108, 62 + Math.random()*30 + climbScore/6);
+    const y = D.minY - gap, gx = 36 + Math.random()*248;
+    D.plats.push({x:gx, y, w:Math.max(40, 62 - climbScore/25), red:false});
+    if(Math.random() < Math.min(0.6, 0.12 + climbScore/450)){
+      let rx = 36 + Math.random()*248, tries = 0;
+      while(Math.abs(rx-gx) < 66 && tries++ < 8) rx = 36 + Math.random()*248;
+      if(Math.abs(rx-gx) >= 66) D.plats.push({x:rx, y:y + (Math.random()*14-7), w:56, red:true});
+    }
+    D.minY = y;
+  }
+}
 function blockmatchStep(){
   const x = G.x;
   if(!G.grid) initBlockGrid();
@@ -1421,7 +1491,7 @@ function bank(){
   // Anti-cheat: cap the banked score to a plausible max based on real elapsed play time,
   // so a tampered/injected G.score (e.g. via devtools) can't produce an absurd result.
   const elapsedSec = Math.max(0.5, (now() - (G.startMs||now())) / 1000);
-  const MAX_RATE = {arctic:9, hoop:7, loop:15, colorbounce:9, bubble:9, drive:15, shooter:16, knife:4, blockmatch:34, dollar:4};
+  const MAX_RATE = {arctic:9, hoop:7, loop:15, colorbounce:9, bubble:9, drive:15, shooter:16, knife:4, blockmatch:34, dollar:4, candle:30};
   const cap = Math.ceil(elapsedSec * (MAX_RATE[G.t.g]||12)) + 25;
   const sc = Math.min(rawSc, cap);
   S.best[id] = Math.max(S.best[id]||0, sc); save();
@@ -1784,7 +1854,7 @@ function doLogout(){
 }
 function adminUI(){
   const c = cfg();
-  const gameNames = {arctic:"Arctic Voyage",hoop:"Hoop Challenge",loop:"Infinity Loop",colorbounce:"Colour Bounce Match Up",bubble:"Guardian of the Bubble",drive:"Car Driving School Simulator",shooter:"Space Shooter",knife:"Knife Hit",blockmatch:"Color Block Match",dollar:"Dollar Catch"};
+  const gameNames = {arctic:"Arctic Voyage",hoop:"Hoop Challenge",loop:"Infinity Loop",colorbounce:"Colour Bounce Match Up",bubble:"Guardian of the Bubble",drive:"Car Driving School Simulator",shooter:"Space Shooter",knife:"Knife Hit",blockmatch:"Color Block Match",dollar:"Dollar Catch",candle:"Candle Jump"};
   const order = (c.gamesOrder&&c.gamesOrder.length)?c.gamesOrder:Object.keys(GAME_CANON);
   const bans = loadBans();
   return `

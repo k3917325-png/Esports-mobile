@@ -14,7 +14,7 @@ const SMS_WEBHOOK_AUTH = process.env.SMS_WEBHOOK_AUTH || ""; // e.g. "Bearer xxx
 const MAX_BODY = 200 * 1024;
 
 // Same anti-cheat rates as the app's bank(): max plausible score per second of play, per game
-const MAX_RATE = { arctic: 9, hoop: 7, loop: 15, colorbounce: 9, bubble: 9, drive: 15, shooter: 16, knife: 4, blockmatch: 34, dollar: 4 };
+const MAX_RATE = { arctic: 9, hoop: 7, loop: 15, colorbounce: 9, bubble: 9, drive: 15, shooter: 16, knife: 4, blockmatch: 34, dollar: 4, candle: 30 };
 // Progress fields the app is allowed to sync (admin config / ad config / withdrawals are NOT accepted here).
 // Tournament scores are NOT accepted via progress sync — only via /api/score, where they are validated and capped.
 const PROGRESS_KEYS = ["coins", "rp", "joined", "playCount", "streakDay", "lastStreakClaim", "lastBonus",
