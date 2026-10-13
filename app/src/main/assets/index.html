@@ -1105,7 +1105,7 @@ function openGame(t){
     blockmatch:"Same color wale 2+ blocks ke group par tap karo • Clear karo, bade group = zyada score (60s)",
     dollar:"💲 ko left/right drag karo • 🟢 green pakdo (+1) • 🔴 red se mat takrao, warna game over!",
     candle:"Left/Right drag karo • Green candle par jump karke upar jao • Red candle par land mat karo, neeche mat girna!",
-    dollarbox:"Box ko left/right drag karo • Girte 💵 dollar box mein pakdo (+50 har dollar) • 3 dollar miss = game over!"
+    dollarbox:"Box ko left/right drag karo • 💵 dollar pakdo (+50 har dollar) • 🔴 red ball box mein aayi to game over • 3 dollar miss = game over!"
   })[t.g];
   const pos = e => { const r = c.getBoundingClientRect(); return (e.clientX-r.left)*320/r.width; };
   const posY = e => { const r = c.getBoundingClientRect(); return (e.clientY-r.top)*480/r.height; };
@@ -1497,19 +1497,29 @@ function dollarboxStep(){
   if(!G.over){
     D.cd--;
     if(D.cd <= 0){
-      D.items.push({x:20+Math.random()*280, y:-16, v:2.4 + Math.min(3.8, n*0.09) + Math.random()*0.5, rot:Math.random()*6, spin:(Math.random()-0.5)*0.12});
+      const red = Math.random() < 0.28 + Math.min(0.17, n*0.005);   // red ball: ~28% se shuru, score ke saath ~45% tak
+      let nx = 20+Math.random()*280;
+      const last = D.items[D.items.length-1];
+      if(last && last.y < 90 && Math.abs(nx-last.x) < 36) nx = nx < 160 ? Math.min(300, nx+60) : Math.max(20, nx-60);   // dono ek ke upar ek na girein
+      D.items.push({x:nx, y:-16, red, v:2.4 + Math.min(3.8, n*0.09) + Math.random()*0.5, rot:Math.random()*6, spin:(Math.random()-0.5)*0.12});
       D.cd = Math.max(26, 62 - n*1.1) + Math.random()*12;   // dollars jaldi-jaldi aate hain
     }
   }
   D.items.forEach(it=>{
     if(!G.over){ it.y += it.v; it.rot += it.spin; }
     if(!G.over && it.y+10 >= boxTop && it.y <= boxTop+30 && Math.abs(it.x-G.sx) < bw/2){
-      G.score += 50; D.catches++; it.dead = true; D.pops.push({x:it.x, y:boxTop-8, t:0});
+      it.dead = true;
+      if(it.red){ G.over = true; G.hitRed = true; D.flash = 14; }          // red ball box mein aayi = GAME OVER
+      else { G.score += 50; D.catches++; D.pops.push({x:it.x, y:boxTop-8, t:0}); }
     } else if(!G.over && it.y > 490){
-      it.dead = true; D.lives--; D.flash = 14;
-      if(D.lives <= 0) G.over = true;
+      it.dead = true;
+      if(!it.red){ D.lives--; D.flash = 14; if(D.lives <= 0) G.over = true; }   // dollar miss = life gayi; red miss = safe
     }
-    if(!it.dead){ x.save(); x.translate(it.x,it.y); x.rotate(Math.sin(it.rot)*0.5); x.font = "26px serif"; x.textAlign = "center"; x.fillText("💵",0,9); x.restore(); }
+    if(!it.dead && it.red){
+      const rg = x.createRadialGradient(it.x-3,it.y-3,2,it.x,it.y,11); rg.addColorStop(0,"#ffb3b3"); rg.addColorStop(1,"#c01616");
+      x.fillStyle = rg; x.beginPath(); x.arc(it.x,it.y,11,0,7); x.fill();
+      x.fillStyle = "#fff"; x.font = "bold 10px sans-serif"; x.textAlign = "center"; x.fillText("▼", it.x, it.y+4);
+    } else if(!it.dead){ x.save(); x.translate(it.x,it.y); x.rotate(Math.sin(it.rot)*0.5); x.font = "26px serif"; x.textAlign = "center"; x.fillText("💵",0,9); x.restore(); }
   });
   D.items = D.items.filter(it=>!it.dead);
   D.pops.forEach(p=>{ p.t++; p.y -= 1.4; x.globalAlpha = Math.max(0,1-p.t/28); x.fillStyle = "#ffe066"; x.font = "bold 18px sans-serif"; x.textAlign = "center"; x.fillText("+50",p.x,p.y); x.globalAlpha = 1; });
@@ -1521,10 +1531,10 @@ function dollarboxStep(){
   x.strokeStyle = "#fcd34d"; x.lineWidth = 3; x.stroke();
   x.fillStyle = "#fff"; x.font = "bold 20px sans-serif"; x.textAlign = "center"; x.fillText("$1", G.sx, boxTop+26);
   if(D.flash>0){ D.flash--; x.fillStyle = "rgba(255,60,60,"+(D.flash/40)+")"; x.fillRect(0,0,320,480); }
-  x.fillStyle = "#cfe3ff"; x.font = "bold 12px sans-serif"; x.textAlign = "left"; x.fillText("💵 box mein pakdo +50", 10, 20);
+  x.fillStyle = "#cfe3ff"; x.font = "bold 12px sans-serif"; x.textAlign = "left"; x.fillText("💵 pakdo +50   🔴 mat pakdo!", 10, 20);
   x.textAlign = "right"; x.fillText("❤️".repeat(Math.max(0,D.lives)) + "🖤".repeat(3-Math.max(0,D.lives)), 310, 20);
   if(G.over){
-    x.fillStyle = "#ff8a8a"; x.font = "bold 18px sans-serif"; x.textAlign = "center"; x.fillText("💸 Dollars miss ho gaye!", 160, 240);
+    x.fillStyle = "#ff8a8a"; x.font = "bold 18px sans-serif"; x.textAlign = "center"; x.fillText(G.hitRed ? "🔴 Red ball pakdi — Game Over!" : "💸 Dollars miss ho gaye!", 160, 240);
     setTimeout(()=>{ if(G) gameOver(); }, 1000);
   }
 }
@@ -1921,9 +1931,10 @@ function adminUI(){
   <div class="mut" style="margin-bottom:6px">Prize Pool per Game (RP coins)</div>
   ${order.map(g=>GAME_CANON[g]?`<div class="row" style="gap:6px;margin-bottom:6px"><span class="mut" style="flex:1">${gameNames[g]}</span><input id="pool_${g}" type="number" value="${(c.gamePools&&c.gamePools[g])||GAME_CANON[g].pool}" style="margin-bottom:0;width:90px"><button class="btn s sm" onclick="setGamePool('${g}')">Save</button></div>`:"").join("")}
   <div class="row" style="gap:6px;margin:8px 0 12px"><span class="mut" style="flex:1">Prize Split — Top N Players</span><input id="admTopN" type="number" min="1" max="50" value="${c.topN||50}" style="margin-bottom:0;width:70px"><button class="btn s sm" onclick="setTopN()">Save</button></div>
-  <div class="mut" style="margin-bottom:6px">Game Management — ON/OFF + Reorder</div>
+  <div class="mut" style="margin-bottom:6px">Game Management — ON/OFF + Position (dropdown se seedha #1, #2... chuno) + ↑↓</div>
   ${order.map((g,i)=>GAME_CANON[g]?`<div class="row" style="gap:6px;margin-bottom:6px">
     <span style="flex:1">${gameNames[g]}</span>
+    <select onchange="setGamePos('${g}',this.value)" title="Position" style="background:#ffffff14;color:#fff;border:1px solid #ffffff2a;border-radius:8px;padding:6px 4px">${order.map((_,k)=>`<option value="${k+1}" ${k===i?"selected":""}>#${k+1}</option>`).join("")}</select>
     <button class="btn s sm" onclick="moveGame('${g}',-1)" ${i===0?"disabled":""}>↑</button>
     <button class="btn s sm" onclick="moveGame('${g}',1)" ${i===order.length-1?"disabled":""}>↓</button>
     <button class="btn ${c.gamesEnabled[g]!==false?"g":"s"} sm" onclick="toggleGame('${g}')">${c.gamesEnabled[g]!==false?"ON ✅":"OFF ❌"}</button>
@@ -2267,6 +2278,14 @@ function toggleGame(g){
   S.config.gamesEnabled[g] = on;
   if(on){ if(!S.tours.some(t=>t.g===g)) S.tours.push({...GAME_CANON[g], pool:(S.config.gamePools&&S.config.gamePools[g])||GAME_CANON[g].pool, end:now()+(S.config.tourDurationMin||30)*MIN}); }
   else { S.tours = S.tours.filter(t=>t.g!==g); }
+  save(); me();
+}
+function setGamePos(g,pos){
+  // game ko seedha chuni hui position par rakho (1 = sabse pehle). Baaki games apni relative order mein khisak jaate hain.
+  if(!S.config.gamesOrder||!S.config.gamesOrder.length) S.config.gamesOrder = Object.keys(GAME_CANON);
+  const arr = S.config.gamesOrder, i = arr.indexOf(g), p = Math.max(1, Math.min(arr.length, parseInt(pos,10)||1)) - 1;
+  if(i<0||i===p) return me();
+  arr.splice(i,1); arr.splice(p,0,g);
   save(); me();
 }
 function moveGame(g,dir){
