@@ -47,11 +47,111 @@ canvas{display:block;margin:0 auto 10px;border-radius:10px;max-width:100%}
 .play{margin:8px 14px 14px;width:calc(100% - 28px);background:linear-gradient(180deg,#8b4dff,#5a1fc4)}
 .adbox{min-height:70px;border:1px dashed var(--muted);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted);background:var(--in);margin-bottom:14px}
 @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+
+/* ===== Splash screen ===== */
+#splash{position:fixed;inset:0;z-index:2147483100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+  background:radial-gradient(120% 90% at 50% 25%,#3b1d8f 0%,#1c1050 45%,#0a0724 100%);color:#fff;transition:opacity .5s ease,visibility .5s;overflow:hidden}
+#splash.hide{opacity:0;visibility:hidden}
+#splash::before,#splash::after{content:"";position:absolute;width:340px;height:340px;border-radius:50%;filter:blur(70px);opacity:.35;animation:spFloat 6s ease-in-out infinite}
+#splash::before{background:#6d2fe0;top:-90px;left:-110px}
+#splash::after{background:#1d6fe0;bottom:-100px;right:-110px;animation-delay:-3s}
+@keyframes spFloat{0%,100%{transform:translate(0,0)}50%{transform:translate(30px,24px)}}
+.sp-logo{position:relative;width:150px;height:150px;display:flex;align-items:center;justify-content:center;animation:spPulse 1.8s ease-in-out infinite}
+.sp-logo::before{content:"";position:absolute;inset:-14px;border-radius:50%;background:radial-gradient(circle,rgba(255,200,60,.45),rgba(255,200,60,0) 70%);animation:spGlow 1.8s ease-in-out infinite}
+.sp-logo svg{position:relative;width:132px;height:132px;filter:drop-shadow(0 6px 18px rgba(255,170,0,.55))}
+.sp-shine{animation:spShine 2.2s ease-in-out infinite}
+@keyframes spPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+@keyframes spGlow{0%,100%{opacity:.55}50%{opacity:1}}
+@keyframes spShine{0%{transform:translateX(-90px)}60%,100%{transform:translateX(150px)}}
+.sp-title{font-size:34px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;font-family:'Segoe UI',Roboto,Arial,sans-serif;
+  background:linear-gradient(180deg,#fff7c2,#ffc83a 55%,#f08a00);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 3px 0 rgba(90,40,0,.6))}
+.sp-title span{display:block;text-align:center;font-size:15px;letter-spacing:7px;margin-top:2px;background:linear-gradient(90deg,#c9a7ff,#7fb4ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sp-bar{width:min(240px,66vw);height:8px;border-radius:8px;background:rgba(255,255,255,.12);overflow:hidden;margin-top:14px;box-shadow:inset 0 1px 3px rgba(0,0,0,.4)}
+.sp-bar i{display:block;height:100%;width:0;border-radius:8px;background:linear-gradient(90deg,#8b4dff,#4da3ff,#ffd54a);animation:spLoad 2.2s cubic-bezier(.4,0,.2,1) forwards}
+@keyframes spLoad{0%{width:0}60%{width:72%}100%{width:100%}}
+.sp-load{font-size:12px;letter-spacing:2px;color:#b3a3d6;animation:spBlink 1.2s ease-in-out infinite;font-family:'Segoe UI',Roboto,Arial,sans-serif}
+@keyframes spBlink{0%,100%{opacity:.45}50%{opacity:1}}
+@media (prefers-reduced-motion:reduce){#splash *,#splash::before,#splash::after{animation-duration:0s!important}.sp-bar i{width:100%}}
+
+/* ===== Hidden Admin View ===== */
+#adm{display:none;position:fixed;inset:0;z-index:2147483200;background:var(--bg);color:var(--text);overflow:hidden}
+#adm .aw{max-width:520px;margin:0 auto;height:100%;display:flex;flex-direction:column;padding:env(safe-area-inset-top,0px) 12px 0;position:relative}
+#adm .atop{display:flex;justify-content:space-between;align-items:center;padding:12px 2px;font-size:17px}
+#adm .atabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;flex:0 0 auto}
+#adm .ch{white-space:nowrap;border:1px solid rgba(180,140,255,.25);background:var(--card);color:var(--muted);padding:8px 12px;border-radius:18px;font-size:13px;font-weight:700;cursor:pointer}
+#adm .ch.on{background:var(--acc);color:#fff;border-color:transparent}
+#adm .chips2{display:flex;gap:6px;overflow-x:auto;margin:6px 0}
+#adm .abody{flex:1;overflow-y:auto;padding-bottom:96px}
+#adm .asave{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));background:var(--card);border-top:1px solid rgba(180,140,255,.25)}
+#adm h3{margin:14px 0 8px;font-size:15px}
+#adm .ar{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-bottom:8px}
+#adm .ar input,#adm .ar select{margin:0;width:auto;flex:0 1 150px;min-width:70px}
+#adm .ar input[type=time],#adm .ar input[type=month]{flex:0 0 auto}
+#adm select,#adm textarea{background:var(--in);color:var(--text);border:2px solid transparent;border-radius:10px;padding:10px;font-size:14px;max-width:100%}
+#adm textarea{width:100%;min-height:70px;margin-bottom:8px;font-family:inherit}
+#adm .b{border:0;border-radius:10px;padding:11px 14px;font-weight:700;font-size:14px;cursor:pointer;background:var(--acc);color:#fff;text-decoration:none;display:inline-block;text-align:center}
+#adm .b.g{background:var(--ok);color:#04281a}#adm .b.bad{background:#e5484d;color:#fff}#adm .b.s{background:var(--in);color:var(--text)}
+#adm .b.sm{padding:8px 12px;font-size:13px}#adm .b.wf{width:100%;margin:2px 0 8px}#adm .b:disabled{opacity:.45}
+#adm .card2{background:var(--card);border-radius:14px;padding:12px;margin:10px 0}
+#adm .lb2{background:var(--card);border-radius:12px;padding:10px 12px}
+#adm .sum{background:var(--in);border-radius:10px;padding:10px;margin-top:8px}
+#adm .g2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+#adm .k{color:var(--muted);font-size:12px}#adm .v{font-weight:700;word-break:break-all}
+#adm .badge{font-size:11px;font-weight:800;padding:3px 9px;border-radius:20px}
+#adm .b-Pending{background:#f5a30030;color:#f5a300}#adm .b-Paid{background:#1fa97130;color:#1fa971}#adm .b-Rejected{background:#e5484d30;color:#e5484d}
+#adm .amod{position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;z-index:5;padding:20px}
+#adm .abox{background:var(--card);border-radius:16px;padding:16px;width:100%;max-width:380px}
 </style>
 </head>
 <body>
 <div class="app" id="root"></div>
+<div id="splash" aria-hidden="true">
+  <div class="sp-logo">
+    <svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="spG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3a6"/><stop offset=".5" stop-color="#ffc83a"/><stop offset="1" stop-color="#e07a00"/></linearGradient>
+        <linearGradient id="spB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8b4dff"/><stop offset="1" stop-color="#3a1aa8"/></linearGradient>
+        <clipPath id="spClip"><path d="M36 18h56v30c0 18-12 30-28 30S36 66 36 48z"/></clipPath>
+      </defs>
+      <path d="M36 26H18c0 20 8 32 24 36" fill="none" stroke="url(#spG)" stroke-width="7" stroke-linecap="round"/>
+      <path d="M92 26h18c0 20-8 32-24 36" fill="none" stroke="url(#spG)" stroke-width="7" stroke-linecap="round"/>
+      <path d="M36 18h56v30c0 18-12 30-28 30S36 66 36 48z" fill="url(#spG)"/>
+      <g clip-path="url(#spClip)"><rect class="sp-shine" x="20" y="10" width="22" height="80" fill="#fff" opacity=".55" transform="rotate(20 64 50)"/></g>
+      <path d="M52 34c0-3 2-5 5-5" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".7"/>
+      <rect x="58" y="76" width="12" height="16" fill="url(#spG)"/>
+      <path d="M40 104c0-8 8-12 24-12s24 4 24 12v6H40z" fill="url(#spB)" stroke="url(#spG)" stroke-width="3"/>
+      <circle cx="64" cy="44" r="9" fill="url(#spB)"/><path d="M64 38l2.2 4.5 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5-3.6-3.5 5-.7z" fill="#ffe27a"/>
+    </svg>
+  </div>
+  <div class="sp-title">Esports<span>REWARD</span></div>
+  <div class="sp-bar"><i></i></div>
+  <div class="sp-load">LOADING...</div>
+</div>
+
 <script>
+// ===== Performance: cache emoji glyphs as sprites (fillText of emoji every frame is very slow on Android) =====
+(function(){
+  const proto = CanvasRenderingContext2D.prototype, orig = proto.fillText, cache = new Map(), EMO = /\p{Extended_Pictographic}/u;
+  proto.fillText = function(text, x, y, maxW){
+    if(maxW !== undefined || typeof text !== "string" || text.length > 6 || !EMO.test(text)) return orig.call(this, text, x, y, maxW);
+    const font = this.font, base = this.textBaseline, fill = this.fillStyle;
+    const key = font + "|" + base + "|" + (typeof fill === "string" ? fill : "") + "|" + text;
+    let e = cache.get(key);
+    if(!e){
+      const px = parseFloat((/(\d+(?:\.\d+)?)px/.exec(font)||[0,32])[1]) || 32;
+      const prevAlign = this.textAlign; this.textAlign = "left";
+      const w = Math.ceil(this.measureText(text).width), pad = Math.ceil(px*0.3), H = Math.ceil(px*2.4);
+      this.textAlign = prevAlign;
+      const off = document.createElement("canvas"); off.width = w + pad*2; off.height = H;
+      const o = off.getContext("2d"); o.font = font; o.textBaseline = base; o.textAlign = "left"; o.fillStyle = fill;
+      orig.call(o, text, pad, H/2);
+      e = {off, w, pad, H}; if(cache.size > 300) cache.clear(); cache.set(key, e);
+    }
+    const a = this.textAlign, dx = (a==="center") ? -e.w/2 : (a==="right"||a==="end") ? -e.w : 0;
+    this.drawImage(e.off, x + dx - e.pad, y - e.H/2);
+  };
+})();
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const COUNTRIES = [
@@ -328,8 +428,8 @@ function legalLinksCard(){
       ${url?`<a href="${esc(url)}" target="_blank" rel="noopener" class="btn s sm" style="text-align:left;text-decoration:none">🌐 Open Hosted Page</a>`:""}
     </div></div>`;
 }
-const WD_ID = {1:"Upi", 2:"Paypal", 3:"Paytm", 4:"Phonepe", 5:"Binance"};
-const WD_METHOD = {1:"UPI", 2:"PayPal", 3:"Paytm", 4:"PhonePe", 5:"Binance"};
+const WD_ID = {1:"Upi", 2:"Paypal", 3:"Paytm", 4:"Phonepe", 5:"Binance", 6:"Bybit"};
+const WD_METHOD = {1:"UPI", 2:"PayPal", 3:"Paytm", 4:"PhonePe", 5:"Binance", 6:"Bybit"};
 function tdsPctFor(opt){ // PayPal/Binance have no TDS (processing fee only); UPI/Paytm/PhonePe each have their own admin-set TDS %
   const c = cfg();
   if(opt===3) return c.paytmTdsPct;
@@ -342,10 +442,13 @@ function tdsPctForMethod(method){
   if(method==="PhonePe") return c.phonepeTdsPct;
   return c.upiTdsPct;
 }
-function isFeeOpt(opt){ return opt===2 || opt===5; } // fee-based (no TDS) methods: PayPal, Binance
-function isFeeMethod(method){ return method==="PayPal" || method==="Binance"; }
-function feePctFor(opt){ const c = cfg(); return opt===5 ? c.binanceFeePct : c.paypalFeePct; }
-function feePctForMethod(method){ const c = cfg(); return method==="Binance" ? cfg().binanceFeePct : cfg().paypalFeePct; }
+function isFeeOpt(opt){ return opt===2 || opt===5 || opt===6; } // fee-based (no TDS) methods: PayPal, Binance
+function isFeeMethod(method){ return method==="PayPal" || method==="Binance" || method==="Bybit"; }
+function bybitFee(){ const v = cfg().bybitFeePct; return (typeof v==='number' && v>=0) ? v : 6; } // Bybit processing fee (admin-set, default 6%)
+function isUsdtOpt(o){ return o===5 || o===6; }
+function isUsdtMethod(m){ return m==="Binance" || m==="Bybit"; }
+function feePctFor(opt){ const c = cfg(); return opt===6 ? bybitFee() : opt===5 ? c.binanceFeePct : c.paypalFeePct; }
+function feePctForMethod(method){ const c = cfg(); return method==="Bybit" ? bybitFee() : method==="Binance" ? cfg().binanceFeePct : cfg().paypalFeePct; }
 const now = () => Date.now(), MIN = 60000;
 function defaultConfig(){ return {
   rate: 1500, // coins per $1
@@ -362,6 +465,8 @@ function defaultConfig(){ return {
   presetAmounts: [1.32,2.50,3.50,5.50,7,10],
   upiEnabled: true, upiTdsPct: 30, paypalEnabled: true, paypalFeePct: 18, usdToInr: 83,
   binanceEnabled: true, binanceFeePct: 6,
+  bybitEnabled: true, bybitFeePct: 6,
+  manualTours: [], // admin-created extra tournaments [{id,g,pool,min}]
   paytmEnabled: true, phonepeEnabled: true, paytmTdsPct: 30, phonepeTdsPct: 30,
   tourDurationMin: 30,
   gamesEnabled: {arctic:true,hoop:true,loop:true,colorbounce:true,bubble:true,drive:true,shooter:true,knife:true,blockmatch:true,dollar:true,candle:true,dollarbox:true},
@@ -394,7 +499,7 @@ function defaultConfig(){ return {
   payoutMerchantId: "",
   payoutWebhookUrl: ""
 }; }
-function cfg(){ return (S && S.config) || defaultConfig(); }
+function cfg(){ return RCFG || (S && S.config) || defaultConfig(); }
 function minCoins(){ return Math.round(cfg().minWithdrawUsd*cfg().rate); }
 function maxCoins(){ return Math.round(cfg().maxWithdrawUsd*cfg().rate); }
 function wdInTimeWindow(){
@@ -422,11 +527,77 @@ function wdCountLeft(){
   return Math.max(0, (cfg().wdMaxPerDay||1) - used);
 }
 function wdAvailable(){ return wdInTimeWindow() && wdDayOk() && wdCountLeft()>0; }
-let S = load() || null, tab = "home", sub = "matches", cap = "", adminOn = false, lbShown = 100;
+let S = load() || null, tab = "home", sub = "matches", cap = "", lbShown = 100;
+
+// ===== Google Sheets: public URL (holds NO secret). Build workflow injects the real URL. =====
+const SHEETS_URL = "";
+// ===== Remote settings (Sheet "Config" tab) - admin edits there, every user app reads them =====
+function mergeDeep(b, o){
+  if(Array.isArray(o)) return o.slice();
+  if(o && typeof o === "object"){
+    const r = (b && typeof b === "object" && !Array.isArray(b)) ? {...b} : {};
+    Object.keys(o).forEach(k=>{ if(k==="__proto__"||k==="constructor"||k==="prototype") return; r[k] = mergeDeep(r[k], o[k]); });
+    return r;
+  }
+  return o === undefined ? b : o;
+}
+function defaultAdConfig(){ return {on:true, id:"", bannerId:"", interstitialId:"", rewardedId:"", network:"mediation", unityOn:true,
+  networks:{admob:{bannerId:"",interstitialId:"",rewardedId:""}, unity:{gameId:"",bannerId:"",interstitialId:"",rewardedId:""}, applovin:{bannerId:"",interstitialId:"",rewardedId:""}},
+  screens:{home:true,matches:true,promo:true,wallet:true,profile:true,game:true}}; }
+let RCFG = null, RADS = null, RPROMOS = null, lastRemoteJson = "";
+function setRemote(doc){
+  RCFG = mergeDeep(defaultConfig(), doc.config || {});
+  RADS = mergeDeep(defaultAdConfig(), doc.adConfig || {});
+  RPROMOS = (doc.promos && typeof doc.promos === "object") ? doc.promos : null;
+}
+function applyRemoteToS(){ if(!S) return; if(RCFG) S.config = RCFG; if(RADS) S.adConfig = RADS; if(RPROMOS) S.promos = RPROMOS; }
+try{ const r = JSON.parse(localStorage.getItem("esp_remote") || "null"); if(r && r.doc){ setRemote(r.doc); lastRemoteJson = JSON.stringify(r.doc); } }catch(e){}
+var rpBusy = false;
+async function remotePull(){
+  if(!SHEETS_URL || rpBusy) return; rpBusy = true;
+  try{
+    const d = await sheetsCall({action:"config"});
+    if(d && d.ok && d.doc){
+      const j = JSON.stringify(d.doc);
+      if(j !== lastRemoteJson){
+        lastRemoteJson = j; setRemote(d.doc);
+        try{ localStorage.setItem("esp_remote", JSON.stringify({doc:d.doc})); }catch(e){}
+        applyRemoteToS(); reconcileTours(); if(S) save();
+        const ae = document.activeElement;
+        if(!(typeof G!=="undefined" && G) && !(ae && /INPUT|TEXTAREA|SELECT/.test(ae.tagName)) && typeof render==="function") render();
+      }
+    }
+  }catch(e){}
+  rpBusy = false;
+}
+setInterval(remotePull, 300000);
+document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) remotePull(); });
+// ===== Users tab sync (display-only profile; never used to pay anyone) + ban enforcement =====
+var usT = null, usLast = 0;
+function userSyncQueue(){ if(!SHEETS_URL || !S || S.isGuest || !S.phone || usT) return; usT = setTimeout(()=>{ usT = null; userSyncNow(); }, 20000); }
+async function userSyncNow(){
+  if(!SHEETS_URL || !S || S.isGuest || !S.phone) return;
+  usLast = Date.now();
+  try{
+    const d = await sheetsCall({action:"userSync", mobile:S.phone, name:S.name||"", coins:S.coins||0, rp:S.rp||0, code:S.code||"", country:S.countryId||""});
+    if(d && d.ok){
+      if(d.banned && !S.banned){ S.banned = true; saveLocal(); showBan(); }
+      else if(!d.banned && S.banned){ S.banned = false; saveLocal(); hideBan(); }
+    }
+  }catch(e){}
+}
+function showBan(){
+  if(document.getElementById("banGate")) return;
+  const o = document.createElement("div"); o.id = "banGate";
+  o.style.cssText = "position:fixed;inset:0;z-index:2147483200;background:#160c2e;color:#f3ecff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:30px;text-align:center;font-family:inherit";
+  o.innerHTML = '<div style="font-size:54px">🚫</div><div style="font-size:18px;font-weight:800">Account blocked</div><div style="font-size:13px;opacity:.75">Is number ko admin ne block kar diya hai. Support se sampark karo.</div>';
+  document.body.appendChild(o);
+}
+function hideBan(){ const o = document.getElementById("banGate"); if(o) o.remove(); }
 
 function load(){ try{ return JSON.parse(localStorage.getItem("esp_app")); }catch(e){ return null; } }
 function saveLocal(){ try{ localStorage.setItem("esp_app", JSON.stringify(S)); }catch(e){} }
-function save(){ saveLocal(); cloudQueue(); }
+function save(){ saveLocal(); cloudQueue(); userSyncQueue(); }
 
 // ===== ☁️ Cloud Sync (progress + tournament scores) =====
 // SECURITY: only the PUBLIC API base URL lives here. No secret keys of any kind (SMS / payout / admin) are ever
@@ -619,6 +790,7 @@ function showPrizes(){
     <div class="row" style="margin-bottom:10px"><h3 style="margin:0">🏆 Top 50 Prize Split</h3><button class="btn s sm" onclick="document.getElementById('pz').remove()">✕</button></div>${rows}</div>`;
   document.body.appendChild(o);
 }
+applyRemoteToS();
 if(S && !S.tours){ S.tours = seedT(); S.rp = 0; S.best = {}; save(); }
 if(S && !S.promos){ S.promos = {"111111":500,"222222":1000,"555555":2500,"999999":5000}; save(); }
 if(S && !S.adConfig){ S.adConfig = {on:true, id:""}; save(); }
@@ -672,7 +844,8 @@ function noticeBanner(screen){
     <div style="font-size:18px;font-weight:900;color:#fff;letter-spacing:.3px;line-height:1.4;text-shadow:0 1px 2px rgba(0,0,0,.4)">⚠️ ${esc(c.noticeText)}</div>
   </div>`;
 }
-if(S && S.tours){
+function reconcileTours(){
+  if(!(S && S.tours)) return;
   let fixed = false;
   const enabled = cfg().gamesEnabled||{};
   // add newly-enabled games that aren't owned yet
@@ -684,9 +857,15 @@ if(S && S.tours){
   // admin changed the tournament duration -> apply it to all active tournaments' timers
   if(S.tourDurApplied !== cfg().tourDurationMin){ S.tours.forEach(t=>{ t.end = now()+(cfg().tourDurationMin||30)*MIN; }); S.tourDurApplied = cfg().tourDurationMin; fixed = true; }
   // admin changed a game's prize pool -> sync it onto the live tournament
-  S.tours.forEach(t=>{ const p = cfg().gamePools && cfg().gamePools[t.g]; if(p && t.pool!==p){ t.pool = p; fixed = true; } });
+  S.tours.forEach(t=>{ const p = cfg().gamePools && cfg().gamePools[t.g]; if(p && !t.manual && t.pool!==p){ t.pool = p; fixed = true; } });
+  // admin-created manual tournaments: add new ones, drop the ones admin deleted
+  const mts = (cfg().manualTours||[]).filter(m=>m && GAME_CANON[m.g] && enabled[m.g]!==false);
+  mts.forEach(m=>{ if(!S.tours.some(t=>t.id===m.id)){ S.tours.push({id:m.id, g:m.g, name:GAME_CANON[m.g].name, split:"Top 50", pool:m.pool, manual:true, end:now()+(m.min||60)*MIN}); fixed = true; } });
+  const keep = S.tours.filter(t=>!t.manual || mts.some(m=>m.id===t.id)); if(keep.length!==S.tours.length){ S.tours = keep; fixed = true; }
   if(fixed) save();
 }
+applyRemoteToS();
+reconcileTours();
 function payoutTournament(t){
   const my = S.best[t.id]||0; if(my<=0) return;
   const list = genReport(t);
@@ -741,12 +920,13 @@ function resendOtp(){
   render();
 }
 function backToPhone(){ otpStep = 1; render(); }
-function verifyOtp(){
+async function verifyOtp(){
   const entered = $("#lo").value.trim();
   if(!/^\d{6}$/.test(entered)) return $("#lm").textContent = "6 digit OTP daalo";
   if(entered !== genOtp) return $("#lm").textContent = "Galat OTP, dobara try karo";
   const {name, cc, countryId, ph, ref} = pendingSignup, fullPhone = cc+" "+ph;
   if(loadBans().includes(fullPhone)){ $("#lm").textContent = "Yeh number banned hai, login nahi ho sakta"; return; }
+  if(SHEETS_URL){ try{ const bd = await sheetsCall({action:"checkBan", mobile:fullPhone}); if(bd && bd.banned){ $("#lm").textContent = "Yeh number banned hai, login nahi ho sakta"; return; } }catch(e){} }
   S = {name, phone:fullPhone, cc, countryId, coins:100 + (ref?50:0), code:"ESP"+Math.floor(1000+Math.random()*9000), lastBonus:"", joined:{}, tours:seedT(), rp:0, best:{}, wd:[], streak:0,
     config: defaultConfig(), adConfig:{on:true, id:"", bannerId:"", interstitialId:"", rewardedId:"", network:"mediation",
       networks:{admob:{bannerId:"",interstitialId:"",rewardedId:""}, unity:{gameId:"",bannerId:"",interstitialId:"",rewardedId:""}, applovin:{bannerId:"",interstitialId:"",rewardedId:""}},
@@ -755,8 +935,9 @@ function verifyOtp(){
   const accounts = loadAccounts(), existing = accounts[fullPhone];
   if(existing){ S.coins = existing.coins||0; S.code = existing.code || S.code; S.rp = 0; }
   otpStep = 1; genOtp = ""; pendingSignup = null;
+  applyRemoteToS(); reconcileTours();
   save(); tab="home"; render();
-  cloudRegister();
+  cloudRegister(); userSyncNow();
 }
 function loginAsGuest(){
   S = {name:"Guest", phone:"", cc:"", isGuest:true, coins:100, code:"GUEST"+Math.floor(1000+Math.random()*9000), lastBonus:"", joined:{}, tours:seedT(), rp:0, best:{}, wd:[], streak:0,
@@ -764,6 +945,7 @@ function loginAsGuest(){
       networks:{admob:{bannerId:"",interstitialId:"",rewardedId:""}, unity:{gameId:"",bannerId:"",interstitialId:"",rewardedId:""}, applovin:{bannerId:"",interstitialId:"",rewardedId:""}},
       screens:{home:true,matches:true,promo:true,wallet:true,profile:true,game:true}}};
   // Guest coins/progress sirf is device/session tak hi rehte hain — koi phone number nahi, isliye accounts registry mein save nahi hota
+  applyRemoteToS(); reconcileTours();
   save(); tab="home"; render();
 }
 function toast(t,ok=true){ const m=$("#msg"); if(m){ m.textContent=t; m.className="msg "+(ok?"ok":"err"); } }
@@ -804,7 +986,7 @@ function render(){
     <button class="btn s" onclick="loginAsGuest()">👤 Continue as Guest</button>
     <div class="mut" style="text-align:center;margin-top:6px;font-size:12px">Guest sirf games khel sakta hai — withdrawal ke liye real number se login zaroori hai</div>
     <p class="mut" style="text-align:center;margin-top:14px">Mobile number 6-digit OTP se verify hoga. Demo mode: real SMS backend ke saath lagega.</p></div>`; return; }
-  r.innerHTML = `<header><div class="logo" onclick="logoTap()">ESPORTS<span>REWARD</span></div><div class="bal">${balText()}</div></header>
+  r.innerHTML = `<header><div class="logo">ESPORTS<span>REWARD</span></div><div class="bal">${balText()}</div></header>
     <main id="view"></main>
     <nav>${[["home","🏠","Home"],["play","🎮","Matches"],["promo","🎟️","Promo"],["wallet","💰","Wallet"],["me","👤","Profile"]].map(t=>`<button class="${tab===t[0]?"on":""}" onclick="tab='${t[0]}';render()"><span>${t[1]}</span>${t[2]}</button>`).join("")}</nav>`;
   ({home,play,promo,wallet,me}[tab])();
@@ -1087,14 +1269,14 @@ function openGame(t){
   const gameAdBox = gameAdOn ? `<div style="width:min(320px,92vw);min-height:50px;margin-top:4px;margin-bottom:2px;border:1px dashed #555;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#888;background:#ffffff0a">${S.adConfig.bannerId?"Banner Ad • "+esc(S.adConfig.bannerId):"Banner Ad (320x50)"}</div>` : "";
   o.innerHTML = `<div style="width:min(320px,92vw);display:flex;justify-content:space-between;align-items:center;font-weight:700"><span>${esc(t.name)}</span><span id="gs">Score: 0</span><button onclick="closeGame()" style="background:#ffffff22;border:none;color:#fff;border-radius:8px;padding:6px 10px;font-size:16px">✕</button></div>
     ${gameAdBox}
-    <div style="position:relative"><canvas id="gc" width="320" height="480" style="width:min(320px,92vw);height:auto;border-radius:14px;touch-action:none;display:block"></canvas><div id="gh" style="position:absolute;left:0;right:0;bottom:12px;text-align:center;font-size:13px;opacity:.9"></div></div>`;
+    <div style="position:relative"><canvas id="gc" width="320" height="480" style="width:min(320px,92vw);height:auto;border-radius:14px;touch-action:none;display:block"></canvas><div id="gh" style="position:absolute;left:0;right:0;bottom:12px;text-align:center;font-size:13px;opacity:.9;pointer-events:none"></div></div>`;
   document.body.appendChild(o);
   const c = $("#gc");
   G = {t, score:0, over:false, tx:160, ty:240, frame:0, ice:[], time:30, ball:null, raf:0, c, x:c.getContext("2d"), sx:160, sy:240, mt:0,
        lane:1, obst:[], gems:[], target:null, left:true, colors:["#ff5c5c","#3ddc97","#3b82f6","#ffb020"],
        startMs:now(), bullets:[], roids:[], knifeRot:0, knifeRotSpeed:0.028, stuck:[], grid:null, bmTime:60};
   $("#gh").textContent = ({
-    hoop:"Tap karo jahan se ball fenkni hai • Hoop mein daalo (30s)",
+    hoop:"Ball ko ungli se left-right ghumao, ungli uthate hi ball jayegi • Hoop mein daalo (30s)",
     arctic:"Screen par drag karo • Icebergs se bacho!",
     loop:"Left/Right tap karo • Lane badlo, obstacles se bacho, gems lo!",
     colorbounce:"Upar wale color se match karta hua side jaldi tap karo!",
@@ -1107,17 +1289,30 @@ function openGame(t){
     candle:"Left/Right drag karo • Green candle par jump karke upar jao • Red candle par land mat karo, neeche mat girna!",
     dollarbox:"Box ko left/right drag karo • 💵 dollar pakdo (+50 har dollar) • 🔴 red ball box mein aayi to game over • 3 dollar miss = game over!"
   })[t.g];
-  const pos = e => { const r = c.getBoundingClientRect(); return (e.clientX-r.left)*320/r.width; };
-  const posY = e => { const r = c.getBoundingClientRect(); return (e.clientY-r.top)*480/r.height; };
-  c.onpointermove = e => { G.tx = pos(e); G.ty = posY(e); };
-  c.onpointerdown = e => {
-    G.tx = pos(e); G.ty = posY(e);
-    if(t.g==="hoop" && !G.ball && !G.over) G.ball = {x:G.tx,y:430,f:0};
+  let rc = c.getBoundingClientRect(); const refreshRc = () => { rc = c.getBoundingClientRect(); };
+  addEventListener("resize", refreshRc);
+  // ---- Touch / drag input: pointer events + touch events together so dragging works in every WebView ----
+  const setXY = (cx, cy) => { G.tx = (cx-rc.left)*320/rc.width; G.ty = (cy-rc.top)*480/rc.height; };
+  const onDown = (cx, cy) => {
+    const t0 = performance.now(); G.sawDown = true; if(t0 - (G.lastDown||0) < 60) return; G.lastDown = t0; // pointerdown + touchstart both fire: run once
+    refreshRc(); setXY(cx, cy);
+    if(t.g==="hoop" && !G.ball && !G.over) G.hold = true; // hoop: ball follows the finger, released on lift
     if((t.g==="loop"||t.g==="drive") && !G.over) G.lane = G.tx < 107 ? 0 : (G.tx < 213 ? 1 : 2);
     if(t.g==="colorbounce" && !G.over) checkColorTap(G.tx < 160 ? 0 : 1);
     if(t.g==="knife" && !G.over) throwKnife();
     if(t.g==="blockmatch" && !G.over) tapBlock(G.tx, G.ty);
   };
+  const onUp = () => { if(t.g==="hoop" && G && G.hold && !G.ball && !G.over){ G.hold = false; G.ball = {x:G.tx,y:430,f:0}; } else if(G) G.hold = false; };
+  c.style.touchAction = "none"; c.style.userSelect = "none"; c.style.webkitUserSelect = "none"; c.style.webkitTouchCallout = "none";
+  c.onpointerdown = e => { try{ c.setPointerCapture(e.pointerId); }catch(_){} onDown(e.clientX, e.clientY); };
+  c.onpointermove = e => setXY(e.clientX, e.clientY);
+  c.onpointerup = onUp; c.onpointercancel = onUp;
+  c.addEventListener("touchstart", e => { e.preventDefault(); const q = e.touches[0]; if(q) onDown(q.clientX, q.clientY); }, {passive:false});
+  c.addEventListener("touchend", e => { e.preventDefault(); onUp(); }, {passive:false}); c.addEventListener("touchcancel", onUp);
+  c.addEventListener("mousedown", e => onDown(e.clientX, e.clientY)); c.addEventListener("mouseup", onUp);
+  c.addEventListener("mousemove", e => setXY(e.clientX, e.clientY));
+  c.addEventListener("click", e => { if(!G || G.sawDown) return; onDown(e.clientX, e.clientY); onUp(); }); // last-resort: environments that only deliver tap/click
+  c.addEventListener("touchmove", e => { e.preventDefault(); const q = e.touches[0]; if(q) setXY(q.clientX, q.clientY); }, {passive:false});
   if(t.g==="dollar"||t.g==="candle"||t.g==="dollarbox"){
     G.kd = e => { if(e.key==="ArrowLeft"||e.key==="a") G.keyL = true; if(e.key==="ArrowRight"||e.key==="d") G.keyR = true; };
     G.ku = e => { if(e.key==="ArrowLeft"||e.key==="a") G.keyL = false; if(e.key==="ArrowRight"||e.key==="d") G.keyR = false; };
@@ -1125,17 +1320,27 @@ function openGame(t){
   }
   loop();
 }
-function loop(){
-  if(!G || G.over) return; G.frame++; G.x.clearRect(0,0,320,480);
-  ({hoop:hoopStep, arctic:arcticStep, loop:loopStep, colorbounce:colorbounceStep, bubble:bubbleStep, drive:driveStep, shooter:shooterStep, knife:knifeStep, blockmatch:blockmatchStep, dollar:dollarStep, candle:candleStep, dollarbox:dollarboxStep})[G.t.g]();
-  const gs = $("#gs"); if(gs && G) gs.textContent = "Score: "+Math.floor(G.score);
-  if(G && !G.over) G.raf = requestAnimationFrame(loop);
+function loop(ts){
+  if(!G || G.over) return;
+  if(ts === undefined) ts = performance.now();
+  if(G.lastTs == null) G.lastTs = ts - 16.7;
+  G.acc = (G.acc||0) + Math.min(100, ts - G.lastTs); G.lastTs = ts;
+  let steps = 0;
+  while(G && !G.over && G.acc >= 16.0 && steps < 3){
+    G.acc -= 16.667; steps++; G.frame++; G.x.clearRect(0,0,320,480);
+    ({hoop:hoopStep, arctic:arcticStep, loop:loopStep, colorbounce:colorbounceStep, bubble:bubbleStep, drive:driveStep, shooter:shooterStep, knife:knifeStep, blockmatch:blockmatchStep, dollar:dollarStep, candle:candleStep, dollarbox:dollarboxStep})[G.t.g]();
+  }
+  if(G){
+    const sc = Math.floor(G.score);
+    if(sc !== G.shown){ G.shown = sc; const gs = $("#gs"); if(gs) gs.textContent = "Score: "+sc; }
+    if(!G.over) G.raf = requestAnimationFrame(loop);
+  }
 }
 function arcticStep(){
   const x = G.x;
   if(!G.bgGrad){ G.bgGrad = x.createLinearGradient(0,0,0,480); G.bgGrad.addColorStop(0,"#0e7490"); G.bgGrad.addColorStop(1,"#082f49"); }
   x.fillStyle = G.bgGrad; x.fillRect(0,0,320,480);
-  G.tx = Math.max(24, Math.min(296, G.tx)); G.sx += (G.tx-G.sx)*0.2; G.sx = Math.max(24, Math.min(296, G.sx));
+  G.tx = Math.max(24, Math.min(296, G.tx)); G.sx = G.tx; // character follows the finger instantly
   if(Math.random() < 0.014+Math.min(0.025,G.score/3000)) G.ice.push({x:20+Math.random()*280,y:-20,r:10+Math.random()*10,v:2+Math.random()*1.2+G.score/400});
   G.ice.forEach(i=>{ i.y += i.v; x.fillStyle = "#e0f7ff"; x.beginPath(); x.arc(i.x,i.y,i.r,0,7); x.fill(); if(Math.hypot(i.x-G.sx,i.y-430) < i.r+12) G.over = true; });
   G.ice = G.ice.filter(i=>i.y<520); G.score += 0.1;
@@ -1201,7 +1406,7 @@ function bubbleStep(){
   const x = G.x;
   if(!G.bgGrad2){ G.bgGrad2 = x.createLinearGradient(0,0,0,480); G.bgGrad2.addColorStop(0,"#1e3a8a"); G.bgGrad2.addColorStop(1,"#4c1d95"); }
   x.fillStyle = G.bgGrad2; x.fillRect(0,0,320,480);
-  G.tx = Math.max(24,Math.min(296,G.tx)); G.sx += (G.tx-G.sx)*0.2; G.sx = Math.max(24,Math.min(296,G.sx));
+  G.tx = Math.max(24,Math.min(296,G.tx)); G.sx = G.tx; // character follows the finger instantly
   if(Math.random() < 0.025+Math.min(0.03,G.score/1800)) G.ice.push({x:20+Math.random()*280,y:-20,r:10+Math.random()*12,v:2.2+Math.random()*1.3+G.score/350});
   G.ice = G.ice.filter(i=>{
     i.y += i.v; x.fillStyle = "#f87171"; x.beginPath(); x.arc(i.x,i.y,i.r,0,7); x.fill();
@@ -1377,7 +1582,7 @@ function dollarStep(){
   // controls: drag/touch/mouse sets G.tx; arrow keys nudge it
   if(G.keyL) G.tx -= 6; if(G.keyR) G.tx += 6;
   G.tx = Math.max(22, Math.min(298, G.tx));
-  G.sx += (G.tx-G.sx)*0.35;
+  G.sx = G.tx;
   const py = 436;
   // spawn: ~62% green (bull), ~38% red (bear); faster + denser as score grows
   if(!G.over){
@@ -1426,7 +1631,7 @@ function candleStep(){
     D.plats.forEach(p=>{ if(p.mv){ p.mv.t += p.mv.sp; p.x = p.bx + Math.sin(p.mv.t+p.mv.ph)*p.mv.amp; } });
     if(G.keyL) G.tx -= 6; if(G.keyR) G.tx += 6;
     G.tx = Math.max(16, Math.min(304, G.tx));
-    D.px += (G.tx-D.px)*0.22; D.px = Math.max(14, Math.min(306, D.px));
+    D.px = Math.max(14, Math.min(306, G.tx));
     const prevBottom = D.py + 14;
     D.vy += 0.38; D.py += D.vy;
     if(D.vy > 0){
@@ -1492,7 +1697,7 @@ function dollarboxStep(){
   if(G.keyL) G.tx -= 6; if(G.keyR) G.tx += 6;
   const bw = Math.max(46, 70 - n*0.7);              // box chhota hota jaata hai
   G.tx = Math.max(bw/2, Math.min(320-bw/2, G.tx));
-  G.sx += (G.tx-G.sx)*0.35;
+  G.sx = G.tx;
   const boxTop = 424;
   if(!G.over){
     D.cd--;
@@ -1567,7 +1772,7 @@ function bank(){
 }
 function gameOver(){
   const t = G.t, sc = bank(), gh = $("#gh");
-  gh.style.bottom = "auto"; gh.style.top = "30px";
+  gh.style.bottom = "auto"; gh.style.top = "30px"; gh.style.pointerEvents = "auto";
   const list = genReport(t);
   let rank = list.findIndex(e=>sc>=e.score); if(rank===-1) rank = list.length;
   const confetti = [0,1,2,3,4,5].map(i=>`<div style="position:absolute;top:${5+i*4}%;left:${8+i*15}%;font-size:18px;transform:rotate(${i*35}deg)">${["🎈","🎊","⭐","🎶","🎉","✨"][i]}</div>`).join("");
@@ -1579,15 +1784,15 @@ function gameOver(){
       <div style="flex:1;background:#dbeafe;border-radius:12px;padding:10px"><div style="font-size:10px;color:#1e3a8a;font-weight:800;letter-spacing:.5px">YOU SCORED</div><div style="font-size:22px;font-weight:900;color:#1e3a8a">🏅 ${sc}</div></div>
       <div style="flex:1;background:#bbf7d0;border-radius:12px;padding:10px"><div style="font-size:10px;color:#14532d;font-weight:800;letter-spacing:.5px">TOURNAMENT RANK</div><div style="font-size:22px;font-weight:900;color:#14532d">🏆 #${rank+1}</div></div>
     </div>
-    ${sc>0?`<div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:4px">
+    ${true?`<div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:4px">
       <button class="btn" id="boostBtn" style="background:linear-gradient(180deg,#ffe488,#f5a300);color:#3a1f00;font-weight:900;font-size:20px;flex:1;max-width:180px" onclick="claim2x(${sc},${t.id})">2×</button>
       <div style="background:#22c55e;color:#fff;font-size:11px;font-weight:800;padding:5px 10px;border-radius:8px;display:flex;align-items:center;gap:3px">🎬 ADS</div>
     </div>`:""}
-    <button class="btn s" style="width:100%;margin-top:10px;background:#ffffff22;color:#fff" onclick="closeGame();playT(${t.id})">Play Again</button>
+    <button class="btn s" style="width:100%;margin-top:10px;background:#ffffff22;color:#fff" onclick="closeGame()">Skip Ads</button>
   </div>`;
   rpAdTick();
 }
-function rpAdLeft(){ return Math.max(0, ((S.lastRpAd||0) + (cfg().rpAdCooldownMin||3)*MIN) - now()); }
+function rpAdLeft(){ return 0; } // cooldown removed
 let rpAdIv = null;
 function rpAdTick(){
   clearInterval(rpAdIv);
@@ -1601,6 +1806,7 @@ function rpAdTick(){
   upd(); rpAdIv = setInterval(upd, 1000);
 }
 function claim2x(sc, id){
+  if(sc<=0) return toast("Score 0 hai, double karne ke liye pehle score banao", false);
   if(rpAdLeft()>0) return;
   const mult = 2;
   const el0 = (G && G.elapsedSec) || 0.5;
@@ -1650,7 +1856,7 @@ function wallet(){
   }
   const notify = S.wdNotify, c = cfg();
   const upiOn = c.upiEnabled!==false, paypalOn = c.paypalEnabled!==false, paytmOn = c.paytmEnabled!==false, phonepeOn = c.phonepeEnabled!==false, binanceOn = c.binanceEnabled!==false;
-  const enabledOpts = [upiOn&&1, paypalOn&&2, paytmOn&&3, phonepeOn&&4, binanceOn&&5].filter(Boolean);
+  const enabledOpts = [upiOn&&1, paypalOn&&2, paytmOn&&3, phonepeOn&&4, binanceOn&&5, 6].filter(Boolean);
   if(!window.opt || !enabledOpts.includes(window.opt)) window.opt = enabledOpts[0] || 1;
   const presets = (c.presetAmounts&&c.presetAmounts.length) ? c.presetAmounts : defaultConfig().presetAmounts;
   const isINR = !isFeeOpt(window.opt);
@@ -1684,19 +1890,21 @@ function wallet(){
       ${paytmOn?`<button class="chip ${window.opt==3?"on":""}" id="o3" onclick="setOpt(3)" style="display:flex;align-items:center;gap:5px"><span style="background:#002e6e;color:#00baf2;font-weight:900;font-style:italic;font-size:12px;padding:1px 6px;border-radius:4px">Paytm</span></button>`:""}
       ${phonepeOn?`<button class="chip ${window.opt==4?"on":""}" id="o4" onclick="setOpt(4)" style="display:flex;align-items:center;gap:5px"><span style="background:#5f259f;color:#fff;font-weight:900;font-size:12px;padding:1px 6px;border-radius:4px">Phone<span style="color:#ffe082">Pe</span></span></button>`:""}
     </div>`:""}
-    ${(paypalOn||binanceOn)?`<div class="mut" style="margin-bottom:6px">🌍 International</div>
+    ${true?`<div class="mut" style="margin-bottom:6px">🌍 International</div>
     <div class="chips" style="flex-wrap:wrap">
       ${paypalOn?`<button class="chip ${window.opt==2?"on":""}" id="o2" onclick="setOpt(2)" style="display:flex;align-items:center;gap:5px"><span style="background:#003087;color:#fff;font-weight:900;font-style:italic;font-size:12px;padding:1px 5px;border-radius:4px">Pay<span style="color:#009cde">Pal</span></span> (Processing Fee ${c.paypalFeePct}%)</button>`:""}
       ${binanceOn?`<button class="chip ${window.opt==5?"on":""}" id="o5" onclick="setOpt(5)" style="display:flex;align-items:center;gap:5px"><span style="background:#0B0E11;color:#F3BA2F;font-weight:900;font-size:12px;padding:1px 6px;border-radius:4px">Binance</span> (Processing Fee ${c.binanceFeePct}%)</button>`:""}
+      ${c.bybitEnabled!==false?`<button class="chip ${window.opt==6?"on":""}" id="o6" onclick="setOpt(6)" style="display:flex;align-items:center;gap:5px"><span style="background:#0B0E11;color:#F7A600;font-weight:900;font-size:12px;padding:1px 6px;border-radius:4px">Bybit</span> (Processing Fee ${bybitFee()}%)</button>`:""}
     </div>`:""}
-    <input id="wa" placeholder="${({1:"UPI ID (name@upi)",2:"PayPal Email",3:"Paytm Number / UPI ID",4:"PhonePe Number / UPI ID",5:"Binance Pay ID / Email"})[window.opt]}">
+    <input id="wa" placeholder="${({1:"UPI ID (name@upi)",2:"PayPal Email",3:"Paytm Number / UPI ID",4:"PhonePe Number / UPI ID",5:"Binance Pay ID / Email",6:"Bybit UID / Email"})[window.opt]}">
     ${domesticWrap(1)}
     ${internationalWrap(2)}
     ${domesticWrap(3)}
     ${domesticWrap(4)}
     ${internationalWrap(5)}
+    ${internationalWrap(6)}
     <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">${presets.map(d=>{
-      const label = isINR ? `₹${Math.round(d*c.usdToInr).toLocaleString("en-IN")}` : (window.opt===5?`USDT ${d}`:`$${d}`);
+      const label = isINR ? `₹${Math.round(d*c.usdToInr).toLocaleString("en-IN")}` : (isUsdtOpt(window.opt)?`USDT ${d}`:`$${d}`);
       return `<button class="chip" style="flex:1 1 auto;min-width:56px;text-align:center" onclick="setAmt(${d})">${label}</button>`;
     }).join("")}</div>
     <input id="wc" placeholder="Upar se ek amount choose karo" readonly style="cursor:not-allowed;opacity:.85">
@@ -1709,7 +1917,7 @@ function wallet(){
       const inr = usd => Math.round(parseFloat(usd)*cfg().usdToInr).toLocaleString("en-IN");
       const mainLine = !isFeeMethod(w.method)
         ? `${esc(w.method)} • ₹${inr(w.net)} net <span class="mut">(req ₹${inr(w.requested)}, TDS ${tdsPctForMethod(w.method)}%: ₹${inr(w.tds)})</span>`
-        : `${esc(w.method)} • ${w.method==="Binance"?"USDT ":"$"}${w.net} net <span class="mut">(req ${w.method==="Binance"?"USDT ":"$"}${w.requested}, TDS: N/A)</span>`;
+        : `${esc(w.method)} • ${isUsdtMethod(w.method)?"USDT ":"$"}${w.net} net <span class="mut">(req ${isUsdtMethod(w.method)?"USDT ":"$"}${w.requested}, TDS: N/A)</span>`;
       return `<div class="lb" style="flex-wrap:wrap"><span class="n">${mainLine}${w.mobile?`<br><span class="mut">📱 ${esc(w.mobile)}</span>`:""}${w.utr?`<br><span class="mut">UTR: ${esc(w.utr)}</span>`:""}</span><span style="color:${badge[1]};font-weight:700;font-size:12px">${badge[0]}</span></div>`;
     }).join(""):`<div class="mut">Abhi koi request nahi.</div>`}`;
   if(notify){ S.wdNotify = null; save(); }
@@ -1750,20 +1958,70 @@ function resetWdOtp(opt){
 function setAmt(d){
   const coins = Math.round(d*cfg().rate), isINR = !isFeeOpt(window.opt);
   $("#wcCoins").value = coins;
-  $("#wc").value = isINR ? `₹${Math.round(d*cfg().usdToInr).toLocaleString("en-IN")} (${coins} coins)` : `${window.opt===5?"USDT "+d:"$"+d} (${coins} coins)`;
+  $("#wc").value = isINR ? `₹${Math.round(d*cfg().usdToInr).toLocaleString("en-IN")} (${coins} coins)` : `${isUsdtOpt(window.opt)?"USDT "+d:"$"+d} (${coins} coins)`;
   updateWcUsd();
 }
 function updateWcUsd(){
   const c = parseInt($("#wcCoins").value,10)||0, gross = c/cfg().rate, el = $("#wcUsd");
   if(!el) return;
   if(isFeeOpt(window.opt)){
-    const feePct = feePctFor(window.opt), net = gross*(1-feePct/100), sym = window.opt===5?"USDT ":"$";
+    const feePct = feePctFor(window.opt), net = gross*(1-feePct/100), sym = isUsdtOpt(window.opt)?"USDT ":"$";
     el.textContent = `≈ ${sym}${gross.toFixed(2)} − Processing Fee ${feePct}% = ${sym}${net.toFixed(2)} milega`;
   } else {
     const tdsPct = tdsPctFor(window.opt), grossInr = gross*cfg().usdToInr, tdsInr = grossInr*(tdsPct/100), netInr = grossInr-tdsInr;
     el.textContent = `≈ ₹${grossInr.toLocaleString("en-IN",{maximumFractionDigits:0})} − TDS ${tdsPct}% (₹${tdsInr.toLocaleString("en-IN",{maximumFractionDigits:0})}) = ₹${netInr.toLocaleString("en-IN",{maximumFractionDigits:0})} milega`;
   }
 }
+// ===== Google Sheets backend (withdrawal requests) =====
+// Paste your Apps Script Web App URL below. This URL is public by design: it holds NO secret.
+// Admin actions need the owner's PIN, which lives only in the Apps Script project, never in this app.
+async function sheetsCall(body){
+  const r = await fetch(SHEETS_URL, {method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify(body)});
+  return await r.json();
+}
+function wdCurrency(m){ return m==="PayPal" ? "USD" : isUsdtMethod(m) ? "USDT" : "INR"; }
+async function sendWdToSheet(w){
+  if(!SHEETS_URL || w.sheetSent || w.refunded) return;
+  try{
+    // Sheet amounts are in the PAYOUT currency: INR for UPI/Paytm/PhonePe (what the user saw), USD for PayPal, USDT for Binance/Bybit.
+    const mult = isFeeMethod(w.method) ? 1 : (w.inrRate || cfg().usdToInr || 83);
+    const fx = v => { const n = parseFloat(v)*mult; return isFeeMethod(w.method) ? +n.toFixed(2) : Math.round(n); };
+    const d = await sheetsCall({action:"submit", requestId:w.id, mobile:w.mobile, to:w.to, method:w.method,
+      coins:w.coins, net:fx(w.net), gross:fx(w.requested||w.net), currency:wdCurrency(w.method), name:S.name||""});
+    if(d && d.ok){ w.sheetSent = true; w.sheetError = ""; }
+    else if(d && d.permanent){ w.sheetError = d.error||"rejected"; w.status = "REJECTED"; wdRefund(w); }
+    else w.sheetError = (d && d.error) || "server error";
+  }catch(e){ w.sheetError = "network"; }
+  save(); if(tab==="wallet" && typeof render==="function") render();
+}
+function wdRefund(w){ if(w.refunded) return; w.refunded = true; S.coins = (S.coins||0) + w.coins; }
+const SHEET_STATUS = {Pending:"PENDING", Paid:"SUCCESS", Rejected:"REJECTED"};
+let wdSyncBusy = false;
+async function syncWdStatuses(){
+  if(!SHEETS_URL || !S || !S.wd || wdSyncBusy) return;
+  wdSyncBusy = true;
+  try{
+    await Promise.all(S.wd.filter(w=>!w.sheetSent && !w.refunded && w.status==="PENDING").map(sendWdToSheet));
+    const open = S.wd.filter(w=>w.sheetSent===true && (w.status==="PENDING"||w.status==="APPROVED"));
+    const byMobile = {};
+    open.forEach(w=>{ (byMobile[w.mobile] = byMobile[w.mobile]||[]).push(w); });
+    let changed = false;
+    for(const m of Object.keys(byMobile)){
+      const d = await sheetsCall({action:"status", mobile:m, ids:byMobile[m].map(w=>w.id)});
+      if(!d || !d.ok) continue;
+      (d.items||[]).forEach(it=>{
+        const w = byMobile[m].find(x=>x.id===it.id); if(!w) return;
+        const ns = SHEET_STATUS[it.status] || w.status;
+        if(ns !== w.status){ w.status = ns; changed = true; }
+        if(it.txn && w.utr !== it.txn){ w.utr = it.txn; changed = true; }
+        if(ns === "REJECTED" && !w.refunded){ wdRefund(w); changed = true; }
+      });
+    }
+    if(changed){ save(); render(); }
+  }catch(e){}
+  wdSyncBusy = false;
+}
+setInterval(syncWdStatuses, 60000);
 function withdraw(){
   if(S.isGuest) return toast("Guest account withdrawal nahi kar sakta — real number se login karo", false);
   const a = $("#wa").value.trim(), c = parseInt($("#wcCoins").value,10), todayStr = new Date().toDateString();
@@ -1792,44 +2050,11 @@ function withdraw(){
   S.coins -= c; S.lastWithdraw = todayStr; S.wdCountDate = todayStr; S.wdCountToday = (S.wdCountToday||0)+1; // requested amount freezes instantly so user can't double-withdraw
   S.wdSeq = (S.wdSeq||1000)+1;
   const wdRec = {id:"WD"+S.wdSeq, user_id:S.phone, method, to:a, mobile, coins:c,
-    requested:gross.toFixed(2), tds:tds.toFixed(2), net:net.toFixed(2), status:"PENDING", utr:"", created:now()};
+    requested:gross.toFixed(2), tds:tds.toFixed(2), net:net.toFixed(2), inrRate:cfg().usdToInr, status:"PENDING", utr:"", created:now()};
   S.wd.push(wdRec);
   save(); render();
-  if(cfg().payoutAutoMode && cfg().payoutWebhookUrl && (cfg().payoutProviders||[]).length) sendWdToBackend(wdRec);
+  sendWdToSheet(wdRec);
 }
-// Posts a withdrawal request to the admin-configured backend webhook (Payout API Setup).
-// Payload field names are the DTO/schema the backend should expect — keep this in sync if fields change.
-async function sendWdToBackend(w){
-  const url = cfg().payoutWebhookUrl;
-  if(!url) return;
-  const payload = {
-    requestId: w.id,                 // our internal withdrawal ID, e.g. "WD1001"
-    userId: w.user_id,               // user's phone number (app's user identifier), e.g. "+91 9876543210"
-    userName: S.name || "",
-    method: w.method,                // "UPI" | "PayPal" | "Paytm" | "PhonePe" | "Binance"
-    payoutAddress: w.to,             // UPI ID / PayPal email / Paytm-PhonePe number, as entered by user
-    mobile: w.mobile || "",          // verified mobile with country code, e.g. "+91 9876543210"
-    coins: w.coins,                  // coins deducted for this withdrawal
-    requestedAmount: parseFloat(w.requested), // gross amount before TDS/fee (in base currency below)
-    tdsAmount: parseFloat(w.tds),    // TDS withheld (0 for PayPal/Binance)
-    netAmount: parseFloat(w.net),    // amount to actually pay out
-    currency: w.method==="PayPal" ? "USD" : w.method==="Binance" ? "USDT" : "INR",
-    status: w.status,                // "PENDING" at the point this is sent
-    provider: (cfg().payoutProviders||[])[0] || "",   // first selected provider; providersAll has the full list
-    providersAll: cfg().payoutProviders || [],
-    merchantId: cfg().payoutMerchantId || "",
-    createdAt: w.created             // epoch ms
-  };
-  try{
-    const res = await fetch(url, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(payload) });
-    w.backendSent = res.ok; w.backendStatus = res.status; w.backendError = "";
-  }catch(e){
-    w.backendSent = false; w.backendStatus = 0; w.backendError = (e && e.message) ? e.message : "network error";
-  }
-  save();
-  if(adminOn && tab==="me") me();
-}
-
 function me(){
   $("#view").innerHTML = adBox('profile') + noticeBanner('profile') + `<div class="card" style="text-align:center"><div style="font-size:40px">🎯</div><h3>${esc(S.name)}${S.isGuest?' <span style="font-size:11px;background:var(--in);color:var(--muted);padding:2px 8px;border-radius:20px;vertical-align:middle">GUEST</span>':''}</h3><div class="mut">${S.isGuest?'Withdrawal ke liye real number se login karo':'📱 '+esc(S.phone)}</div></div>
     ${S.isGuest?'':`<div class="card"><h3>👥 Referral Code</h3><div class="row"><b style="font-size:20px;color:var(--gold)">${S.code}</b><button class="btn sm" onclick="navigator.clipboard&&navigator.clipboard.writeText('${S.code}');this.textContent='Copied'">Copy</button></div>
@@ -1837,65 +2062,7 @@ function me(){
     <div class="card"><h3>☁️ Cloud Sync</h3><div class="mut" id="cloudStat">${cloudStatText()}</div></div>
     ${supportLinksCard()}
     ${legalLinksCard()}
-    ${adminOn?`<div class="card"><h3>🛠 Admin Panel</h3>${adminUI()}</div>`:""}
     <button class="btn s" onclick="logoutBox()">Logout</button>`;
-}
-let logoTaps = 0, logoTapT = 0;
-function logoTap(){
-  const t = now();
-  logoTaps = (t - logoTapT < 2500) ? logoTaps+1 : 1; logoTapT = t;
-  if(logoTaps >= 10){ logoTaps = 0; pinBox(); }
-}
-const PIN_MAX_TRIES = 5, PIN_LOCK_MS = 50*60*1000; // 5 galat tries ke baad 50 minute ka lockout
-function pinLockLeftMs(){
-  if(!S || !S.pinLockUntil) return 0;
-  return Math.max(0, S.pinLockUntil - now());
-}
-function pinBox(){
-  const o = document.createElement("div"); o.id = "pinbox";
-  o.style.cssText = "position:fixed;inset:0;z-index:99;background:#000000a0;display:flex;align-items:center;justify-content:center;padding:20px";
-  o.onclick = e => { if(e.target===o) o.remove(); };
-  const lockedMs = pinLockLeftMs();
-  if(lockedMs > 0){
-    const mm = Math.floor(lockedMs/60000), ss = Math.floor((lockedMs%60000)/1000);
-    o.innerHTML = `<div style="background:var(--card);border-radius:16px;padding:20px;max-width:300px;width:100%;text-align:center">
-      <h3 style="margin:0 0 12px">🔒 Admin PIN Locked</h3>
-      <div class="mut">5 galat attempts ho chuke hain. Dubara try karne ke liye wait karo:</div>
-      <div id="pinLockT" style="font-size:24px;font-weight:900;color:#ff5c5c;margin:12px 0">${mm}:${String(ss).padStart(2,"0")}</div>
-      <button class="btn s" onclick="document.getElementById('pinbox').remove()">Close</button></div>`;
-    document.body.appendChild(o);
-    const iv = setInterval(()=>{
-      const t = $("#pinLockT"); const left = pinLockLeftMs();
-      if(!t || left<=0){ clearInterval(iv); const bx=$("#pinbox"); if(bx) bx.remove(); return; }
-      const m2 = Math.floor(left/60000), s2 = Math.floor((left%60000)/1000);
-      t.textContent = `${m2}:${String(s2).padStart(2,"0")}`;
-    },1000);
-    return;
-  }
-  o.innerHTML = `<div style="background:var(--card);border-radius:16px;padding:20px;max-width:300px;width:100%;text-align:center">
-    <h3 style="margin:0 0 12px">🔒 Admin PIN</h3>
-    <input id="pinIn" type="password" placeholder="PIN daalo" style="margin-bottom:10px">
-    <div id="pinErr" class="msg err"></div>
-    <div class="row" style="gap:8px"><button class="btn s" onclick="document.getElementById('pinbox').remove()">Cancel</button><button class="btn" onclick="pinCheck()">Open</button></div></div>`;
-  document.body.appendChild(o);
-  const inp = $("#pinIn"); if(inp){ inp.focus(); inp.onkeydown = e => { if(e.key==="Enter") pinCheck(); }; }
-}
-function pinCheck(){
-  if(pinLockLeftMs() > 0) return pinBox();
-  const v = $("#pinIn").value;
-  if(v === "@Praveen7411111949"){
-    S.pinFailCount = 0; S.pinLockUntil = 0; save();
-    document.getElementById("pinbox").remove(); adminOn = true; tab = "me"; render();
-  } else {
-    S.pinFailCount = (S.pinFailCount||0) + 1;
-    if(S.pinFailCount >= PIN_MAX_TRIES){
-      S.pinLockUntil = now() + PIN_LOCK_MS; S.pinFailCount = 0; save();
-      document.getElementById("pinbox").remove(); pinBox();
-      return;
-    }
-    save();
-    $("#pinErr").textContent = `Galat PIN (${S.pinFailCount}/${PIN_MAX_TRIES} attempts, 5 galat par 50 min lock hoga)`;
-  }
 }
 function logoutBox(){
   const o = document.createElement("div"); o.id = "lgbox";
@@ -1916,692 +2083,525 @@ function doLogout(){
     saveAccounts(accounts);
   }
   try{ localStorage.removeItem("esp_app"); }catch(e){}
-  S = null; tab = "home"; sub = "matches"; adminOn = false;
+  S = null; tab = "home"; sub = "matches";
   render();
 }
-function adminUI(){
-  const c = cfg();
-  const gameNames = {arctic:"Arctic Voyage",hoop:"Hoop Challenge",loop:"Infinity Loop",colorbounce:"Colour Bounce Match Up",bubble:"Guardian of the Bubble",drive:"Car Driving School Simulator",shooter:"Space Shooter",knife:"Knife Hit",blockmatch:"Color Block Match",dollar:"Dollar Catch",candle:"Candle Jump",dollarbox:"Dollar Box"};
-  const order = (c.gamesOrder&&c.gamesOrder.length)?c.gamesOrder:Object.keys(GAME_CANON);
-  const bans = loadBans();
-  return `
-  <h3>1️⃣ Tournaments & Games Control</h3>
-  <div class="mut" style="margin-bottom:6px">Tournament Duration & Timer (minutes)</div>
-  <div class="row" style="gap:6px;margin-bottom:12px"><input id="admDur" type="number" value="${c.tourDurationMin}" placeholder="Minutes" style="margin-bottom:0"><button class="btn sm" onclick="setTourDuration()">Set & Reset Timer</button></div>
-  <div class="mut" style="margin-bottom:6px">Prize Pool per Game (RP coins)</div>
-  ${order.map(g=>GAME_CANON[g]?`<div class="row" style="gap:6px;margin-bottom:6px"><span class="mut" style="flex:1">${gameNames[g]}</span><input id="pool_${g}" type="number" value="${(c.gamePools&&c.gamePools[g])||GAME_CANON[g].pool}" style="margin-bottom:0;width:90px"><button class="btn s sm" onclick="setGamePool('${g}')">Save</button></div>`:"").join("")}
-  <div class="row" style="gap:6px;margin:8px 0 12px"><span class="mut" style="flex:1">Prize Split — Top N Players</span><input id="admTopN" type="number" min="1" max="50" value="${c.topN||50}" style="margin-bottom:0;width:70px"><button class="btn s sm" onclick="setTopN()">Save</button></div>
-  <div class="mut" style="margin-bottom:6px">Game Management — ON/OFF + Position (dropdown se seedha #1, #2... chuno) + ↑↓</div>
-  ${order.map((g,i)=>GAME_CANON[g]?`<div class="row" style="gap:6px;margin-bottom:6px">
-    <span style="flex:1">${gameNames[g]}</span>
-    <select onchange="setGamePos('${g}',this.value)" title="Position" style="background:#ffffff14;color:#fff;border:1px solid #ffffff2a;border-radius:8px;padding:6px 4px">${order.map((_,k)=>`<option value="${k+1}" ${k===i?"selected":""}>#${k+1}</option>`).join("")}</select>
-    <button class="btn s sm" onclick="moveGame('${g}',-1)" ${i===0?"disabled":""}>↑</button>
-    <button class="btn s sm" onclick="moveGame('${g}',1)" ${i===order.length-1?"disabled":""}>↓</button>
-    <button class="btn ${c.gamesEnabled[g]!==false?"g":"s"} sm" onclick="toggleGame('${g}')">${c.gamesEnabled[g]!==false?"ON ✅":"OFF ❌"}</button>
-  </div>`:"").join("")}
-  <div class="mut" style="margin:12px 0 6px">Add New Game Link (external promo card)</div>
-  <input id="ngName" placeholder="Game name"><input id="ngUrl" placeholder="https://...">
-  <button class="btn g" onclick="addGameLink()">Add Game Link</button>
-  ${(c.customGames&&c.customGames.length)?c.customGames.map(cg=>`<div class="lb"><span class="n">🔗 ${esc(cg.name)}</span><button class="btn s sm" onclick="delGameLink('${cg.id}')">✕</button></div>`).join(""):""}
-
-  <h3 style="margin-top:18px">🏆 Tournament Prize Split — Top 50 (RP per rank)</h3>
-  <div class="mut" style="margin-bottom:6px">Har tournament ke "Prize Split: Top 50" popup mein yehi rank-wise RP dikhega (results/winner ranking ke hisab se)</div>
-  ${Array.from({length:50},(_,i)=>i+1).map(r=>{ const v=(c.tourPrizeTable&&c.tourPrizeTable[r])||0; return `<div class="row" style="gap:6px;margin-bottom:6px"><span class="mut" style="width:62px">Rank #${r}</span><input id="tpz_${r}" type="number" value="${v}" style="margin-bottom:0"></div>`; }).join("")}
-  <div class="row" style="gap:6px;margin:10px 0;padding:10px;background:var(--in);border-radius:10px"><span style="font-weight:800;flex:1">Total (Rank 1-50)</span><span style="font-weight:800;color:var(--gold)">💜 ${Array.from({length:50},(_,i)=>(c.tourPrizeTable&&c.tourPrizeTable[i+1])||0).reduce((a,b)=>a+b,0).toLocaleString()} RP</span></div>
-  <button class="btn g" onclick="saveTourPrizeTable()">Tournament Prize Split Save Karo</button>
-
-  <h3 style="margin-top:18px">2️⃣ Leaderboard & Prize Distribution</h3>
-  <div class="row" style="gap:6px;margin-bottom:12px"><span class="mut" style="flex:1">Daily Reset Hour</span>
-    <select id="admLbHour" style="background:#ffffff14;color:#fff;border:1px solid #ffffff2a;border-radius:8px;padding:6px 8px">
-      ${Array.from({length:24},(_,h)=>{ const label = h===0?"12:00 AM":h<12?`${h}:00 AM`:h===12?"12:00 PM":`${h-12}:00 PM`; return `<option value="${h}" ${c.lbResetHour===h?"selected":""}>${label}</option>`; }).join("")}
-    </select>
-    <button class="btn sm" onclick="setLbHour()">Set</button></div>
-  <div class="row" style="gap:6px;margin-bottom:6px"><span class="mut" style="flex:1">Reset Frequency</span>
-    <select id="admLbMode" onchange="setLbMode()" style="background:#ffffff14;color:#fff;border:1px solid #ffffff2a;border-radius:8px;padding:6px 8px">
-      <option value="daily" ${(c.lbResetMode!=="days"&&c.lbResetMode!=="interval")?"selected":""}>Daily (har din)</option>
-      <option value="days" ${c.lbResetMode==="days"?"selected":""}>Specific Days (chuni hui weekdays)</option>
-      <option value="interval" ${c.lbResetMode==="interval"?"selected":""}>Fix Days (har N din baad)</option>
-    </select></div>
-  ${c.lbResetMode==="days" ? `<div class="mut" style="margin-bottom:6px">Reset in din par hoga (jitne chaho utne select karo)</div>
-  <div class="row" style="flex-wrap:wrap;gap:6px;margin-bottom:12px">
-    ${["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map((lbl,i)=>`<button class="btn ${((c.lbResetDays||[]).includes(i))?"g":"s"} sm" onclick="toggleLbDay(${i})">${lbl}</button>`).join("")}
-  </div>` : ""}
-  ${c.lbResetMode==="interval" ? `<div class="mut" style="margin-bottom:6px">Kitne din ke baad reset ho (1 = har din, 2 = ek din chhod kar, etc.)</div>
-  <div class="row" style="gap:6px;margin-bottom:12px"><span class="mut" style="flex:1">Reset har</span>
-    <input id="admLbInterval" type="number" min="1" max="30" value="${c.lbResetIntervalDays||1}" style="margin-bottom:0;width:80px">
-    <span class="mut">din mein</span>
-    <button class="btn sm" onclick="saveLbInterval()">Set</button></div>` : ""}
-  <div class="mut" style="margin-bottom:6px">Rank Reward Structure — Top 50 (RP/coins)</div>
-  ${Array.from({length:50},(_,i)=>i+1).map(r=>{ const v=(c.lbPrizeTable&&c.lbPrizeTable[r])||0; return `<div class="row" style="gap:6px;margin-bottom:6px"><span class="mut" style="width:62px">Rank #${r}</span><input id="lbp_${r}" type="number" value="${v}" oninput="updateLbVal(${r})" style="margin-bottom:0"><span class="mut" id="lbpv_${r}" style="width:60px;text-align:right">≈ $${(v/c.rate).toFixed(2)}</span></div>`; }).join("")}
-  <div class="row" style="gap:6px;margin:10px 0;padding:10px;background:var(--in);border-radius:10px"><span style="font-weight:800;flex:1">Total (Rank 1-50)</span><span id="lbpvTotal" style="font-weight:800;color:var(--gold)">≈ $${(Array.from({length:50},(_,i)=>(c.lbPrizeTable&&c.lbPrizeTable[i+1])||0).reduce((a,b)=>a+b,0)/c.rate).toFixed(2)}</span></div>
-  <button class="btn g" onclick="saveLbPrizes()">Save Rank Rewards</button>
-  <div class="mut" style="margin:12px 0 6px">Manual Override</div>
-  <button class="btn s" onclick="resetMyRp()">Reset My RP to 0</button>
-  <div class="row" style="gap:6px;margin-top:8px"><input id="banPhoneIn" placeholder="+91 9876543210 (ban karo)" style="margin-bottom:0"><button class="btn sm" onclick="banPhone()">Ban</button></div>
-  ${bans.length?bans.map(p=>`<div class="lb"><span class="n">🚫 ${esc(p)}</span><button class="btn s sm" onclick="unbanPhone('${esc(p)}')">✕</button></div>`).join(""):""}
-  <div class="mut" style="margin-top:4px">Single-device demo hai — ban sirf isi device par naya signup rokta hai. Real multi-user ban/hide ke liye backend chahiye.</div>
-
-  <h3 style="margin-top:18px">3️⃣ Wallet & Withdrawal Controls</h3>
-  <div class="row" style="gap:6px;margin-bottom:8px"><span class="mut" style="flex:1">Coin Rate (coins = $1)</span><input id="admRate" type="number" value="${c.rate}" style="margin-bottom:0;width:90px"></div>
-  <div class="row" style="gap:6px;margin-bottom:8px"><span class="mut" style="flex:1">Min Withdraw ($)</span><input id="admMin" type="number" step="0.01" value="${c.minWithdrawUsd}" style="margin-bottom:0;width:90px"></div>
-  <div class="row" style="gap:6px;margin-bottom:10px"><span class="mut" style="flex:1">Max Withdraw ($)</span><input id="admMax" type="number" step="0.01" value="${c.maxWithdrawUsd}" style="margin-bottom:0;width:90px"></div>
-  <button class="btn g" onclick="saveWalletLimits()">Save Rate & Limits</button>
-  <div class="row" style="gap:6px;margin:12px 0 12px"><span class="mut" style="flex:1">Max Withdrawals Per Day</span><input id="admWdMax" type="number" min="1" value="${c.wdMaxPerDay||1}" style="margin-bottom:0;width:70px"><button class="btn sm" onclick="saveWdMaxPerDay()">Save</button></div>
-  <div class="row" style="margin:12px 0 6px"><span class="mut" style="flex:1">Withdrawal Timing Window</span><button class="btn s sm" onclick="toggleWdTimeWindow()">${c.wdTimeEnabled?"ON ✅":"OFF ❌"}</button></div>
-  ${c.wdTimeEnabled ? `<div class="row" style="gap:6px;margin-bottom:12px">
-    <span class="mut">Start</span><input id="admWdStart" type="time" value="${c.wdTimeStart||"18:00"}" style="margin-bottom:0">
-    <span class="mut">End</span><input id="admWdEnd" type="time" value="${c.wdTimeEnd||"22:00"}" style="margin-bottom:0">
-    <button class="btn sm" onclick="saveWdTimeWindow()">Save</button>
-  </div>` : ""}
-  <div class="row" style="margin-bottom:6px"><span class="mut" style="flex:1">Withdrawal Allowed Days</span><button class="btn s sm" onclick="toggleWdDays()">${c.wdDaysEnabled?"ON ✅":"OFF ❌"}</button></div>
-  ${c.wdDaysEnabled ? `<div class="row" style="flex-wrap:wrap;gap:6px;margin-bottom:12px">
-    ${["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map((lbl,i)=>`<button class="btn ${((c.wdDays||[]).includes(i))?"g":"s"} sm" onclick="toggleWdDay(${i})">${lbl}</button>`).join("")}
-  </div>` : ""}
-  <div class="mut" style="margin:12px 0 6px">Preset Withdrawal Amounts (comma se alag karo)</div>
-  <input id="admPresets" value="${(c.presetAmounts||[]).join(",")}">
-  <button class="btn s" onclick="savePresets()">Save Presets</button>
-  <div class="row" style="margin:12px 0 6px"><span class="mut" style="flex:1">UPI Enabled</span><button class="btn s sm" onclick="toggleUpi()">${c.upiEnabled!==false?"ON ✅":"OFF ❌"}</button></div>
-  <div class="row" style="gap:6px;margin-bottom:8px"><span class="mut" style="flex:1">UPI TDS (%)</span><input id="admUpiTds" type="number" value="${c.upiTdsPct}" style="margin-bottom:0;width:70px"><button class="btn sm" onclick="saveUpiTds()">Save</button></div>
-  <div class="row" style="margin-bottom:8px"><span class="mut" style="flex:1">PayPal Enabled</span><button class="btn s sm" onclick="togglePaypal()">${c.paypalEnabled!==false?"ON ✅":"OFF ❌"}</button></div>
-  <div class="row" style="gap:6px;margin-bottom:8px"><span class="mut" style="flex:1">PayPal Processing Fee (%)</span><input id="admFee" type="number" value="${c.paypalFeePct}" style="margin-bottom:0;width:70px"><button class="btn sm" onclick="saveFee()">Save</button></div>
-  <div class="row" style="margin-bottom:8px"><span class="mut" style="flex:1">Paytm Enabled</span><button class="btn s sm" onclick="togglePaytm()">${c.paytmEnabled!==false?"ON ✅":"OFF ❌"}</button></div>
-  <div class="row" style="gap:6px;margin-bottom:8px"><span class="mut" style="flex:1">Paytm TDS (%)</span><input id="admPaytmTds" type="number" value="${c.paytmTdsPct}" style="margin-bottom:0;width:70px"><button class="btn sm" onclick="savePaytmTds()">Save</button></div>
-  <div class="row" style="margin-bottom:8px"><span class="mut" style="flex:1">PhonePe Enabled</span><button class="btn s sm" onclick="togglePhonepe()">${c.phonepeEnabled!==false?"ON ✅":"OFF ❌"}</button></div>
-  <div class="row" style="gap:6px;margin-bottom:8px"><span class="mut" style="flex:1">PhonePe TDS (%)</span><input id="admPhonepeTds" type="number" value="${c.phonepeTdsPct}" style="margin-bottom:0;width:70px"><button class="btn sm" onclick="savePhonepeTds()">Save</button></div>
-  <div class="mut" style="margin-bottom:8px;font-size:11px">Paytm aur PhonePe dono ₹ (INR) mein chalte hain, par ab inka TDS % UPI se alag-alag set kar sakte ho</div>
-  <div class="row" style="gap:6px;margin-bottom:8px"><span class="mut" style="flex:1">USD → INR Rate (UPI display)</span><input id="admInr" type="number" value="${c.usdToInr}" style="margin-bottom:0;width:70px"><button class="btn sm" onclick="saveInrRate()">Save</button></div>
-  <div class="row" style="margin-bottom:8px"><span class="mut" style="flex:1">Binance Enabled</span><button class="btn s sm" onclick="toggleBinance()">${c.binanceEnabled!==false?"ON ✅":"OFF ❌"}</button></div>
-  <div class="row" style="gap:6px;margin-bottom:8px"><span class="mut" style="flex:1">Binance Processing Fee (%)</span><input id="admBinanceFee" type="number" value="${c.binanceFeePct}" style="margin-bottom:0;width:70px"><button class="btn sm" onclick="saveBinanceFee()">Save</button></div>
-  <div class="mut" style="margin-bottom:8px;font-size:11px">Binance USDT/crypto mein chalta hai (PayPal jaisa — koi TDS nahi, sirf Processing Fee)</div>
-
-  <div class="mut" style="margin:16px 0 6px">💸 Auto-Payout (Payout API) Setup</div>
-  <div class="row" style="margin-bottom:8px"><span class="mut" style="flex:1">Payout Mode</span><button class="btn s sm" onclick="togglePayoutMode()">${c.payoutAutoMode?"⚡ Auto":"🖐 Manual"}</button></div>
-  <div class="mut" style="margin-bottom:6px">Payout Provider(s) — jitne chaho utne select karo (ek, do, teen ya chaaron)</div>
-  ${[["upi","UPI Payout Gateway (Razorpay/Cashfree etc.)"],["phonepe","PhonePe Business (Payouts)"],["paytm","Paytm for Business (Payouts)"],["paypal","PayPal Payouts (Mass Pay API)"],["binance","Binance Pay / Withdrawal API"]].map(([val,label])=>`<div class="row" style="margin-bottom:6px"><span class="mut" style="flex:1">${label}</span><button class="btn s sm" onclick="togglePayoutProvider('${val}')">${(c.payoutProviders||[]).includes(val)?"ON ✅":"OFF ❌"}</button></div>`).join("")}
-  <input id="admPayoutMerchant" placeholder="Merchant / Client ID" value="${esc(c.payoutMerchantId||"")}">
-  <input id="admPayoutWebhook" placeholder="Webhook URL (backend endpoint)" value="${esc(c.payoutWebhookUrl||"")}">
-  <button class="btn s" onclick="savePayoutSettings()">Payout Settings Save Karo</button>
-  <div class="mut" style="margin-top:8px;font-size:11px;line-height:1.5">⚠️ API Secret Key/Credentials <b>kabhi yahan ya kisi bhi client-side (browser) file mein na daalo</b> — yeh file sirf frontend hai, iska code kisi bhi user ke browser mein khulkar dikh sakta hai, isliye secret key chori ho sakti hai. Yeh baat UPI, PayPal, PhonePe, Paytm aur Binance — in sabhi payout providers par barabar laagu hoti hai, kisi ek tak limited nahi. Real automatic payout ke liye tumhe ek secure <b>backend server</b> banwana hoga jo UPI Payout Gateway / PayPal Payouts API / PhonePe / Paytm Payout API / Binance Pay API ko server-se-server call kare (secret keys sirf backend ke .env/environment variables mein). Is app se sirf withdrawal request ka basic data (User ID, Coins, UPI ID/mobile/email/Binance ID) uss backend ko bhejna hai — jaisa <code>sendWdToBackend()</code> function abhi karta hai. Yeh fields (Merchant/Client ID, Webhook URL) sirf provider/merchant ID note karne ke liye hain, taaki developer ko sahi integration ka context mile — koi secret yahan save nahi hota.</div>
-
-  <h3 style="margin-top:18px">4️⃣ Daily Bonus & Login Streak</h3>
-  <div class="row" style="gap:6px;margin-bottom:12px"><span class="mut" style="flex:1">Daily Bonus (RP)</span><input id="admBonus" type="number" value="${c.dailyBonusRp}" style="margin-bottom:0;width:90px"><button class="btn sm" onclick="saveDailyBonus()">Save</button></div>
-  <div class="row" style="gap:6px;margin-bottom:12px"><span class="mut" style="flex:1">Bonus Video Frequency</span>
-    <select id="admBonusInterval" style="background:#ffffff14;color:#fff;border:1px solid #ffffff2a;border-radius:8px;padding:6px 8px">
-      ${[1,2,3,4,5,6,7].map(n=>`<option value="${n}" ${c.dailyBonusIntervalDays===n?"selected":""}>${n===1?"Har Din (1 din)":`Har ${n} din mein ek baar`}</option>`).join("")}
-    </select>
-    <button class="btn sm" onclick="saveBonusInterval()">Set</button></div>
-  <div class="row" style="margin-bottom:8px"><span class="mut" style="flex:1">Timing Window (sirf is time par video dikhe)</span><button class="btn s sm" onclick="toggleBonusTimeWindow()">${c.dailyBonusTimeEnabled?"ON ✅":"OFF ❌"}</button></div>
-  ${c.dailyBonusTimeEnabled ? `<div class="row" style="gap:6px;margin-bottom:12px">
-    <span class="mut">Start</span><input id="admBonusStart" type="time" value="${c.dailyBonusTimeStart||"18:00"}" style="margin-bottom:0">
-    <span class="mut">End</span><input id="admBonusEnd" type="time" value="${c.dailyBonusTimeEnd||"22:00"}" style="margin-bottom:0">
-    <button class="btn sm" onclick="saveBonusTimeWindow()">Save</button>
-  </div>` : ""}
-  <div class="mut" style="margin-bottom:6px">Login Streak Rewards (Day 1-${(c.streakRewards||[]).length})</div>
-  ${(c.streakRewards||[]).map((r,i)=>`<div class="row" style="gap:6px;margin-bottom:6px"><span class="mut" style="width:52px">Day ${i+1}</span><input id="str_${i}" value="${esc(String(r))}" style="margin-bottom:0"></div>`).join("")}
-  <button class="btn g" onclick="saveStreakRewards()">Save Streak Rewards</button>
-
-  <h3 style="margin-top:18px">5️⃣ Ad Control & Monetization</h3>
-  <div class="row" style="margin-bottom:10px"><span>All Ads</span><button class="btn s sm" onclick="toggleAds()">${S.adConfig.on?"ON ✅":"OFF ❌"}</button></div>
-  <div class="row" style="margin-bottom:10px"><span>Ad Network Mode / Strategy</span>
-    <select id="adNetworkSel" style="background:#ffffff14;color:#fff;border:1px solid #ffffff2a;border-radius:8px;padding:6px 8px">
-      <option value="mediation" ${(S.adConfig.network||"mediation")==="mediation"?"selected":""}>Auto Fallback / Mediation (AdMob ➔ Unity ➔ AppLovin)</option>
-      <option value="admob" ${S.adConfig.network==="admob"?"selected":""}>AdMob Only</option>
-      <option value="unity" ${S.adConfig.network==="unity"?"selected":""}>Unity Ads Only</option>
-      <option value="applovin" ${S.adConfig.network==="applovin"?"selected":""}>AppLovin MAX Only</option>
-    </select>
-  </div>
-  <div class="mut" style="margin-bottom:10px">Mediation mode mein: pehle AdMob try hoga, AdMob fail/khaali hone par Unity, Unity bhi fail/khaali hone par AppLovin ka ad dikhega — fill-rate 100% ke paas rahega.</div>
-  <div class="mut" style="margin-bottom:4px">📱 AdMob — Ad Unit IDs</div>
-  <input id="ad_admob_banner" placeholder="AdMob Banner Ad Unit ID" value="${esc((S.adConfig.networks&&S.adConfig.networks.admob&&S.adConfig.networks.admob.bannerId)||"")}">
-  <input id="ad_admob_inter" placeholder="AdMob Interstitial Ad Unit ID" value="${esc((S.adConfig.networks&&S.adConfig.networks.admob&&S.adConfig.networks.admob.interstitialId)||"")}">
-  <input id="ad_admob_rew" placeholder="AdMob Rewarded Ad Unit ID" value="${esc((S.adConfig.networks&&S.adConfig.networks.admob&&S.adConfig.networks.admob.rewardedId)||"")}">
-  <div class="mut" style="margin:14px 0 4px">🎮 Unity Ads — Game ID & Ad Unit IDs</div>
-  <div class="mut" style="margin-bottom:6px;font-size:11px">Unity Dashboard → your project → Game ID (6-7 digit number, Android/iOS ke liye alag hota hai) + har placement ki Ad Unit ID</div>
-  <input id="ad_unity_gameid" placeholder="Unity Game ID (6-7 digit number)" inputmode="numeric" value="${esc((S.adConfig.networks&&S.adConfig.networks.unity&&S.adConfig.networks.unity.gameId)||"")}">
-  <input id="ad_unity_banner" placeholder="Unity Banner Ad Unit ID" value="${esc((S.adConfig.networks&&S.adConfig.networks.unity&&S.adConfig.networks.unity.bannerId)||"")}">
-  <input id="ad_unity_inter" placeholder="Unity Interstitial Ad Unit ID" value="${esc((S.adConfig.networks&&S.adConfig.networks.unity&&S.adConfig.networks.unity.interstitialId)||"")}">
-  <input id="ad_unity_rew" placeholder="Unity Rewarded Ad Unit ID" value="${esc((S.adConfig.networks&&S.adConfig.networks.unity&&S.adConfig.networks.unity.rewardedId)||"")}">
-  <div class="mut" style="margin:14px 0 4px">🦁 AppLovin — Ad Unit IDs</div>
-  <div class="mut" style="margin-bottom:6px;font-size:11px">AppLovin MAX Dashboard se generate ki gayi Ad Unit ID 16-character alphanumeric code hoti hai (e.g. a1b2c3d4e5f6g7h8)</div>
-  <input id="ad_applovin_banner" placeholder="AppLovin Banner Ad Unit ID (16-char)" maxlength="16" value="${esc((S.adConfig.networks&&S.adConfig.networks.applovin&&S.adConfig.networks.applovin.bannerId)||"")}">
-  <input id="ad_applovin_inter" placeholder="AppLovin Interstitial Ad Unit ID (16-char)" maxlength="16" value="${esc((S.adConfig.networks&&S.adConfig.networks.applovin&&S.adConfig.networks.applovin.interstitialId)||"")}">
-  <input id="ad_applovin_rew" placeholder="AppLovin Rewarded Ad Unit ID (16-char)" maxlength="16" value="${esc((S.adConfig.networks&&S.adConfig.networks.applovin&&S.adConfig.networks.applovin.rewardedId)||"")}">
-  <button class="btn g" style="margin-top:10px" onclick="saveAllAdSettings()">Save All Monetization Settings</button>
-  <div class="mut" style="margin:12px 0 6px">Per-Screen Ad Toggle (320x50 / 320x100)</div>
-  ${["home","matches","promo","wallet","profile","game"].map(sc=>`<div class="row" style="margin-bottom:6px"><span class="mut" style="flex:1;text-transform:capitalize">${sc}</span><button class="btn s sm" onclick="toggleAdScreen('${sc}')">${(!S.adConfig.screens||S.adConfig.screens[sc]!==false)?"ON ✅":"OFF ❌"}</button></div>`).join("")}
-
-  <h3 style="margin-top:18px">6️⃣ Important Notice Banner</h3>
-  <div class="mut" style="margin-bottom:6px">Yahan jo text likhoge woh bade, bold, red banner mein user ko dikhega (jin screens par ON kiya hoga)</div>
-  <textarea id="admNoticeText" placeholder="Important note likho (e.g. Server maintenance 2AM-4AM, withdrawals delay ho sakte hain)" style="width:100%;min-height:70px;background:var(--in);color:var(--text);border:none;border-radius:10px;padding:10px;font-size:14px;margin-bottom:10px;box-sizing:border-box">${esc(c.noticeText||"")}</textarea>
-  <div class="mut" style="margin-bottom:6px">Kin screens par dikhna chahiye:</div>
-  ${[["home","🏠 Home"],["matches","🎮 Matches"],["wallet","💰 Withdrawal (Wallet)"],["profile","👤 Profile"]].map(([sc,label])=>`<div class="row" style="margin-bottom:6px"><span class="mut" style="flex:1">${label}</span><button class="btn s sm" onclick="toggleNoticeScreen('${sc}')">${(c.noticeOn&&c.noticeOn[sc])?"ON ✅":"OFF ❌"}</button></div>`).join("")}
-  <button class="btn g" style="margin-top:6px" onclick="saveNotice()">Notice Save Karo</button>
-
-  <h3 style="margin-top:18px">7️⃣ Support Team / Social Links</h3>
-  <div class="mut" style="margin-bottom:6px">Yahan jo links add karoge woh Promo aur Profile screen par "Support Team" card mein users ko dikhenge</div>
-  <div class="row" style="gap:6px;margin-bottom:8px">
-    <select id="admSuppPlatform" style="background:#ffffff14;color:#fff;border:1px solid #ffffff2a;border-radius:8px;padding:6px 8px">
-      ${Object.entries(SUPPORT_PLATFORMS).map(([k,p])=>`<option value="${k}">${p.icon} ${p.label}</option>`).join("")}
-    </select>
-    <input id="admSuppUrl" placeholder="Link/URL (https://...)" style="flex:1;margin-bottom:0">
-    <button class="btn g sm" onclick="addSupportLink()">Add</button>
-  </div>
-  ${(c.supportLinks&&c.supportLinks.length) ? c.supportLinks.map(l=>{ const p = SUPPORT_PLATFORMS[l.platform]||SUPPORT_PLATFORMS.website;
-    return `<div class="lb"><span class="n">${p.icon} ${esc(p.label)}<br><span class="mut">${esc(l.url)}</span></span><button class="btn s sm" onclick="delSupportLink('${l.id}')">✕</button></div>`; }).join("") : `<div class="mut">Koi support link add nahi kiya abhi tak.</div>`}
-
-  <h3 style="margin-top:18px">📄 Terms & Privacy — Hosted URL</h3>
-  <div class="mut" style="margin-bottom:6px">Play Console submission ke liye public hosted T&C/Privacy Policy page ka link (app ke "Legal" card aur popup mein bhi dikhega)</div>
-  <div class="row" style="gap:6px;margin-bottom:12px">
-    <input id="admLegalUrl" placeholder="https://..." value="${esc(c.legalUrl||"")}" style="flex:1;margin-bottom:0">
-    <button class="btn g sm" onclick="saveLegalUrl()">Save</button>
-  </div>
-
-  <h3 style="margin-top:18px">☁️ Cloud Backend</h3>
-  <div class="mut" style="margin-bottom:6px">Deployed esports-backend ka PUBLIC URL (jaise https://your-api.example.com). Yahan koi secret key mat daalo — SMS/payout keys sirf server ke environment variables mein rehti hain.</div>
-  <div class="row" style="gap:6px;margin-bottom:12px">
-    <input id="admCloudUrl" placeholder="https://..." value="${esc(c.cloudApiUrl||"")}" style="flex:1;margin-bottom:0">
-    <button class="btn g sm" onclick="saveCloudUrl()">Save</button>
-  </div>
-
-  <h3 style="margin-top:18px">🌍 Country Blocking (Login aur Withdrawal)</h3>
-  <div class="mut" style="margin-bottom:6px">Ab sabhi ${COUNTRIES.length} countries login/signup aur PayPal/Binance verification mein available hain. Jis country ko block karna hai usse list mein se select karo — login block aur withdrawal block dono alag-alag set kar sakte ho.</div>
-  <input id="admCountryQ" placeholder="Country search karo..." value="${esc(admCountryQ)}" oninput="admCountrySearch(this.value)" style="margin-bottom:8px">
-  <div style="max-height:260px;overflow-y:auto;border:1px solid #ffffff1f;border-radius:10px;padding:6px">
-    ${COUNTRIES.filter(cn=>!admCountryQ || cn.name.toLowerCase().includes(admCountryQ.toLowerCase()) || cn.code.includes(admCountryQ)).map(cn=>{
-      const lb = (c.blockedLoginCountries||[]).includes(cn.id), wb = (c.blockedWithdrawCountries||[]).includes(cn.id);
-      return `<div class="lb" style="padding:6px 4px"><span class="n">${cn.flag} ${esc(cn.name)} <span class="mut">(${cn.code})</span></span>
-        <span style="display:flex;gap:6px;flex:0 0 auto">
-          <button class="btn ${lb?"g":"s"} sm" onclick="toggleBlockedLoginCountry('${cn.id}')">${lb?"Login: Blocked":"Login: OK"}</button>
-          <button class="btn ${wb?"g":"s"} sm" onclick="toggleBlockedWithdrawCountry('${cn.id}')">${wb?"WD: Blocked":"WD: OK"}</button>
-        </span></div>`;
-    }).join("") || `<div class="mut">Koi country match nahi hua.</div>`}
-  </div>
-  ${(c.blockedLoginCountries||[]).length || (c.blockedWithdrawCountries||[]).length ? `<div class="mut" style="margin-top:6px">Login blocked: ${(c.blockedLoginCountries||[]).length} • Withdrawal blocked: ${(c.blockedWithdrawCountries||[]).length}</div>` : ""}
-
-  <h3 style="margin-top:18px">Naya tournament banao (manual)</h3>
-  <div class="mut">Naya tournament banao</div><input id="ag" placeholder="Game: arctic ya hoop"><input id="ap2" placeholder="Tournament pool (coins)" inputmode="numeric"><input id="am" placeholder="Kitne minute chalega?" inputmode="numeric">
-  <button class="btn g" onclick="addMatch()">Tournament Add Karo</button>
-  <h3 style="margin-top:14px">💵 UPI Withdrawals (₹ INR)</h3>
-  ${(()=>{ const upiWd = S.wd.filter(w=>w.method==="UPI");
-    return upiWd.length?["PENDING","APPROVED","SUCCESS","REJECTED"].map(st=>{
-      const list = upiWd.filter(w=>w.status===st);
-      if(!list.length) return "";
-      return `<div class="mut" style="margin:10px 0 4px;font-weight:800">${st} (${list.length})</div>` + list.map(wdRow).join("");
-    }).join(""):`<div class="mut">Koi UPI request nahi.</div>`; })()}
-  <h3 style="margin-top:14px">💳 PayPal Withdrawals ($ USD)</h3>
-  ${(()=>{ const ppWd = S.wd.filter(w=>w.method==="PayPal");
-    return ppWd.length?["PENDING","APPROVED","SUCCESS","REJECTED"].map(st=>{
-      const list = ppWd.filter(w=>w.status===st);
-      if(!list.length) return "";
-      return `<div class="mut" style="margin:10px 0 4px;font-weight:800">${st} (${list.length})</div>` + list.map(wdRow).join("");
-    }).join(""):`<div class="mut">Koi PayPal request nahi.</div>`; })()}
-  <h3 style="margin-top:14px">💙 Paytm Withdrawals (₹ INR)</h3>
-  ${(()=>{ const ptWd = S.wd.filter(w=>w.method==="Paytm");
-    return ptWd.length?["PENDING","APPROVED","SUCCESS","REJECTED"].map(st=>{
-      const list = ptWd.filter(w=>w.status===st);
-      if(!list.length) return "";
-      return `<div class="mut" style="margin:10px 0 4px;font-weight:800">${st} (${list.length})</div>` + list.map(wdRow).join("");
-    }).join(""):`<div class="mut">Koi Paytm request nahi.</div>`; })()}
-  <h3 style="margin-top:14px">💜 PhonePe Withdrawals (₹ INR)</h3>
-  ${(()=>{ const ppeWd = S.wd.filter(w=>w.method==="PhonePe");
-    return ppeWd.length?["PENDING","APPROVED","SUCCESS","REJECTED"].map(st=>{
-      const list = ppeWd.filter(w=>w.status===st);
-      if(!list.length) return "";
-      return `<div class="mut" style="margin:10px 0 4px;font-weight:800">${st} (${list.length})</div>` + list.map(wdRow).join("");
-    }).join(""):`<div class="mut">Koi PhonePe request nahi.</div>`; })()}
-  <h3 style="margin-top:14px">🟡 Binance Withdrawals (USDT)</h3>
-  ${(()=>{ const bnWd = S.wd.filter(w=>w.method==="Binance");
-    return bnWd.length?["PENDING","APPROVED","SUCCESS","REJECTED"].map(st=>{
-      const list = bnWd.filter(w=>w.status===st);
-      if(!list.length) return "";
-      return `<div class="mut" style="margin:10px 0 4px;font-weight:800">${st} (${list.length})</div>` + list.map(wdRow).join("");
-    }).join(""):`<div class="mut">Koi Binance request nahi.</div>`; })()}
-  <h3 style="margin-top:14px">📊 UPI TDS Report</h3>
-  <button class="btn s" onclick="exportUpiTdsCsv()">Export Monthly UPI TDS Report (CSV)</button>
-  <div class="mut" style="margin-top:6px">Is mahine ke UPI SUCCESS payouts ka Requested(₹), TDS (admin-set %) aur Net Payout(₹) ek CSV mein export hoga — Challan 281 bharne ke liye</div>
-  <h3 style="margin-top:14px">📊 Paytm TDS Report</h3>
-  <button class="btn s" onclick="exportPaytmTdsCsv()">Export Monthly Paytm TDS Report (CSV)</button>
-  <div class="mut" style="margin-top:6px">Is mahine ke Paytm SUCCESS payouts ka Requested(₹), TDS (admin-set %) aur Net Payout(₹) ek CSV mein export hoga — Challan 281 bharne ke liye</div>
-  <h3 style="margin-top:14px">📊 PhonePe TDS Report</h3>
-  <button class="btn s" onclick="exportPhonepeTdsCsv()">Export Monthly PhonePe TDS Report (CSV)</button>
-  <div class="mut" style="margin-top:6px">Is mahine ke PhonePe SUCCESS payouts ka Requested(₹), TDS (admin-set %) aur Net Payout(₹) ek CSV mein export hoga — Challan 281 bharne ke liye</div>
-  <h3 style="margin-top:14px">📊 PayPal Report</h3>
-  <button class="btn s" onclick="exportPaypalCsv()">Export Monthly PayPal Report (CSV)</button>
-  <div class="mut" style="margin-top:6px">Is mahine ke PayPal SUCCESS payouts ka Requested($), Processing Fee aur Net Payout($) ek CSV mein export hoga (TDS yahan nahi lagta)</div>
-  <h3 style="margin-top:14px">📊 Binance Report</h3>
-  <button class="btn s" onclick="exportBinanceCsv()">Export Monthly Binance Report (CSV)</button>
-  <div class="mut" style="margin-top:6px">Is mahine ke Binance SUCCESS payouts ka Requested(USDT), Processing Fee aur Net Payout(USDT) ek CSV mein export hoga (TDS yahan nahi lagta)</div>
-  <h3 style="margin-top:14px">Promo Codes</h3>
-  <input id="pcCode" placeholder="6-digit code" maxlength="6" inputmode="numeric"><input id="pcRp" placeholder="RP value" inputmode="numeric">
-  <button class="btn g" onclick="addPromo()">Code Add Karo</button>
-  ${Object.keys(S.promos||{}).length?Object.entries(S.promos).map(([c2,v])=>`<div class="lb"><span class="n">${esc(c2)}</span><span class="p">💜 ${v} RP</span><button class="btn s sm" onclick="delPromo('${c2}')">✕</button></div>`).join(""):`<div class="mut">Koi code nahi.</div>`}
-  <h3 style="margin-top:14px">User Details (is device ka)</h3>
-  <div class="lb"><span class="n">Naam</span><span class="p">${esc(S.name)}</span></div>
-  <div class="lb"><span class="n">Phone</span><span class="p">${esc(S.phone)}</span></div>
-  <div class="lb"><span class="n">Coins</span><span class="p">${S.coins}</span></div>
-  <div class="lb"><span class="n">RP</span><span class="p">${S.rp||0}</span></div>
-  <div class="lb"><span class="n">Referral Code</span><span class="p">${S.code}</span></div>
-  <div class="lb"><span class="n">Matches Joined</span><span class="p">${Object.keys(S.joined||{}).length}</span></div>
-  <div class="lb"><span class="n">Withdrawal Requests</span><span class="p">${S.wd.length}</span></div>
-  <div class="mut" style="margin:8px 0">Sirf isi device ka data dikh raha hai. Sab users ka data dekhne ke liye backend (server) chahiye.</div>
-  <button class="btn s" style="margin-top:8px" onclick="adminOn=false;me()">Close Admin</button>`;
-}
-function toggleAds(){ S.adConfig.on = !S.adConfig.on; save(); me(); }
-function syncActiveAdIds(){
-  const nets = S.adConfig.networks || {}, mode = S.adConfig.network || "mediation";
-  let net, used;
-  if(mode==="mediation"){
-    // Auto Fallback: AdMob -> Unity -> AppLovin (pehla network jiska banner ID bhara ho use karo)
-    if(nets.admob && nets.admob.bannerId){ net = nets.admob; used = "admob"; }
-    else if(nets.unity && nets.unity.bannerId){ net = nets.unity; used = "unity"; }
-    else if(nets.applovin && nets.applovin.bannerId){ net = nets.applovin; used = "applovin"; }
-    else { net = nets.admob||{}; used = "admob"; }
-  } else {
-    net = nets[mode] || {}; used = mode;
-  }
-  S.adConfig.bannerId = net.bannerId||""; S.adConfig.interstitialId = net.interstitialId||""; S.adConfig.rewardedId = net.rewardedId||"";
-  S.adConfig.activeNetworkUsed = used;
-}
-function saveAllAdSettings(){
-  const admob = {bannerId:$("#ad_admob_banner").value.trim(), interstitialId:$("#ad_admob_inter").value.trim(), rewardedId:$("#ad_admob_rew").value.trim()};
-  const unity = {gameId:$("#ad_unity_gameid").value.trim(), bannerId:$("#ad_unity_banner").value.trim(), interstitialId:$("#ad_unity_inter").value.trim(), rewardedId:$("#ad_unity_rew").value.trim()};
-  const applovin = {bannerId:$("#ad_applovin_banner").value.trim(), interstitialId:$("#ad_applovin_inter").value.trim(), rewardedId:$("#ad_applovin_rew").value.trim()};
-  const re = /^[a-zA-Z0-9]{16}$/, bad = [["Banner",applovin.bannerId],["Interstitial",applovin.interstitialId],["Rewarded",applovin.rewardedId]].filter(([,v])=>v && !re.test(v));
-  if(bad.length) return alert("AppLovin "+bad.map(([n])=>n).join(", ")+" ID galat hai — AppLovin MAX Dashboard ka Ad Unit ID 16-character alphanumeric code hota hai (sirf a-z, A-Z, 0-9)");
-  if(unity.gameId && !/^\d{6,7}$/.test(unity.gameId)) return alert("Unity Game ID galat hai — yeh 6-7 digit ka number hona chahiye");
-  if(!S.adConfig.networks) S.adConfig.networks = {};
-  S.adConfig.networks.admob = admob; S.adConfig.networks.unity = unity; S.adConfig.networks.applovin = applovin;
-  S.adConfig.network = $("#adNetworkSel").value;
-  syncActiveAdIds();
-  save(); alert("Saari Monetization Settings save ho gayi! Active mode: "+$("#adNetworkSel").selectedOptions[0].textContent); me();
-}
-function toggleAdScreen(sc){
-  if(!S.adConfig.screens) S.adConfig.screens = {home:true,matches:true,promo:true,wallet:true,profile:true,game:true};
-  S.adConfig.screens[sc] = S.adConfig.screens[sc]===false ? true : false;
-  save(); me();
-}
-function saveNotice(){
-  S.config.noticeText = $("#admNoticeText").value.trim();
-  save(); alert("Notice save ho gaya"); me();
-}
-function toggleNoticeScreen(sc){
-  if(!S.config.noticeOn) S.config.noticeOn = {home:false,matches:false,wallet:false,profile:false};
-  S.config.noticeOn[sc] = !S.config.noticeOn[sc];
-  save(); me();
-}
-function addSupportLink(){
-  const platform = $("#admSuppPlatform").value, url = $("#admSuppUrl").value.trim();
-  if(!url) return alert("Pehle link/URL daalo");
-  if(!/^https?:\/\//i.test(url)) return alert("Valid link daalo (http:// ya https:// se shuru hona chahiye)");
-  if(!S.config.supportLinks) S.config.supportLinks = [];
-  S.config.supportLinks.push({id:"sl"+Date.now(), platform, url});
-  save(); $("#admSuppUrl").value = ""; me();
-}
-function delSupportLink(id){
-  S.config.supportLinks = (S.config.supportLinks||[]).filter(l=>l.id!==id);
-  save(); me();
-}
-function saveCloudUrl(){
-  const url = $("#admCloudUrl").value.trim();
-  if(url && !/^https:\/\/[^\s]+$/i.test(url)) return alert("https:// se shuru hone wala valid URL daalo");
-  S.config.cloudApiUrl = url; save(); cloudStatus = "idle"; alert(url?"Cloud URL save ho gaya":"Cloud URL hata diya"); if(url) cloudPull(); me();
-}
-function saveLegalUrl(){
-  const url = $("#admLegalUrl").value.trim();
-  if(url && !/^https?:\/\//i.test(url)) return alert("Valid link daalo (http:// ya https:// se shuru hona chahiye)");
-  S.config.legalUrl = url; save(); alert("Legal URL save ho gaya"); me();
-}
-function setTourDuration(){
-  const v = parseInt($("#admDur").value,10);
-  if(isNaN(v)||v<=0) return alert("Valid minutes daalo");
-  S.config.tourDurationMin = v;
-  S.tours.forEach(t=>t.end = now()+v*MIN);
-  S.tourDurApplied = v;
-  save(); alert("Tournament duration update ho gaya"); me();
-}
-function setGamePool(g){
-  const v = parseInt($("#pool_"+g).value,10);
-  if(isNaN(v)||v<=0) return alert("Valid pool amount daalo");
-  if(!S.config.gamePools) S.config.gamePools = {};
-  S.config.gamePools[g] = v;
-  const t = S.tours.find(x=>x.g===g); if(t) t.pool = v;
-  save(); alert("Pool update ho gaya"); me();
-}
-function setTopN(){
-  const v = parseInt($("#admTopN").value,10);
-  if(isNaN(v)||v<=0||v>50) return alert("1-50 ke beech value daalo");
-  S.config.topN = v; save(); me();
-}
-function toggleGame(g){
-  if(!S.config.gamesEnabled) S.config.gamesEnabled = {};
-  const on = S.config.gamesEnabled[g]===false;
-  S.config.gamesEnabled[g] = on;
-  if(on){ if(!S.tours.some(t=>t.g===g)) S.tours.push({...GAME_CANON[g], pool:(S.config.gamePools&&S.config.gamePools[g])||GAME_CANON[g].pool, end:now()+(S.config.tourDurationMin||30)*MIN}); }
-  else { S.tours = S.tours.filter(t=>t.g!==g); }
-  save(); me();
-}
-function setGamePos(g,pos){
-  // game ko seedha chuni hui position par rakho (1 = sabse pehle). Baaki games apni relative order mein khisak jaate hain.
-  if(!S.config.gamesOrder||!S.config.gamesOrder.length) S.config.gamesOrder = Object.keys(GAME_CANON);
-  const arr = S.config.gamesOrder, i = arr.indexOf(g), p = Math.max(1, Math.min(arr.length, parseInt(pos,10)||1)) - 1;
-  if(i<0||i===p) return me();
-  arr.splice(i,1); arr.splice(p,0,g);
-  save(); me();
-}
-function moveGame(g,dir){
-  if(!S.config.gamesOrder||!S.config.gamesOrder.length) S.config.gamesOrder = Object.keys(GAME_CANON);
-  const arr = S.config.gamesOrder, i = arr.indexOf(g), j = i+dir;
-  if(i<0||j<0||j>=arr.length) return;
-  [arr[i],arr[j]] = [arr[j],arr[i]];
-  save(); me();
-}
-function addGameLink(){
-  const name = $("#ngName").value.trim(), url = $("#ngUrl").value.trim();
-  if(!name || !/^https?:\/\//.test(url)) return alert("Naam aur valid URL (http/https) daalo");
-  if(!S.config.customGames) S.config.customGames = [];
-  S.config.customGames.push({id:"cg"+now(), name, url});
-  save(); alert("Game link add ho gaya"); me();
-}
-function delGameLink(id){ S.config.customGames = (S.config.customGames||[]).filter(g=>g.id!==id); save(); me(); }
-function setLbHour(){
-  const v = parseInt($("#admLbHour").value,10);
-  if(isNaN(v)||v<0||v>23) return alert("0-23 ke beech hour daalo");
-  S.config.lbResetHour = v; save(); alert("Reset hour update ho gaya"); me();
-}
-function setLbMode(){
-  const v = $("#admLbMode").value;
-  S.config.lbResetMode = v; save(); me();
-}
-function toggleLbDay(i){
-  if(!S.config.lbResetDays) S.config.lbResetDays = [0,1,2,3,4,5,6];
-  const arr = S.config.lbResetDays;
-  const pos = arr.indexOf(i);
-  if(pos>=0) arr.splice(pos,1); else arr.push(i);
-  save(); me();
-}
-function admCountrySearch(v){ admCountryQ = v; me(); }
-function toggleBlockedLoginCountry(id){
-  if(!S.config.blockedLoginCountries) S.config.blockedLoginCountries = [];
-  const arr = S.config.blockedLoginCountries, pos = arr.indexOf(id);
-  if(pos>=0) arr.splice(pos,1); else arr.push(id);
-  save(); me();
-}
-function toggleBlockedWithdrawCountry(id){
-  if(!S.config.blockedWithdrawCountries) S.config.blockedWithdrawCountries = [];
-  const arr = S.config.blockedWithdrawCountries, pos = arr.indexOf(id);
-  if(pos>=0) arr.splice(pos,1); else arr.push(id);
-  save(); me();
-}
-function saveLbInterval(){
-  const v = parseInt($("#admLbInterval").value,10);
-  if(isNaN(v)||v<1||v>30) return alert("1-30 ke beech din daalo");
-  S.config.lbResetIntervalDays = v; save(); alert("Reset interval update ho gaya"); me();
-}
-function updateLbVal(r){
-  const v = parseInt($("#lbp_"+r).value,10)||0, el = $("#lbpv_"+r), rate = cfg().rate;
-  if(el) el.textContent = `≈ $${(v/rate).toFixed(2)}`;
-  let total = 0;
-  for(let i=1;i<=50;i++){ const iv = parseInt($("#lbp_"+i).value,10); total += isNaN(iv)?0:iv; }
-  const tEl = $("#lbpvTotal"); if(tEl) tEl.textContent = `≈ $${(total/rate).toFixed(2)}`;
-}
-function saveLbPrizes(){
-  const t = {};
-  for(let r=1;r<=50;r++){ const v = parseInt($("#lbp_"+r).value,10); t[r] = isNaN(v)?0:v; }
-  S.config.lbPrizeTable = t; save(); alert("Rank rewards save ho gaye"); me();
-}
-function saveTourPrizeTable(){
-  const t = {};
-  for(let r=1;r<=50;r++){ const v = parseInt($("#tpz_"+r).value,10); t[r] = isNaN(v)?0:v; }
-  S.config.tourPrizeTable = t; save(); alert("Tournament Prize Split save ho gaya"); me();
-}
-function resetMyRp(){ S.rp = 0; save(); alert("RP reset ho gaya"); me(); }
-function banPhone(){
-  const p = $("#banPhoneIn").value.trim();
-  if(!p) return alert("Phone daalo (jaise +91 9876543210)");
-  const b = loadBans();
-  if(!b.includes(p)) b.push(p);
-  saveBans(b); me();
-}
-function unbanPhone(p){ saveBans(loadBans().filter(x=>x!==p)); me(); }
-function saveWalletLimits(){
-  const rate = parseFloat($("#admRate").value), mn = parseFloat($("#admMin").value), mx = parseFloat($("#admMax").value);
-  if(!rate || !mn || !mx || mn>=mx) return alert("Valid rate aur limits daalo (min < max)");
-  S.config.rate = rate; S.config.minWithdrawUsd = mn; S.config.maxWithdrawUsd = mx;
-  save(); alert("Wallet settings save ho gaye"); me();
-}
-function saveWdMaxPerDay(){
-  const v = parseInt($("#admWdMax").value,10);
-  if(isNaN(v)||v<1) return alert("Valid number daalo (1 ya usse zyada)");
-  S.config.wdMaxPerDay = v; save(); alert("Max withdrawals/day save ho gaya"); me();
-}
-function toggleWdTimeWindow(){ S.config.wdTimeEnabled = !S.config.wdTimeEnabled; save(); me(); }
-function saveWdTimeWindow(){
-  const st = $("#admWdStart").value, en = $("#admWdEnd").value;
-  if(!st || !en) return alert("Start aur End time dono daalo");
-  S.config.wdTimeStart = st; S.config.wdTimeEnd = en; save(); alert("Withdrawal timing window save ho gaya"); me();
-}
-function toggleWdDays(){ S.config.wdDaysEnabled = !S.config.wdDaysEnabled; save(); me(); }
-function toggleWdDay(i){
-  if(!S.config.wdDays) S.config.wdDays = [0,1,2,3,4,5,6];
-  const arr = S.config.wdDays, pos = arr.indexOf(i);
-  if(pos>=0) arr.splice(pos,1); else arr.push(i);
-  save(); me();
-}
-function savePresets(){
-  const vals = $("#admPresets").value.split(",").map(s=>parseFloat(s.trim())).filter(n=>!isNaN(n)&&n>0);
-  if(!vals.length) return alert("Valid comma-separated amounts daalo");
-  S.config.presetAmounts = vals; save(); alert("Presets save ho gaye"); me();
-}
-function toggleUpi(){ S.config.upiEnabled = S.config.upiEnabled===false ? true : false; save(); me(); }
-function togglePaypal(){ S.config.paypalEnabled = S.config.paypalEnabled===false ? true : false; save(); me(); }
-function togglePaytm(){ S.config.paytmEnabled = S.config.paytmEnabled===false ? true : false; save(); me(); }
-function togglePhonepe(){ S.config.phonepeEnabled = S.config.phonepeEnabled===false ? true : false; save(); me(); }
-function toggleBinance(){ S.config.binanceEnabled = S.config.binanceEnabled===false ? true : false; save(); me(); }
-function saveFee(){
-  const v = parseFloat($("#admFee").value);
-  if(isNaN(v)||v<0||v>100) return alert("0-100 ke beech fee % daalo");
-  S.config.paypalFeePct = v; save(); alert("Processing fee save ho gaya"); me();
-}
-function saveBinanceFee(){
-  const v = parseFloat($("#admBinanceFee").value);
-  if(isNaN(v)||v<0||v>100) return alert("0-100 ke beech fee % daalo");
-  S.config.binanceFeePct = v; save(); alert("Binance Processing fee save ho gaya"); me();
-}
-function saveInrRate(){
-  const v = parseFloat($("#admInr").value);
-  if(isNaN(v)||v<=0) return alert("Valid USD-INR rate daalo");
-  S.config.usdToInr = v; save(); alert("INR rate save ho gaya"); me();
-}
-function togglePayoutMode(){ S.config.payoutAutoMode = !S.config.payoutAutoMode; save(); me(); }
-function togglePayoutProvider(val){
-  if(!S.config.payoutProviders) S.config.payoutProviders = [];
-  const i = S.config.payoutProviders.indexOf(val);
-  if(i===-1) S.config.payoutProviders.push(val); else S.config.payoutProviders.splice(i,1);
-  save(); me();
-}
-function savePayoutSettings(){
-  S.config.payoutMerchantId = $("#admPayoutMerchant").value.trim();
-  S.config.payoutWebhookUrl = $("#admPayoutWebhook").value.trim();
-  save(); alert("Payout settings save ho gaye (yaad rakho: real auto-transfer ke liye backend chahiye)"); me();
-}
-function saveUpiTds(){
-  const v = parseFloat($("#admUpiTds").value);
-  if(isNaN(v)||v<0||v>100) return alert("0-100 ke beech TDS % daalo");
-  S.config.upiTdsPct = v; save(); alert("UPI TDS % save ho gaya"); me();
-}
-function savePaytmTds(){
-  const v = parseFloat($("#admPaytmTds").value);
-  if(isNaN(v)||v<0||v>100) return alert("0-100 ke beech TDS % daalo");
-  S.config.paytmTdsPct = v; save(); alert("Paytm TDS % save ho gaya"); me();
-}
-function savePhonepeTds(){
-  const v = parseFloat($("#admPhonepeTds").value);
-  if(isNaN(v)||v<0||v>100) return alert("0-100 ke beech TDS % daalo");
-  S.config.phonepeTdsPct = v; save(); alert("PhonePe TDS % save ho gaya"); me();
-}
-function saveDailyBonus(){
-  const v = parseInt($("#admBonus").value,10);
-  if(isNaN(v)||v<=0) return alert("Valid RP amount daalo");
-  S.config.dailyBonusRp = v; save(); alert("Daily bonus save ho gaya"); me();
-}
-function saveBonusInterval(){
-  const v = parseInt($("#admBonusInterval").value,10);
-  S.config.dailyBonusIntervalDays = v; save(); alert("Bonus video frequency set ho gaya"); me();
-}
-function toggleBonusTimeWindow(){
-  S.config.dailyBonusTimeEnabled = !S.config.dailyBonusTimeEnabled; save(); me();
-}
-function saveBonusTimeWindow(){
-  const st = $("#admBonusStart").value, en = $("#admBonusEnd").value;
-  if(!st || !en) return alert("Start aur End time dono daalo");
-  S.config.dailyBonusTimeStart = st; S.config.dailyBonusTimeEnd = en; save(); alert("Timing window save ho gaya"); me();
-}
-function saveStreakRewards(){
-  const arr = [];
-  for(let i=0;i<(S.config.streakRewards||[]).length;i++){
-    const raw = $("#str_"+i).value.trim();
-    const num = parseFloat(raw);
-    arr.push(raw.startsWith("$") ? raw : (isNaN(num)?raw:num));
-  }
-  S.config.streakRewards = arr; save(); alert("Streak rewards save ho gaye"); me();
-}
-function addPromo(){
-  const c = $("#pcCode").value.trim(), v = parseInt($("#pcRp").value,10);
-  if(!/^\d{6}$/.test(c)) return alert("6 digit code daalo");
-  if(isNaN(v) || v<=0) return alert("RP value daalo");
-  if(!S.promos) S.promos = {};
-  S.promos[c] = v; save(); me();
-}
-function delPromo(c){ delete S.promos[c]; save(); me(); }
-function addMatch(){
-  const g = $("#ag").value.trim().toLowerCase(), p = parseInt($("#ap2").value,10), m = parseInt($("#am").value,10)||60;
-  if(!["arctic","hoop"].includes(g) || isNaN(p)) return alert("Game mein 'arctic' ya 'hoop' likho aur pool bharo");
-  S.tours.push({id:now(),g,name:g==="hoop"?"Hoop Challenge":"Arctic Voyage",split:"Top 50",pool:p,end:now()+m*MIN}); save(); alert("Tournament add ho gaya"); me();
-}
-function wdFraudFlag(w){
-  // Single-device demo app, so this only checks within this device's own request history.
-  // A real fraud check (duplicate UPI/PayPal across accounts, fake-coin detection) needs a backend.
-  const sameId = S.wd.filter(x=>x.to===w.to && x.id!==w.id).length;
-  return sameId>0 ? `⚠️ Yeh UPI/PayPal ID ${sameId} aur request(s) mein bhi use hui hai — manually review karo` : "";
-}
-function wdRow(w){
-  const flag = w.status==="PENDING" ? wdFraudFlag(w) : "";
-  const inr = usd => Math.round(parseFloat(usd)*cfg().usdToInr).toLocaleString("en-IN");
-  const amtLine = !isFeeMethod(w.method)
-    ? `₹${inr(w.net)} net (req ₹${inr(w.requested)}, TDS ₹${inr(w.tds)})`
-    : `${w.method==="Binance"?"USDT ":"$"}${w.net} net (req ${w.method==="Binance"?"USDT ":"$"}${w.requested}, TDS N/A)`;
-  const backendOn = !!cfg().payoutWebhookUrl;
-  const backendBadge = backendOn ? (
-    w.backendSent===true ? `<br><span style="color:#22c55e;font-size:11px">📤 Backend: Sent (${w.backendStatus})</span>`
-    : w.backendSent===false ? `<br><span style="color:#ff5c5c;font-size:11px">📤 Backend: Failed${w.backendError?" — "+esc(w.backendError):""}</span>`
-    : `<br><span class="mut" style="font-size:11px">📤 Backend: Not sent</span>`
-  ) : "";
-  return `<div class="lb" style="flex-wrap:wrap">
-    <span class="n">${esc(w.user_id)} • ${amtLine} • ${esc(w.method)}<br>
-    <span class="mut">${esc(w.to)}</span>${w.mobile?`<br><span class="mut">📱 ${esc(w.mobile)}</span>`:""}${w.utr?`<br><span class="mut">UTR: ${esc(w.utr)}</span>`:""}${flag?`<br><span style="color:#ffb020;font-size:11px">${flag}</span>`:""}${backendBadge}</span>
-    <span class="mut">${w.status}${w.status==="PENDING"&&cfg().payoutAutoMode&&(cfg().payoutProviders||[]).length>0?` <span style="color:#22c55e">⚡ Auto</span>`:""}</span>
-    ${w.status==="PENDING"?`<button class="btn g sm" onclick="approveWd('${w.id}')">✓ Approve</button><button class="btn sm" onclick="rejectWd('${w.id}')">✗ Reject</button>`:""}
-    ${backendOn&&(w.status==="PENDING"||w.status==="APPROVED")?`<button class="btn s sm" onclick="sendWdToBackend(S.wd.find(x=>x.id==='${w.id}'))">📤 ${w.backendSent===undefined?"Send":"Resend"} to Backend</button>`:""}
-    ${w.status==="APPROVED"?`<div style="width:100%;display:flex;gap:6px;margin-top:6px"><input id="utr_${w.id}" placeholder="12-digit UTR number" style="margin-bottom:0;flex:1"><button class="btn g sm" onclick="markPaid('${w.id}')">Mark as Paid</button></div>`:""}
-  </div>`;
-}
-function approveWd(id){ const w=S.wd.find(x=>x.id===id); if(!w) return; w.status="APPROVED"; save(); me(); }
-function rejectWd(id){ const w=S.wd.find(x=>x.id===id); if(!w) return; S.coins=(S.coins||0)+w.coins; w.status="REJECTED"; save(); me(); }
-function markPaid(id){
-  const w=S.wd.find(x=>x.id===id); if(!w) return;
-  const inp = $("#utr_"+id), utr = inp?inp.value.trim():"";
-  if(!/^\d{10,16}$/.test(utr)) return alert("Valid UTR number daalo (10-16 digit)");
-  w.status="SUCCESS"; w.utr=utr;
-  S.wdNotify = `$${w.net} sent successfully! UTR: ${utr}`;
-  save(); me();
-}
-async function saveCsv(filename, csv){
-  try{
-    const downloads = window.claude ? await window.claude.use("downloads") : null;
-    if(!downloads){ alert("Download yahan available nahi hai is view mein"); return; }
-    await downloads.save({filename, data: csv});
-  }catch(e){
-    if(e && e.code === "declined") return; // user cancelled, no error needed
-    alert("Download fail ho gaya: " + (e && e.message ? e.message : "unknown error"));
-  }
-}
-async function exportUpiTdsCsv(){
-  const d = new Date(), ym = d.toISOString().slice(0,7), rate = cfg().usdToInr, tdsPct = cfg().upiTdsPct;
-  const rows = S.wd.filter(w=>w.method==="UPI" && w.status==="SUCCESS" && new Date(w.created).toISOString().slice(0,7)===ym);
-  if(!rows.length){ alert("Is mahine koi UPI SUCCESS payout nahi hai"); return; }
-  let totalReq=0, totalTds=0, totalNet=0;
-  let csv = "ID,User,UPI ID,Mobile,Requested(₹),TDS %,TDS(₹),Net Payout(₹),UTR,Date\n";
-  rows.forEach(w=>{
-    const req = Math.round(parseFloat(w.requested)*rate), tds = Math.round(parseFloat(w.tds)*rate), net = Math.round(parseFloat(w.net)*rate);
-    totalReq+=req; totalTds+=tds; totalNet+=net;
-    csv += `${w.id},${w.user_id},${w.to},${w.mobile||""},${req},${tdsPct}%,${tds},${net},${w.utr},${new Date(w.created).toLocaleDateString()}\n`;
-  });
-  csv += `\nTOTAL,,,,${totalReq},,${totalTds},${totalNet},,\n`;
-  csv += `\nMonth: ${ym}\nTotal UPI SUCCESS Payouts: ${rows.length}\nTotal TDS (${tdsPct}%) payable to Govt: ₹${totalTds} — Challan 281 bharne ke liye\n`;
-  await saveCsv(`UPI_TDS_Report_${ym}.csv`, csv);
-}
-async function exportPaytmTdsCsv(){
-  const d = new Date(), ym = d.toISOString().slice(0,7), rate = cfg().usdToInr, tdsPct = cfg().paytmTdsPct;
-  const rows = S.wd.filter(w=>w.method==="Paytm" && w.status==="SUCCESS" && new Date(w.created).toISOString().slice(0,7)===ym);
-  if(!rows.length){ alert("Is mahine koi Paytm SUCCESS payout nahi hai"); return; }
-  let totalReq=0, totalTds=0, totalNet=0;
-  let csv = "ID,User,Paytm ID,Mobile,Requested(₹),TDS %,TDS(₹),Net Payout(₹),UTR,Date\n";
-  rows.forEach(w=>{
-    const req = Math.round(parseFloat(w.requested)*rate), tds = Math.round(parseFloat(w.tds)*rate), net = Math.round(parseFloat(w.net)*rate);
-    totalReq+=req; totalTds+=tds; totalNet+=net;
-    csv += `${w.id},${w.user_id},${w.to},${w.mobile||""},${req},${tdsPct}%,${tds},${net},${w.utr},${new Date(w.created).toLocaleDateString()}\n`;
-  });
-  csv += `\nTOTAL,,,,${totalReq},,${totalTds},${totalNet},,\n`;
-  csv += `\nMonth: ${ym}\nTotal Paytm SUCCESS Payouts: ${rows.length}\nTotal TDS (${tdsPct}%) payable to Govt: ₹${totalTds} — Challan 281 bharne ke liye\n`;
-  await saveCsv(`Paytm_TDS_Report_${ym}.csv`, csv);
-}
-async function exportPhonepeTdsCsv(){
-  const d = new Date(), ym = d.toISOString().slice(0,7), rate = cfg().usdToInr, tdsPct = cfg().phonepeTdsPct;
-  const rows = S.wd.filter(w=>w.method==="PhonePe" && w.status==="SUCCESS" && new Date(w.created).toISOString().slice(0,7)===ym);
-  if(!rows.length){ alert("Is mahine koi PhonePe SUCCESS payout nahi hai"); return; }
-  let totalReq=0, totalTds=0, totalNet=0;
-  let csv = "ID,User,PhonePe ID,Mobile,Requested(₹),TDS %,TDS(₹),Net Payout(₹),UTR,Date\n";
-  rows.forEach(w=>{
-    const req = Math.round(parseFloat(w.requested)*rate), tds = Math.round(parseFloat(w.tds)*rate), net = Math.round(parseFloat(w.net)*rate);
-    totalReq+=req; totalTds+=tds; totalNet+=net;
-    csv += `${w.id},${w.user_id},${w.to},${w.mobile||""},${req},${tdsPct}%,${tds},${net},${w.utr},${new Date(w.created).toLocaleDateString()}\n`;
-  });
-  csv += `\nTOTAL,,,,${totalReq},,${totalTds},${totalNet},,\n`;
-  csv += `\nMonth: ${ym}\nTotal PhonePe SUCCESS Payouts: ${rows.length}\nTotal TDS (${tdsPct}%) payable to Govt: ₹${totalTds} — Challan 281 bharne ke liye\n`;
-  await saveCsv(`PhonePe_TDS_Report_${ym}.csv`, csv);
-}
-async function exportPaypalCsv(){
-  const d = new Date(), ym = d.toISOString().slice(0,7), feePct = cfg().paypalFeePct;
-  const rows = S.wd.filter(w=>w.method==="PayPal" && w.status==="SUCCESS" && new Date(w.created).toISOString().slice(0,7)===ym);
-  if(!rows.length){ alert("Is mahine koi PayPal SUCCESS payout nahi hai"); return; }
-  let totalReq=0, totalFee=0, totalNet=0;
-  let csv = "ID,User,PayPal Email,Mobile,Requested($),Processing Fee %,Fee($),Net Payout($),UTR,Date\n";
-  rows.forEach(w=>{
-    const req = parseFloat(w.requested), net = parseFloat(w.net), fee = (req-net);
-    totalReq+=req; totalFee+=fee; totalNet+=net;
-    csv += `${w.id},${w.user_id},${w.to},${w.mobile||""},${req.toFixed(2)},${feePct}%,${fee.toFixed(2)},${net.toFixed(2)},${w.utr},${new Date(w.created).toLocaleDateString()}\n`;
-  });
-  csv += `\nTOTAL,,,,${totalReq.toFixed(2)},,${totalFee.toFixed(2)},${totalNet.toFixed(2)},,\n`;
-  csv += `\nMonth: ${ym}\nTotal PayPal SUCCESS Payouts: ${rows.length}\nTDS: N/A (PayPal par TDS nahi lagta)\n`;
-  await saveCsv(`PayPal_Report_${ym}.csv`, csv);
-}
-async function exportBinanceCsv(){
-  const d = new Date(), ym = d.toISOString().slice(0,7), feePct = cfg().binanceFeePct;
-  const rows = S.wd.filter(w=>w.method==="Binance" && w.status==="SUCCESS" && new Date(w.created).toISOString().slice(0,7)===ym);
-  if(!rows.length){ alert("Is mahine koi Binance SUCCESS payout nahi hai"); return; }
-  let totalReq=0, totalFee=0, totalNet=0;
-  let csv = "ID,User,Binance Pay ID/Email,Mobile,Requested(USDT),Processing Fee %,Fee(USDT),Net Payout(USDT),UTR,Date\n";
-  rows.forEach(w=>{
-    const req = parseFloat(w.requested), net = parseFloat(w.net), fee = (req-net);
-    totalReq+=req; totalFee+=fee; totalNet+=net;
-    csv += `${w.id},${w.user_id},${w.to},${w.mobile||""},${req.toFixed(2)},${feePct}%,${fee.toFixed(2)},${net.toFixed(2)},${w.utr},${new Date(w.created).toLocaleDateString()}\n`;
-  });
-  csv += `\nTOTAL,,,,${totalReq.toFixed(2)},,${totalFee.toFixed(2)},${totalNet.toFixed(2)},,\n`;
-  csv += `\nMonth: ${ym}\nTotal Binance SUCCESS Payouts: ${rows.length}\nTDS: N/A (Binance par TDS nahi lagta)\n`;
-  await saveCsv(`Binance_Report_${ym}.csv`, csv);
-}
 render();
+if(S && S.banned) showBan();
+remotePull();
+userSyncNow();
 cloudPull();
+syncWdStatuses();
+
+// ===== Splash screen: shown on every app launch for ~2.2s =====
+(function(){
+  const sp = document.getElementById("splash"); if(!sp) return;
+  setTimeout(()=>{ sp.classList.add("hide"); setTimeout(()=>{ try{ sp.remove(); }catch(e){} }, 600); }, 2200);
+})();
+
+// ===== Internet required: app is blocked ONLY while the device itself reports no connection =====
+// (Uses the browser/WebView's own online status. No external probe requests, so a working connection is never blocked by mistake.)
+(function(){
+  const o = document.createElement("div"); o.id = "netGate";
+  o.style.cssText = "display:none;position:fixed;inset:0;z-index:2147483000;background:#160c2e;color:#f3ecff;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:30px;text-align:center;font-family:'Segoe UI',Roboto,Arial,sans-serif";
+  o.innerHTML = '<div style="font-size:54px">📡</div><div style="font-size:18px;font-weight:800">Internet nahi hai</div><div style="font-size:13px;opacity:.75">Ye app chalane ke liye internet chahiye. Wi-Fi ya mobile data on karo.</div><button id="netBtn" style="border:0;border-radius:10px;padding:12px 26px;font-weight:700;font-size:15px;background:#6d2fe0;color:#fff;cursor:pointer">Retry</button>';
+  document.body.appendChild(o);
+  let wasOff = false;
+  function update(){
+    const off = navigator.onLine === false;
+    o.style.display = off ? "flex" : "none";
+    if(wasOff && !off && typeof syncWdStatuses === "function") syncWdStatuses();
+    wasOff = off;
+  }
+  o.querySelector("#netBtn").onclick = update;
+  addEventListener("offline", update);
+  addEventListener("online", update);
+  setInterval(update, 3000);
+  update();
+})();
+</script>
+<div id="adm"></div>
+<script>
+// ===== Hidden Admin View (same APK) =====
+// Entry: 10 taps on the logo within 3 s -> Android BiometricPrompt (fingerprint) -> admin PIN -> admin token (30 min).
+// SECURITY: no PIN / secret exists in this file. Every admin read/write is authorised by the Apps Script server
+// (ADMIN_SECRET in Script properties). The fingerprint + 10-tap only hide the screen on the owner's phone.
+(function(){
+"use strict";
+const $adm = document.getElementById("adm");
+const E = s => String(s==null?"":s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const BAD = /^(__proto__|constructor|prototype)$/;
+const gp = (o,p) => p.split(".").reduce((a,k)=>a==null?a:a[k], o);
+function sp(o,p,v){
+  const ks = p.split("."); if(ks.some(k=>BAD.test(k))) return;
+  let a = o;
+  for(let i=0;i<ks.length-1;i++){ const k = ks[i]; if(a[k]==null || typeof a[k]!=="object") a[k] = /^\d+$/.test(ks[i+1]) ? [] : {}; a = a[k]; }
+  a[ks[ks.length-1]] = v;
+}
+const A = {open:false, tok:"", doc:null, dirty:false, tab:"wd", saving:false, loading:false,
+  wd:{filter:"Pending", method:"all", items:[], counts:{}, loaded:false},
+  us:{q:"", items:[], total:0, loaded:false}, cq:"", hiddenAt:0, msg:""};
+const CFG_TABS = ["games","lb","wal","bonus","ads","info","ctry","promo"];
+const TABS = [["wd","💸 Withdrawals"],["rep","📊 Reports"],["users","👥 Users"],["games","🎮 Games"],["lb","🏆 Leaderboard"],["wal","💰 Wallet"],["bonus","🎁 Bonus"],["ads","📺 Ads"],["info","📢 Notice & Links"],["ctry","🌍 Countries"],["promo","🎟 Promo"]];
+const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const METHODS = ["UPI","PayPal","Paytm","PhonePe","Binance","Bybit"];
+
+/* ---------- small helpers ---------- */
+function flash(t){
+  const d = document.createElement("div");
+  d.style.cssText = "position:fixed;left:50%;bottom:84px;transform:translateX(-50%);z-index:2147483300;background:#000d;color:#fff;padding:10px 16px;border-radius:12px;font-size:13px;font-weight:600;max-width:88vw;text-align:center";
+  d.textContent = t; document.body.appendChild(d); setTimeout(()=>d.remove(), 3200);
+}
+function ask(o){
+  return new Promise(res=>{
+    const m = document.createElement("div"); m.className = "amod";
+    m.innerHTML = `<div class="abox"><b>${E(o.title)}</b><div class="mut" style="margin:8px 0">${E(o.msg||"")}</div>${o.input?`<input id="amIn" placeholder="${E(o.ph||"")}" autocomplete="off">`:""}<div class="ar" style="margin-top:8px"><button class="b s" id="amNo">Cancel</button><button class="b ${o.bad?"bad":"g"}" id="amOk">${E(o.ok||"OK")}</button></div></div>`;
+    $adm.appendChild(m);
+    const done = v => { m.remove(); res(v); };
+    m.querySelector("#amNo").onclick = ()=>done(null);
+    m.querySelector("#amOk").onclick = ()=>done(o.input ? m.querySelector("#amIn").value.trim() : true);
+    if(o.input) m.querySelector("#amIn").focus();
+  });
+}
+function saveCsvFile(name, csv){
+  const a = document.createElement("a");
+  a.href = "data:text/csv;charset=utf-8," + encodeURIComponent("﻿"+csv); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+const csvCell = v => { v = String(v==null?"":v); return /[",\n]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; };
+
+/* ---------- entry: 10 taps in 3 seconds -> fingerprint ---------- */
+const taps = [];
+document.addEventListener("click", e=>{
+  if(!e.target.closest || !e.target.closest(".logo")) return;
+  const t = Date.now(); taps.push(t);
+  while(taps.length && t - taps[0] > 3000) taps.shift();
+  if(taps.length >= 10){ taps.length = 0; gate(); }
+}, true);
+let pending = false;
+function gate(){
+  if(A.open || pending) return;
+  if(!SHEETS_URL){ flash("Sheets URL app mein set nahi hai"); return; }
+  if(!window.AndroidAdmin || !window.AndroidAdmin.authenticate){ flash("Admin sirf Android app mein (fingerprint ke saath) khulta hai"); return; }
+  pending = true;
+  try{ window.AndroidAdmin.authenticate(); }catch(e){ pending = false; flash("Fingerprint prompt nahi khul paya"); }
+}
+// Called by MainActivity only. Ignored unless THIS page asked for it (pending). A forged call still gets nothing: the server needs the PIN.
+window.__adminAuth = function(ok, msg){
+  if(!pending) return; pending = false;
+  if(ok === true) openAdmin(); else flash(msg || "Fingerprint match nahi hua — admin band");
+};
+document.addEventListener("visibilitychange", ()=>{
+  if(document.hidden){ A.hiddenAt = Date.now(); }
+  else if(A.open && A.hiddenAt && Date.now() - A.hiddenAt > 60000){ closeAdmin(); flash("Admin auto-lock ho gaya"); }
+});
+
+function openAdmin(){ A.open = true; A.tok = ""; A.doc = null; A.dirty = false; A.tab = "wd"; A.wd.loaded = false; A.us.loaded = false; $adm.style.display = "block"; draw(); }
+function closeAdmin(){ A.open = false; A.tok = ""; A.doc = null; A.dirty = false; $adm.style.display = "none"; $adm.innerHTML = ""; }
+
+/* ---------- server calls ---------- */
+async function call(action, extra){
+  const d = await sheetsCall(Object.assign({action, token:A.tok}, extra||{}));
+  if(d && d.auth){ closeAdmin(); flash("Session expire — dobara fingerprint se kholo"); throw new Error("auth"); }
+  return d;
+}
+function buildDoc(r){
+  const doc = (r && r.doc) || {};
+  const ads = mergeDeep(defaultAdConfig(), doc.adConfig || {}); ads.unityOn = !(r && r.unityAds === "OFF");
+  const promos = (doc.promos && typeof doc.promos === "object") ? doc.promos : (RPROMOS || {"111111":500,"222222":1000,"555555":2500,"999999":5000});
+  return {config: mergeDeep(defaultConfig(), doc.config || {}), adConfig: ads, promos: JSON.parse(JSON.stringify(promos))};
+}
+async function login(pin){
+  A.loading = true; draw();
+  try{
+    const d = await sheetsCall({action:"adminLogin", pin});
+    if(!d || !d.ok){ A.loading = false; A.msg = (d && d.error) || "Login fail"; draw(); return; }
+    A.tok = d.token;
+    const r = await call("adminConfigGet");
+    if(!r.ok){ A.loading = false; A.msg = r.error || "Config load fail"; draw(); return; }
+    A.doc = buildDoc(r); A.msg = "";
+    await loadWd(true);
+  }catch(e){ A.msg = "Network / URL error"; }
+  A.loading = false; draw();
+}
+async function loadWd(quiet){
+  try{
+    const d = await call("adminList", {filter:"all"});
+    if(d.ok){ A.wd.items = d.items || []; A.wd.counts = d.counts || {}; A.wd.loaded = true; }
+    else flash(d.error || "Load error");
+  }catch(e){ if(e.message !== "auth") flash("Network error"); }
+  if(!quiet) draw();
+}
+async function loadUsers(){
+  try{
+    const d = await call("adminUsers", {q:A.us.q});
+    if(d.ok){ A.us.items = d.items || []; A.us.total = d.total || 0; A.us.loaded = true; }
+    else flash(d.error || "Load error");
+  }catch(e){ if(e.message !== "auth") flash("Network error"); }
+  draw();
+}
+async function saveCfg(){
+  if(A.saving) return; A.saving = true; draw();
+  try{
+    const d = await call("adminConfigSet", {doc:A.doc});
+    if(d.ok){ A.dirty = false; flash("Sheet mein save ho gaya ✅ (users ko 5 min mein mil jayega)"); }
+    else flash(d.error || "Save fail");
+  }catch(e){ if(e.message !== "auth") flash("Network error — save nahi hua"); }
+  A.saving = false; draw();
+}
+async function setUnity(){
+  const next = !(A.doc.adConfig.unityOn !== false);
+  try{
+    const d = await call("adminUnitySet", {on:next});
+    if(d.ok){ A.doc.adConfig.unityOn = (d.unityAds === "ON"); flash("Unity Ads " + d.unityAds + " — Sheet update ho gayi ✅"); }
+    else flash(d.error || "Unity update fail");
+  }catch(e){ if(e.message !== "auth") flash("Network error"); }
+  draw();
+}
+
+/* ---------- field builders (all bound by data-p path into A.doc) ---------- */
+function inp(label, p, t, o){
+  o = o || {}; let v = gp(A.doc, p); if(t === "csv") v = (v||[]).join(",");
+  const ty = (t==="n"||t==="i") ? 'type="number" step="any"' : (o.type ? `type="${o.type}"` : "");
+  return `<div class="ar"><span class="mut">${label}</span><input data-p="${p}" data-t="${t}" ${ty} ${o.ph?`placeholder="${E(o.ph)}"`:""} value="${E(v==null?"":v)}" style="${o.w?`width:${o.w}px;`:""}margin:0"></div>`;
+}
+function wide(label, p, ph){ return `<div class="mut" style="margin:8px 0 2px">${label}</div><input data-p="${p}" data-t="t" placeholder="${E(ph||"")}" value="${E(gp(A.doc,p)||"")}">`; }
+function tg(label, p, d){
+  const v = gp(A.doc, p), on = d==="1" ? v!==false : v===true;
+  return `<div class="ar"><span class="mut">${label}</span><button class="b ${on?"g":"s"} sm" data-a="tg" data-p="${p}" data-d="${d}">${on?"ON ✅":"OFF ❌"}</button></div>`;
+}
+function sel(label, p, opts, t, rr){
+  const v = String(gp(A.doc, p));
+  return `<div class="ar"><span class="mut">${label}</span><select data-p="${p}" data-t="${t||"t"}" ${rr?'data-rr="1"':""}>${opts.map(([k,l])=>`<option value="${E(k)}" ${String(k)===v?"selected":""}>${E(l)}</option>`).join("")}</select></div>`;
+}
+function days(label, p){
+  const arr = gp(A.doc, p) || [];
+  return `<div class="mut" style="margin:8px 0 4px">${label}</div><div class="ar" style="justify-content:flex-start;flex-wrap:wrap">${DAYS.map((l,i)=>`<button class="b ${arr.includes(i)?"g":"s"} sm" data-a="day" data-p="${p}" data-i="${i}">${l}</button>`).join("")}</div>`;
+}
+function table(prefix, n, label){
+  const t = gp(A.doc, prefix) || {};
+  let sum = 0, rows = "";
+  for(let r=1;r<=n;r++){ const v = Number(t[r])||0; sum += v; rows += `<div class="ar"><span class="mut" style="width:64px">Rank #${r}</span><input data-p="${prefix}.${r}" data-t="n" type="number" step="any" value="${v}" style="margin:0"></div>`; }
+  return `<div class="mut" style="margin:8px 0 4px">${label}</div>${rows}<div class="ar sum"><b>Total (Rank 1-${n})</b><b id="sum_${prefix}" data-sumfor="${prefix}" data-n="${n}">💜 ${sum.toLocaleString()} RP</b></div>`;
+}
+
+/* ---------- tab bodies ---------- */
+function tGames(){
+  const c = A.doc.config, order = (c.gamesOrder||[]).filter(g=>GAME_CANON[g]);
+  return `<h3>1️⃣ Tournaments & Games</h3>
+  ${inp("Tournament Duration (minutes)","config.tourDurationMin","n",{w:90})}
+  <div class="mut" style="margin:8px 0 2px">Prize Pool per Game (RP)</div>
+  ${order.map(g=>inp(E(GAME_CANON[g].name),`config.gamePools.${g}`,"n",{w:100})).join("")}
+  ${inp("Prize Split — Top N Players","config.topN","n",{w:80})}
+  <div class="mut" style="margin:10px 0 4px">Game Management — ON/OFF + Position</div>
+  ${order.map((g,i)=>{ const on = (c.gamesEnabled||{})[g]!==false; return `<div class="ar"><span style="flex:1">${E(GAME_CANON[g].name)}</span>
+    <select data-a2="pos" data-g="${g}">${order.map((_,k)=>`<option value="${k}" ${k===i?"selected":""}>#${k+1}</option>`).join("")}</select>
+    <button class="b s sm" data-a="mv" data-g="${g}" data-d="-1" ${i===0?"disabled":""}>↑</button>
+    <button class="b s sm" data-a="mv" data-g="${g}" data-d="1" ${i===order.length-1?"disabled":""}>↓</button>
+    <button class="b ${on?"g":"s"} sm" data-a="tg" data-p="config.gamesEnabled.${g}" data-d="1">${on?"ON ✅":"OFF ❌"}</button></div>`; }).join("")}
+  <div class="mut" style="margin:12px 0 4px">Add New Game Link (external promo card)</div>
+  <input id="ngName" placeholder="Game name"><input id="ngUrl" placeholder="https://...">
+  <button class="b g wf" data-a="addcg">Add Game Link</button>
+  ${(c.customGames||[]).map((cg,i)=>`<div class="ar lb2"><span>🔗 ${E(cg.name)}<br><span class="mut">${E(cg.url||"")}</span></span><button class="b s sm" data-a="delcg" data-i="${i}">✕</button></div>`).join("")}
+  <div class="mut" style="margin:14px 0 4px">Naya tournament banao (manual)</div>
+  <div class="ar"><select id="mtG">${Object.keys(GAME_CANON).map(g=>`<option value="${g}">${E(GAME_CANON[g].name)}</option>`).join("")}</select></div>
+  <input id="mtPool" placeholder="Tournament pool (RP)" inputmode="numeric"><input id="mtMin" placeholder="Kitne minute chalega?" inputmode="numeric">
+  <button class="b g wf" data-a="addmt">Tournament Add Karo</button>
+  ${(c.manualTours||[]).map((m,i)=>`<div class="ar lb2"><span>🎯 ${E((GAME_CANON[m.g]||{}).name||m.g)} • ${E(m.pool)} RP • ${E(m.min)} min</span><button class="b s sm" data-a="delmt" data-i="${i}">✕</button></div>`).join("")}
+  <h3 style="margin-top:18px">🏆 Tournament Prize Split — Top 50 (RP per rank)</h3>
+  ${table("config.tourPrizeTable",50,"Har tournament ke \"Prize Split: Top 50\" popup mein yehi rank-wise RP dikhega")}`;
+}
+function tLb(){
+  const c = A.doc.config, mode = c.lbResetMode==="days"||c.lbResetMode==="interval" ? c.lbResetMode : "daily";
+  const hours = Array.from({length:24},(_,h)=>[h, h===0?"12:00 AM":h<12?`${h}:00 AM`:h===12?"12:00 PM":`${h-12}:00 PM`]);
+  return `<h3>2️⃣ Leaderboard & Prize Distribution</h3>
+  ${sel("Daily Reset Hour","config.lbResetHour",hours,"i")}
+  <div class="ar"><span class="mut">Reset Frequency</span><select data-p="config.lbResetMode" data-t="t" data-rr="1">
+    <option value="daily" ${mode==="daily"?"selected":""}>Daily (har din)</option><option value="days" ${mode==="days"?"selected":""}>Specific Days</option><option value="interval" ${mode==="interval"?"selected":""}>Fix Days (har N din)</option></select></div>
+  ${mode==="days"?days("Reset in din par hoga","config.lbResetDays"):""}
+  ${mode==="interval"?inp("Reset har (din)","config.lbResetIntervalDays","i",{w:80}):""}
+  ${table("config.lbPrizeTable",50,"Rank Reward Structure — Top 50 (RP/coins)")}
+  <div class="mut" style="margin-top:6px">≈ Total $ value = total ÷ coin rate (${E(c.rate)})</div>
+  <div class="mut" style="margin:14px 0 6px">Manual Override</div>
+  <button class="b s wf" data-a="resetMyRp">Is device ka RP 0 karo</button>
+  <div class="mut" style="margin-top:6px">Ban/Unban ab 👥 Users tab mein hai — Sheet se chalta hai, sabhi users par lagu hota hai.</div>`;
+}
+function tWal(){
+  return `<h3>3️⃣ Wallet & Withdrawal Controls</h3>
+  ${inp("Coin Rate (coins = $1)","config.rate","n",{w:100})}${inp("Min Withdraw ($)","config.minWithdrawUsd","n",{w:100})}${inp("Max Withdraw ($)","config.maxWithdrawUsd","n",{w:100})}
+  ${inp("Max Withdrawals Per Day","config.wdMaxPerDay","i",{w:80})}
+  ${tg("Withdrawal Timing Window","config.wdTimeEnabled","0")}
+  ${A.doc.config.wdTimeEnabled?`${inp("Start","config.wdTimeStart","t",{type:"time"})}${inp("End","config.wdTimeEnd","t",{type:"time"})}`:""}
+  ${tg("Withdrawal Allowed Days","config.wdDaysEnabled","0")}
+  ${A.doc.config.wdDaysEnabled?days("Allowed days","config.wdDays"):""}
+  <div class="mut" style="margin:10px 0 2px">Preset Withdrawal Amounts (comma se alag karo)</div>
+  <input data-p="config.presetAmounts" data-t="csv" value="${E((A.doc.config.presetAmounts||[]).join(","))}">
+  <div class="mut" style="margin:12px 0 2px">UPI / Paytm / PhonePe (₹, TDS lagta hai)</div>
+  ${tg("UPI Enabled","config.upiEnabled","1")}${inp("UPI TDS (%)","config.upiTdsPct","n",{w:80})}
+  ${tg("Paytm Enabled","config.paytmEnabled","1")}${inp("Paytm TDS (%)","config.paytmTdsPct","n",{w:80})}
+  ${tg("PhonePe Enabled","config.phonepeEnabled","1")}${inp("PhonePe TDS (%)","config.phonepeTdsPct","n",{w:80})}
+  ${inp("USD → INR Rate","config.usdToInr","n",{w:80})}
+  <div class="mut" style="margin:12px 0 2px">PayPal / Binance / Bybit (processing fee, TDS nahi)</div>
+  ${tg("PayPal Enabled","config.paypalEnabled","1")}${inp("PayPal Fee (%)","config.paypalFeePct","n",{w:80})}
+  ${tg("Binance Enabled","config.binanceEnabled","1")}${inp("Binance Fee (%)","config.binanceFeePct","n",{w:80})}
+  ${tg("Bybit Enabled","config.bybitEnabled","1")}${inp("Bybit Fee (%)","config.bybitFeePct","n",{w:80})}
+  <div class="mut" style="margin-top:10px;font-size:11px;line-height:1.5">💸 Payout manual hai: 💸 Withdrawals tab → "Pay via UPI app" / apne app se bhejo → UTR daalke Mark Paid. Auto-payout (Razorpay/PayPal Payouts) ke liye alag secure server chahiye — us provider ki secret key kabhi app mein mat daalna.</div>`;
+}
+function tBonus(){
+  const c = A.doc.config;
+  return `<h3>4️⃣ Daily Bonus & Login Streak</h3>
+  ${inp("Daily Bonus (RP)","config.dailyBonusRp","n",{w:100})}
+  ${sel("Bonus Video Frequency","config.dailyBonusIntervalDays",[1,2,3,4,5,6,7].map(n=>[n,n===1?"Har Din":`Har ${n} din`]),"i")}
+  ${tg("Timing Window (sirf is time par video)","config.dailyBonusTimeEnabled","0")}
+  ${c.dailyBonusTimeEnabled?`${inp("Start","config.dailyBonusTimeStart","t",{type:"time"})}${inp("End","config.dailyBonusTimeEnd","t",{type:"time"})}`:""}
+  <div class="mut" style="margin:10px 0 4px">Login Streak Rewards (Day 1-${(c.streakRewards||[]).length}) — number ya "$0.10" jaisa text</div>
+  ${(c.streakRewards||[]).map((r,i)=>`<div class="ar"><span class="mut" style="width:54px">Day ${i+1}</span><input data-p="config.streakRewards.${i}" data-t="a" value="${E(r)}" style="margin:0"></div>`).join("")}`;
+}
+function tAds(){
+  const ad = A.doc.adConfig, un = ad.unityOn !== false;
+  const net = (k,f,ph,max) => `<input data-p="adConfig.networks.${k}.${f}" data-t="t" placeholder="${ph}" ${max?`maxlength="${max}"`:""} value="${E(gp(A.doc,`adConfig.networks.${k}.${f}`)||"")}">`;
+  return `<h3>5️⃣ Ad Control & Monetization</h3>
+  <div class="card2"><div class="ar"><span><b>🎮 Unity Ads Status</b><br><span class="mut">Seedha Google Sheet (Config tab → unity_ads) mein save hota hai</span></span>
+    <button class="b ${un?"g":"s"}" data-a="unity">${un?"ON ✅":"OFF ❌"}</button></div></div>
+  ${tg("All Ads","adConfig.on","1")}
+  ${sel("Ad Network Mode","adConfig.network",[["mediation","Auto Fallback (AdMob ➔ Unity ➔ AppLovin)"],["admob","AdMob Only"],["unity","Unity Ads Only"],["applovin","AppLovin MAX Only"]])}
+  <div class="mut" style="margin:8px 0 4px">📱 AdMob — Ad Unit IDs</div>${net("admob","bannerId","AdMob Banner ID")}${net("admob","interstitialId","AdMob Interstitial ID")}${net("admob","rewardedId","AdMob Rewarded ID")}
+  <div class="mut" style="margin:8px 0 4px">🎮 Unity Ads — Game ID & Ad Unit IDs</div>${net("unity","gameId","Unity Game ID (6-7 digit)")}${net("unity","bannerId","Unity Banner ID")}${net("unity","interstitialId","Unity Interstitial ID")}${net("unity","rewardedId","Unity Rewarded ID")}
+  <div class="mut" style="margin:8px 0 4px">🦁 AppLovin — Ad Unit IDs (16-char)</div>${net("applovin","bannerId","AppLovin Banner ID",16)}${net("applovin","interstitialId","AppLovin Interstitial ID",16)}${net("applovin","rewardedId","AppLovin Rewarded ID",16)}
+  <div class="mut" style="margin:12px 0 4px">Per-Screen Ad Toggle</div>
+  ${["home","matches","promo","wallet","profile","game"].map(sc=>tg(sc[0].toUpperCase()+sc.slice(1),`adConfig.screens.${sc}`,"1")).join("")}`;
+}
+function tInfo(){
+  const c = A.doc.config;
+  return `<h3>6️⃣ Important Notice Banner</h3>
+  <textarea data-p="config.noticeText" data-t="t" placeholder="Important note likho (e.g. Server maintenance 2AM-4AM)">${E(c.noticeText||"")}</textarea>
+  ${[["home","🏠 Home"],["matches","🎮 Matches"],["wallet","💰 Withdrawal (Wallet)"],["profile","👤 Profile"]].map(([k,l])=>tg(l,`config.noticeOn.${k}`,"0")).join("")}
+  <h3 style="margin-top:18px">7️⃣ Support Team / Social Links</h3>
+  <div class="ar"><select id="spPlat">${Object.entries(SUPPORT_PLATFORMS).map(([k,p])=>`<option value="${k}">${E(p.icon)} ${E(p.label)}</option>`).join("")}</select></div>
+  <input id="spUrl" placeholder="Link/URL (https://...)"><button class="b g wf" data-a="addsp">Add Link</button>
+  ${(c.supportLinks||[]).length ? c.supportLinks.map((l,i)=>{ const p = SUPPORT_PLATFORMS[l.platform]||SUPPORT_PLATFORMS.website; return `<div class="ar lb2"><span>${E(p.icon)} ${E(p.label)}<br><span class="mut">${E(l.url)}</span></span><button class="b s sm" data-a="delsp" data-i="${i}">✕</button></div>`; }).join("") : `<div class="mut">Koi support link nahi.</div>`}
+  <h3 style="margin-top:18px">📄 Terms & Privacy — Hosted URL</h3>${wide("Public T&C / Privacy page link","config.legalUrl","https://...")}
+  <h3 style="margin-top:18px">☁️ Optional Cloud Backend URL</h3><div class="mut">Sirf agar alag progress-sync server chala rahe ho. Secret key kabhi mat daalo.</div>${wide("Server public URL","config.cloudApiUrl","https://...")}`;
+}
+function ctryList(){
+  const c = A.doc.config, q = A.cq.toLowerCase();
+  const list = COUNTRIES.filter(cn=>!q || cn.name.toLowerCase().includes(q) || String(cn.code).includes(q));
+  return list.map(cn=>{
+    const lb = (c.blockedLoginCountries||[]).includes(cn.id), wb = (c.blockedWithdrawCountries||[]).includes(cn.id);
+    return `<div class="ar lb2"><span>${cn.flag} ${E(cn.name)} <span class="mut">(${E(cn.code)})</span></span><span style="display:flex;gap:6px;flex:0 0 auto">
+      <button class="b ${lb?"g":"s"} sm" data-a="ctg" data-k="blockedLoginCountries" data-id="${cn.id}">${lb?"Login: Blocked":"Login: OK"}</button>
+      <button class="b ${wb?"g":"s"} sm" data-a="ctg" data-k="blockedWithdrawCountries" data-id="${cn.id}">${wb?"WD: Blocked":"WD: OK"}</button></span></div>`;
+  }).join("") || `<div class="mut">Koi country match nahi hua.</div>`;
+}
+function tCtry(){
+  const c = A.doc.config;
+  return `<h3>🌍 Country Blocking (Login aur Withdrawal)</h3><div class="mut" style="margin-bottom:6px">Jis country ko block karna hai uske button dabao. Login aur withdrawal alag-alag block hote hain.</div>
+  <input id="cq" data-a2="cq" placeholder="Country search karo..." value="${E(A.cq)}">
+  <div id="ctryList" style="max-height:60vh;overflow-y:auto">${ctryList()}</div>
+  <div class="mut" style="margin-top:6px">Login blocked: ${(c.blockedLoginCountries||[]).length} • Withdrawal blocked: ${(c.blockedWithdrawCountries||[]).length}</div>`;
+}
+function tPromo(){
+  const p = A.doc.promos || {};
+  return `<h3>🎟 Promo Codes</h3><input id="pcCode" placeholder="6-digit code" maxlength="6" inputmode="numeric"><input id="pcRp" placeholder="RP value" inputmode="numeric">
+  <button class="b g wf" data-a="addpc">Code Add Karo</button>
+  ${Object.keys(p).length ? Object.entries(p).map(([k,v])=>`<div class="ar lb2"><span><b>${E(k)}</b> • 💜 ${E(v)} RP</span><button class="b s sm" data-a="delpc" data-k="${E(k)}">✕</button></div>`).join("") : `<div class="mut" style="margin-top:8px">Koi code nahi.</div>`}`;
+}
+const sym = c => c==="USD" ? "$" : c==="USDT" ? "USDT " : "₹";
+function wdCard(w){
+  const upi = w.method==="UPI" && w.currency==="INR";
+  const link = upi ? `upi://pay?pa=${encodeURIComponent(w.to)}&pn=${encodeURIComponent(w.name||"User")}&am=${encodeURIComponent(w.net)}&cu=INR&tn=${encodeURIComponent(w.id)}` : "";
+  const g = parseFloat(w.gross), n = parseFloat(w.net), cut = (g>0 && g>=n) ? (g-n) : 0;
+  return `<div class="card2"><div class="ar"><b>${E(w.id)} · ${E(w.method)}</b><span class="badge b-${E(w.status)}">${E(w.status)}</span></div>
+  <div class="g2">
+    <div><div class="k">Name</div><div class="v">${E(w.name||"-")}</div></div><div><div class="k">Mobile</div><div class="v">${E(w.mobile)}</div></div>
+    <div><div class="k">${upi?"UPI ID":"Payout ID"}</div><div class="v">${E(w.to)}</div></div><div><div class="k">Coins</div><div class="v">${E(w.coins)}</div></div>
+    <div><div class="k">Pay amount</div><div class="v">${sym(w.currency)}${E(w.net)}</div></div><div><div class="k">Time</div><div class="v" style="font-size:12px">${E(w.time)}</div></div>
+    ${cut>0?`<div><div class="k">Requested</div><div class="v">${sym(w.currency)}${E(w.gross)}</div></div><div><div class="k">${["PayPal","Binance","Bybit"].includes(w.method)?"Fee":"TDS"}</div><div class="v">${sym(w.currency)}${cut.toFixed(2)}</div></div>`:""}
+  </div>
+  ${w.txn?`<div class="k">Transaction ID</div><div class="v" style="margin-bottom:8px">${E(w.txn)}</div>`:""}
+  <div class="ar" style="justify-content:flex-start;flex-wrap:wrap">
+    <button class="b s" data-a="copy" data-t="${E(w.to)}">Copy ID</button>
+    ${link && w.status==="Pending" ? `<a class="b" href="${E(link)}">Pay via UPI app</a>` : ""}
+    ${w.status==="Pending" ? `<button class="b g" data-a="paid" data-id="${E(w.id)}" data-m="${E(w.mobile)}">Mark Paid</button><button class="b bad" data-a="rej" data-id="${E(w.id)}" data-m="${E(w.mobile)}">Reject</button>` : ""}
+  </div></div>`;
+}
+function tWd(){
+  const f = A.wd.filter, m = A.wd.method, c = A.wd.counts;
+  const items = A.wd.items.filter(w=>(f==="all"||w.status===f) && (m==="all"||w.method===m));
+  return `<div class="ar"><span class="mut">Pending ${c.Pending||0} · Paid ${c.Paid||0} · Rejected ${c.Rejected||0}</span><button class="b s sm" data-a="wdload">Refresh</button></div>
+  <div class="chips2">${["Pending","Paid","Rejected","all"].map(t=>`<button class="ch ${f===t?"on":""}" data-a="wdf" data-v="${t}">${t==="all"?"All":t}</button>`).join("")}</div>
+  <div class="chips2">${["all"].concat(METHODS).map(t=>`<button class="ch ${m===t?"on":""}" data-a="wdm" data-v="${t}">${t==="all"?"All methods":t}</button>`).join("")}</div>
+  ${A.wd.loaded ? (items.length ? items.slice(0,150).map(wdCard).join("") : `<div class="mut" style="margin:14px 0">Koi request nahi hai</div>`) : `<div class="mut">Loading...</div>`}`;
+}
+function tRep(){
+  const ym = A.repMonth || new Date().toISOString().slice(0,7);
+  const tds = ["UPI","Paytm","PhonePe"];
+  return `<h3>📊 Monthly Reports (CSV)</h3><div class="ar"><span class="mut">Month</span><input type="month" id="repMonth" value="${ym}" data-a2="repMonth" style="margin:0;width:auto"></div>
+  <div class="mut" style="margin:6px 0">Sirf us mahine ke <b>Paid</b> payouts. UPI/Paytm/PhonePe → TDS report (Challan 281). PayPal/Binance/Bybit → processing-fee report (TDS nahi). Amounts Sheet se aate hain (₹ / $ / USDT).</div>
+  ${METHODS.map(m=>`<button class="b s wf" style="margin-bottom:8px" data-a="rep" data-m="${m}">${tds.includes(m)?"📊":"💳"} Export ${m} ${tds.includes(m)?"TDS":"Fee"} Report</button>`).join("")}`;
+}
+function tUsers(){
+  const u = A.us;
+  return `<h3>👥 Users (Sheet → Users tab)</h3>
+  <div class="ar"><input id="uq" data-a2="uq" placeholder="Naam ya number search" value="${E(u.q)}" style="margin:0"><button class="b sm" data-a="usearch">Search</button></div>
+  <div class="mut" style="margin:6px 0">Total synced users: ${u.total}. Coins/RP user ke app se aaye hain (sirf dekhne ke liye — payout hamesha Sheet ki request se hota hai).</div>
+  ${u.loaded ? (u.items.length ? u.items.map(x=>`<div class="card2"><div class="ar"><b>${E(x.name||"-")}</b><span class="mut">${E(x.country)}</span></div>
+    <div class="g2"><div><div class="k">Mobile</div><div class="v">${E(x.mobile)}</div></div><div><div class="k">Referral</div><div class="v">${E(x.code)}</div></div>
+    <div><div class="k">Coins</div><div class="v">${E(x.coins)}</div></div><div><div class="k">RP</div><div class="v">${E(x.rp)}</div></div>
+    <div><div class="k">First seen</div><div class="v" style="font-size:12px">${E(x.first)}</div></div><div><div class="k">Last seen</div><div class="v" style="font-size:12px">${E(x.seen)}</div></div></div>
+    <button class="b ${x.banned?"g":"bad"} sm" data-a="ban" data-m="${E(x.mobile)}" data-b="${x.banned?0:1}">${x.banned?"Unban karo":"🚫 Ban karo"}</button></div>`).join("") : `<div class="mut">Koi user nahi mila.</div>`) : `<div class="mut">Loading...</div>`}
+  <div class="mut" style="margin:14px 0 4px">Number se seedha ban:</div>
+  <div class="ar"><input id="banNum" placeholder="+91 9876543210" style="margin:0"><button class="b bad sm" data-a="banNum">Ban</button></div>`;
+}
+
+/* ---------- shell ---------- */
+function body(){
+  switch(A.tab){
+    case "wd": return tWd(); case "rep": return tRep(); case "users": return tUsers(); case "games": return tGames(); case "lb": return tLb();
+    case "wal": return tWal(); case "bonus": return tBonus(); case "ads": return tAds(); case "info": return tInfo(); case "ctry": return tCtry(); case "promo": return tPromo();
+  }
+  return "";
+}
+function draw(){
+  if(!A.open) return;
+  const prev = $adm.querySelector("#admBody"), st = prev ? prev.scrollTop : 0;
+  if(!A.doc){
+    $adm.innerHTML = `<div class="aw"><div class="atop"><b>🛡 Admin</b><button class="b s sm" data-a="close">Close</button></div>
+    <div class="card2"><div class="mut">Fingerprint ✅ verify ho gaya. Ab admin PIN daalo (server Script property ADMIN_SECRET se check hota hai).</div>
+    <input id="admPin" type="password" placeholder="Admin PIN" autocomplete="off" ${A.loading?"disabled":""}>
+    <div class="msg err" style="min-height:18px">${E(A.msg)}</div>
+    <button class="b wf" data-a="login" ${A.loading?"disabled":""}>${A.loading?"Checking...":"Unlock"}</button>
+    <div class="mut" style="margin-top:8px">PIN is app mein kahin save nahi hota. Session 30 min.</div></div></div>`;
+    const pin = $adm.querySelector("#admPin"); if(pin && !A.loading) setTimeout(()=>pin.focus(), 50);
+    return;
+  }
+  const un = A.doc.adConfig.unityOn !== false, cfgTab = CFG_TABS.includes(A.tab);
+  $adm.innerHTML = `<div class="aw"><div class="atop"><b>🛡 Admin</b><span style="display:flex;gap:6px"><button class="b ${un?"g":"s"} sm" data-a="unity">Unity ${un?"ON":"OFF"}</button><button class="b s sm" data-a="close">Lock</button></span></div>
+  <div class="atabs">${TABS.map(([k,l])=>`<button class="ch ${A.tab===k?"on":""}" data-a="tab" data-v="${k}">${l}</button>`).join("")}</div>
+  <div id="admBody" class="abody">${body()}</div>
+  ${cfgTab ? `<div class="asave"><span class="mut">${A.dirty?"● Unsaved changes":"✓ Saved"}</span><button class="b g" data-a="save" ${(!A.dirty||A.saving)?"disabled":""}>${A.saving?"Saving...":"💾 Save to Sheet"}</button></div>` : ""}</div>`;
+  const nb = $adm.querySelector("#admBody"); if(nb) nb.scrollTop = st;
+}
+function markDirty(){
+  A.dirty = true;
+  const s = $adm.querySelector(".asave"); if(s){ s.querySelector(".mut").textContent = "● Unsaved changes"; const b = s.querySelector("button"); b.disabled = false; }
+}
+
+/* ---------- events ---------- */
+function parseVal(t, v){
+  if(t==="n"){ const n = parseFloat(v); return isNaN(n) ? 0 : n; }
+  if(t==="i"){ const n = parseInt(v,10); return isNaN(n) ? 0 : n; }
+  if(t==="csv") return String(v).split(",").map(x=>parseFloat(x.trim())).filter(x=>!isNaN(x) && x>=0);
+  if(t==="a"){ v = String(v).trim(); return /^\d+(\.\d+)?$/.test(v) ? Number(v) : v; }
+  return String(v);
+}
+function onField(e, final){
+  const el = e.target, p = el.dataset && el.dataset.p; if(!p || !A.doc) return;
+  sp(A.doc, p, parseVal(el.dataset.t, el.value)); markDirty();
+  const pre = p.split(".").slice(0,2).join("."), sumEl = $adm.querySelector(`[data-sumfor="${pre}"]`);
+  if(sumEl){ const t = gp(A.doc, pre)||{}; let s = 0; for(let r=1;r<=Number(sumEl.dataset.n);r++) s += Number(t[r])||0; sumEl.textContent = "💜 " + s.toLocaleString() + " RP"; }
+  if(final && el.dataset.rr) draw();
+}
+$adm.addEventListener("input", e=>{
+  const d = e.target.dataset || {};
+  if(d.a2 === "cq"){ A.cq = e.target.value; const l = $adm.querySelector("#ctryList"); if(l) l.innerHTML = ctryList(); return; }
+  if(d.a2 === "uq"){ A.us.q = e.target.value; return; }
+  if(e.target.tagName === "SELECT") return;
+  onField(e, false);
+});
+$adm.addEventListener("change", e=>{
+  const d = e.target.dataset || {};
+  if(d.a2 === "pos"){ const o = A.doc.config.gamesOrder, g = d.g, i = o.indexOf(g); o.splice(i,1); o.splice(parseInt(e.target.value,10),0,g); markDirty(); draw(); return; }
+  if(d.a2 === "repMonth"){ A.repMonth = e.target.value; return; }
+  onField(e, true);
+});
+const actions = {
+  close(){ closeAdmin(); },
+  tab(el){ A.tab = el.dataset.v; draw(); if(A.tab==="users" && !A.us.loaded) loadUsers(); if(A.tab==="wd" && !A.wd.loaded) loadWd(); },
+  login(){ const pin = ($adm.querySelector("#admPin")||{}).value || ""; if(!pin) { A.msg = "PIN daalo"; draw(); return; } login(pin); },
+  save(){ saveCfg(); },
+  unity(){ setUnity(); },
+  tg(el){ const p = el.dataset.p, v = gp(A.doc,p), cur = el.dataset.d==="1" ? v!==false : v===true; sp(A.doc,p,!cur); markDirty(); draw(); },
+  day(el){ const p = el.dataset.p, i = parseInt(el.dataset.i,10); let a = (gp(A.doc,p)||[]).slice(); a = a.includes(i) ? a.filter(x=>x!==i) : a.concat(i).sort((x,y)=>x-y); sp(A.doc,p,a); markDirty(); draw(); },
+  mv(el){ const o = A.doc.config.gamesOrder, g = el.dataset.g, d = parseInt(el.dataset.d,10), i = o.indexOf(g), j = i + d; if(j<0||j>=o.length) return; o.splice(i,1); o.splice(j,0,g); markDirty(); draw(); },
+  addcg(){ const n = $adm.querySelector("#ngName").value.trim().slice(0,40), u = $adm.querySelector("#ngUrl").value.trim();
+    if(!n || !/^https?:\/\/\S+$/i.test(u)) return flash("Naam aur valid https:// link daalo");
+    (A.doc.config.customGames = A.doc.config.customGames||[]).push({id:"g"+Date.now(), name:n, url:u}); markDirty(); draw(); },
+  delcg(el){ A.doc.config.customGames.splice(parseInt(el.dataset.i,10),1); markDirty(); draw(); },
+  addmt(){ const g = $adm.querySelector("#mtG").value, pool = parseInt($adm.querySelector("#mtPool").value,10), min = parseInt($adm.querySelector("#mtMin").value,10)||60;
+    if(!GAME_CANON[g] || isNaN(pool) || pool<1) return flash("Pool (RP) daalo");
+    (A.doc.config.manualTours = A.doc.config.manualTours||[]).push({id:Date.now(), g, pool, min:Math.max(1,Math.min(10080,min))}); markDirty(); draw(); },
+  delmt(el){ A.doc.config.manualTours.splice(parseInt(el.dataset.i,10),1); markDirty(); draw(); },
+  addsp(){ const u = $adm.querySelector("#spUrl").value.trim(), pl = $adm.querySelector("#spPlat").value;
+    if(!/^https?:\/\/\S+$/i.test(u)) return flash("Valid https:// link daalo");
+    (A.doc.config.supportLinks = A.doc.config.supportLinks||[]).push({id:"s"+Date.now(), platform:pl, url:u}); markDirty(); draw(); },
+  delsp(el){ A.doc.config.supportLinks.splice(parseInt(el.dataset.i,10),1); markDirty(); draw(); },
+  ctg(el){ const k = el.dataset.k, id = el.dataset.id; let a = (A.doc.config[k]||[]).slice(); a = a.includes(id) ? a.filter(x=>x!==id) : a.concat(id); A.doc.config[k] = a; markDirty();
+    const l = $adm.querySelector("#ctryList"), st = l.scrollTop; l.innerHTML = ctryList(); l.scrollTop = st; },
+  addpc(){ const c = $adm.querySelector("#pcCode").value.trim(), v = parseInt($adm.querySelector("#pcRp").value,10);
+    if(!/^\d{6}$/.test(c) || isNaN(v) || v<1) return flash("6-digit code aur RP daalo");
+    A.doc.promos[c] = v; markDirty(); draw(); },
+  delpc(el){ delete A.doc.promos[el.dataset.k]; markDirty(); draw(); },
+  resetMyRp(){ if(S){ S.rp = 0; save(); flash("Is device ka RP 0 ho gaya"); } else flash("Pehle app mein login karo"); },
+  copy(el){ try{ navigator.clipboard.writeText(el.dataset.t); flash("Copied"); }catch(e){ flash("Copy nahi hua"); } },
+  wdload(){ loadWd(); },
+  wdf(el){ A.wd.filter = el.dataset.v; draw(); },
+  wdm(el){ A.wd.method = el.dataset.v; draw(); },
+  async paid(el){
+    const txn = await ask({title:"Mark Paid", msg:"Paisa bhejne ke baad Transaction ID / UTR daalo", input:true, ph:"UTR / Txn ID", ok:"Mark Paid"});
+    if(!txn) return;
+    await setStatus(el.dataset.id, el.dataset.m, "Paid", txn);
+  },
+  async rej(el){
+    const ok = await ask({title:"Reject?", msg:`${el.dataset.id} reject karna hai? User ke coins wapas ho jayenge.`, ok:"Reject", bad:true});
+    if(ok) await setStatus(el.dataset.id, el.dataset.m, "Rejected", "");
+  },
+  usearch(){ loadUsers(); },
+  async ban(el){
+    const ban = el.dataset.b === "1";
+    const ok = await ask({title: ban?"Ban karo?":"Unban karo?", msg:`${el.dataset.m} ${ban?"login/withdraw nahi kar payega":"dobara use kar payega"}.`, ok: ban?"Ban":"Unban", bad:ban});
+    if(!ok) return;
+    try{ const d = await call("adminBan", {mobile:el.dataset.m, banned:ban}); flash(d.ok ? (ban?"Banned 🚫":"Unbanned ✅") : (d.error||"Error")); }catch(e){ if(e.message!=="auth") flash("Network error"); }
+    loadUsers();
+  },
+  async banNum(){
+    const n = ($adm.querySelector("#banNum").value||"").replace(/\D/g,""); if(n.length<7) return flash("Valid number daalo");
+    try{ const d = await call("adminBan", {mobile:n, banned:true}); flash(d.ok ? "Banned 🚫" : (d.error||"Error")); }catch(e){ if(e.message!=="auth") flash("Network error"); }
+    loadUsers();
+  },
+  async rep(el){
+    const m = el.dataset.m, ym = (A.repMonth || new Date().toISOString().slice(0,7));
+    flash("Report ban rahi hai...");
+    let items;
+    try{ const d = await call("adminList", {filter:"Paid", month:ym, method:m}); if(!d.ok) return flash(d.error||"Error"); items = d.items||[]; }catch(e){ if(e.message!=="auth") flash("Network error"); return; }
+    const rows = items.filter(w=>w.method===m && w.status==="Paid" && String(w.time).slice(0,7)===ym);
+    if(!rows.length) return flash(`${ym} mein koi ${m} Paid payout nahi`);
+    const isTds = ["UPI","Paytm","PhonePe"].includes(m), cur = rows[0].currency, c = A.doc.config;
+    const pct = isTds ? ({UPI:c.upiTdsPct,Paytm:c.paytmTdsPct,PhonePe:c.phonepeTdsPct})[m] : ({PayPal:c.paypalFeePct,Binance:c.binanceFeePct,Bybit:c.bybitFeePct})[m];
+    let tr = 0, tc = 0, tn = 0;
+    let csv = `ID,Name,Mobile,Payout ID,Requested(${cur}),${isTds?"TDS":"Fee"}(${cur}),Net Payout(${cur}),UTR,Date\n`;
+    rows.forEach(w=>{ const net = parseFloat(w.net)||0, g = parseFloat(w.gross)||net, cut = Math.max(0, g-net); tr+=g; tc+=cut; tn+=net;
+      csv += [w.id,w.name,w.mobile,w.to,g.toFixed(2),cut.toFixed(2),net.toFixed(2),w.txn,w.time].map(csvCell).join(",") + "\n"; });
+    csv += `\nTOTAL,,,,${tr.toFixed(2)},${tc.toFixed(2)},${tn.toFixed(2)},,\n\nMonth: ${ym}\nTotal ${m} Paid Payouts: ${rows.length}\n`;
+    csv += isTds ? `Total TDS (${pct}% current setting) payable to Govt: ${cur} ${tc.toFixed(2)} — Challan 281 bharne ke liye\n` : `Total Processing Fee collected (${pct}% current setting): ${cur} ${tc.toFixed(2)} (TDS yahan nahi lagta)\n`;
+    saveCsvFile(`${m}_${isTds?"TDS":"Fee"}_Report_${ym}.csv`, csv); flash("CSV save ho rahi hai");
+  }
+};
+async function setStatus(id, mobile, status, txn){
+  try{
+    const d = await call("adminSet", {id, mobile, status, txn});
+    if(d.ok){ flash(`${id} → ${status} ✅`); await loadWd(true); }
+    else flash(d.error || "Error");
+  }catch(e){ if(e.message!=="auth") flash("Network error"); }
+  draw();
+}
+$adm.addEventListener("click", e=>{
+  const el = e.target.closest("[data-a]"); if(!el || !$adm.contains(el)) return;
+  const f = actions[el.dataset.a]; if(f){ if(el.tagName==="A") return f(el); e.preventDefault(); f(el); }
+});
+$adm.addEventListener("keydown", e=>{ if(e.key==="Enter" && e.target.id==="admPin") actions.login(); });
+})();
+
 </script>
 </body>
 </html>

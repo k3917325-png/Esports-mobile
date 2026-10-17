@@ -1,7 +1,6 @@
 package com.mobile.esports;
 
 import android.Manifest;
-import android.app.Activity;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
@@ -15,10 +14,15 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.JavascriptInterface;
+import android.webkit.JsResult;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.biometric.BiometricManager;
+import androidx.biometric.BiometricPrompt;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
@@ -35,14 +39,19 @@ import com.google.android.ump.UserMessagingPlatform;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Thin native wrapper around the Esports Reward single-file HTML app.
- * The app's own UI, game logic, admin panel, localStorage-based persistence
- * etc. all run unmodified inside this WebView, loaded from assets/index.html.
+ * The app's own UI, game logic, hidden admin view, localStorage-based persistence
+ * etc. all run inside this WebView, loaded from assets/index.html.
+ *
+ * Admin gate: the page asks for window.AndroidAdmin.authenticate() (after the secret 10-tap gesture);
+ * this class shows the system fingerprint prompt and reports back through window.__adminAuth(ok, message).
+ * The fingerprint only unlocks the admin SCREEN; every admin action is still authorised by the Apps Script server (PIN/token).
  */
-public class MainActivity extends Activity {
+public class MainActivity extends AppCompatActivity {
 
     private WebView webView;
     private static final int REQ_NOTIF_PERMISSION = 1001;
@@ -81,10 +90,29 @@ public class MainActivity extends Activity {
             }
         });
         webView.addJavascriptInterface(new AdsBridge(), "AndroidAds");
+        webView.addJavascriptInterface(new AdminBridge(), "AndroidAdmin");
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
             public boolean onConsoleMessage(ConsoleMessage cm) {
                 return true; // swallow JS console noise in logcat
+            }
+
+            // WebView swallows JS alert()/confirm() unless the app shows them itself.
+            @Override
+            public boolean onJsAlert(WebView view, String url, String message, final JsResult result) {
+                new AlertDialog.Builder(MainActivity.this).setMessage(message)
+                        .setPositiveButton(android.R.string.ok, (d, w) -> result.confirm())
+                        .setOnCancelListener(d -> result.cancel()).show();
+                return true;
+            }
+
+            @Override
+            public boolean onJsConfirm(WebView view, String url, String message, final JsResult result) {
+                new AlertDialog.Builder(MainActivity.this).setMessage(message)
+                        .setPositiveButton(android.R.string.ok, (d, w) -> result.confirm())
+                        .setNegativeButton(android.R.string.cancel, (d, w) -> result.cancel())
+                        .setOnCancelListener(d -> result.cancel()).show();
+                return true;
             }
 
             @Override
@@ -125,6 +153,54 @@ public class MainActivity extends Activity {
             final String safeId = id == null ? "0" : id.replaceAll("[^0-9]", "");
             runOnUiThread(() -> showRewardedInternal(safeId));
         }
+    }
+
+    // ===================== Admin fingerprint gate =====================
+    /** JS-facing bridge: window.AndroidAdmin.authenticate() -> later window.__adminAuth(ok, message) */
+    private class AdminBridge {
+        @JavascriptInterface
+        public void authenticate() {
+            runOnUiThread(() -> authenticateAdmin());
+        }
+    }
+
+    private void authenticateAdmin() {
+        final int authenticators = BiometricManager.Authenticators.BIOMETRIC_STRONG; // fingerprint (Class 3)
+        int can = BiometricManager.from(this).canAuthenticate(authenticators);
+        if (can != BiometricManager.BIOMETRIC_SUCCESS) {
+            String msg;
+            if (can == BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED) msg = "Is phone mein fingerprint set nahi hai (Settings mein add karo)";
+            else if (can == BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE) msg = "Is phone mein fingerprint sensor nahi hai";
+            else msg = "Fingerprint abhi available nahi hai";
+            jsAdminResult(false, msg);
+            return;
+        }
+        Executor executor = ContextCompat.getMainExecutor(this);
+        BiometricPrompt prompt = new BiometricPrompt(this, executor, new BiometricPrompt.AuthenticationCallback() {
+            @Override
+            public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult result) {
+                jsAdminResult(true, "");
+            }
+
+            @Override
+            public void onAuthenticationError(int errorCode, CharSequence errString) {
+                // cancelled, locked out, or no match after retries -> abort the login
+                jsAdminResult(false, "Fingerprint verify nahi hua — admin band");
+            }
+            // onAuthenticationFailed(): a single wrong finger; the system prompt stays open for another try.
+        });
+        BiometricPrompt.PromptInfo info = new BiometricPrompt.PromptInfo.Builder()
+                .setTitle("Admin unlock")
+                .setSubtitle("Apni fingerprint verify karo")
+                .setNegativeButtonText("Cancel")
+                .setAllowedAuthenticators(authenticators)
+                .build();
+        prompt.authenticate(info);
+    }
+
+    private void jsAdminResult(final boolean ok, String msg) {
+        final String safe = msg == null ? "" : msg.replace("\\", " ").replace("'", " ").replace("\n", " ");
+        webView.post(() -> webView.evaluateJavascript("window.__adminAuth(" + ok + ",'" + safe + "')", null));
     }
 
     /** EU/UK users must see Google's consent form (UMP) before any ad request. */
