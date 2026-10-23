@@ -545,7 +545,7 @@ let _unused_ = 0, tab = "home", sub = "matches", cap = "", lbShown = 100;
    These three values are PUBLIC identifiers (not secrets). Real protection = Firestore Security Rules (firestore.rules).
    Admin PIN = password of the admin Firebase account; it is never stored in the app. */
 const APP_VER = 13;   // integer app version used by Force Update (admin sets "minimum allowed version")
-const APP_BUILD = "v14.2-unity-native-2026-10-23";
+const APP_BUILD = "v14.3-waterfall-2026-10-23";
 console.log("build", APP_BUILD);
 const FB = {apiKey:"AIzaSyBHEpJcFl_0ROchiOCZni8JmG9qYUgNR1Q", projectId:"esports-reward", adminEmail:"praveen4477766@gmail.com", googleClientId:"__GOOGLE_WEB_CLIENT_ID__"};
 const FB_READY = !!FB.apiKey && !!FB.projectId && FB.apiKey.indexOf("__")!==0 && FB.projectId.indexOf("__")!==0;
@@ -1082,7 +1082,7 @@ function mergeDeep(b, o){
   }
   return o === undefined ? b : o;
 }
-function defaultAdConfig(){ return {on:true, id:"", bannerId:"", interstitialId:"", rewardedId:"", network:"mediation", unityOn:true,
+function defaultAdConfig(){ return {on:true, id:"", bannerId:"", interstitialId:"", rewardedId:"", network:"mediation", order:"unity,admob,applovin", unityOn:true,
   networks:{admob:{bannerId:"",interstitialId:"",rewardedId:""}, unity:{gameId:"",bannerId:"",interstitialId:"",rewardedId:""}, applovin:{bannerId:"",interstitialId:"",rewardedId:""}},
   screens:{home:true,matches:true,promo:true,wallet:true,profile:true,game:true}}; }
 let RCFG = null, RADS = null, RPROMOS = null, lastRemoteJson = "";
@@ -1438,8 +1438,10 @@ if(S && S.wd && S.wd.length && S.wd.some(w=>!w.id)){
 }
 function pushAdCfg(){
   if(!(window.AndroidAds && window.AndroidAds.configure && S && S.adConfig)) return;
-  const a = S.adConfig, u = (a.networks && a.networks.unity) || {};
-  try{ window.AndroidAds.configure(JSON.stringify({network:a.network||"mediation", on:a.on!==false, unityOn:a.unityOn!==false, gameId:u.gameId||"", bannerId:u.bannerId||"", rewardedId:u.rewardedId||""})); }catch(e){}
+  const a = S.adConfig, n = a.networks || {}, ad = n.admob || {}, u = n.unity || {}, al = n.applovin || {};
+  try{ window.AndroidAds.configure(JSON.stringify({network:a.network||"mediation", order:a.order||"unity,admob,applovin", on:a.on!==false, unityOn:a.unityOn!==false,
+    admobBanner:ad.bannerId||"", admobRewarded:ad.rewardedId||"", unityGame:u.gameId||"", unityBanner:u.bannerId||"", unityRewarded:u.rewardedId||"",
+    alKey:al.sdkKey||"", alBanner:al.bannerId||"", alRewarded:al.rewardedId||""})); }catch(e){}
 }
 function adBox(screen){
   pushAdCfg();
@@ -3181,10 +3183,12 @@ function tAds(){
   <div class="card2"><div class="ar"><span><b>🎮 Unity Ads Status</b><br><span class="mut">Seedha app ke database (Firebase) mein save hota hai</span></span>
     <button class="b ${un?"g":"s"}" data-a="unity">${un?"ON ✅":"OFF ❌"}</button></div></div>
   ${tg("All Ads","adConfig.on","1")}
-  ${sel("Ad Network Mode","adConfig.network",[["mediation","Auto Fallback (AdMob ➔ Unity ➔ AppLovin)"],["admob","AdMob Only"],["unity","Unity Ads Only"],["applovin","AppLovin MAX Only"]])}
+  ${sel("Ad Network Mode","adConfig.network",[["mediation","Auto Fallback (neeche wale order me)"],["admob","AdMob Only"],["unity","Unity Ads Only"],["applovin","AppLovin MAX Only"]])}
+  ${sel("Fallback Order (Auto mode me)","adConfig.order",[["unity,admob,applovin","Unity ➔ AdMob ➔ AppLovin"],["unity,applovin,admob","Unity ➔ AppLovin ➔ AdMob"],["admob,unity,applovin","AdMob ➔ Unity ➔ AppLovin"],["admob,applovin,unity","AdMob ➔ AppLovin ➔ Unity"],["applovin,unity,admob","AppLovin ➔ Unity ➔ AdMob"],["applovin,admob,unity","AppLovin ➔ AdMob ➔ Unity"]])}
+  <div class="mut" style="font-size:11px;margin:2px 0 6px">Auto mode: pehle network me ad ready na ho to agle se try hota hai. Banner sirf pehle chalne wale network ka dikhta hai. AdMob ka App ID app ke andar build me fixed hai (yahan se badalta nahi).</div>
   <div class="mut" style="margin:8px 0 4px">📱 AdMob — Ad Unit IDs</div>${net("admob","bannerId","AdMob Banner ID")}${net("admob","interstitialId","AdMob Interstitial ID")}${net("admob","rewardedId","AdMob Rewarded ID")}
   <div class="mut" style="margin:8px 0 4px">🎮 Unity Ads — Game ID & Ad Unit IDs</div>${net("unity","gameId","Unity Game ID (6-7 digit)")}${net("unity","bannerId","Unity Banner ID")}${net("unity","interstitialId","Unity Interstitial ID")}${net("unity","rewardedId","Unity Rewarded ID")}
-  <div class="mut" style="margin:8px 0 4px">🦁 AppLovin — Ad Unit IDs (16-char)</div>${net("applovin","bannerId","AppLovin Banner ID",16)}${net("applovin","interstitialId","AppLovin Interstitial ID",16)}${net("applovin","rewardedId","AppLovin Rewarded ID",16)}
+  <div class="mut" style="margin:8px 0 4px">🦁 AppLovin — Ad Unit IDs (16-char)</div>${net("applovin","sdkKey","AppLovin SDK Key (lamba key, 80+ char)",120)}${net("applovin","bannerId","AppLovin Banner ID",16)}${net("applovin","interstitialId","AppLovin Interstitial ID",16)}${net("applovin","rewardedId","AppLovin Rewarded ID",16)}
   <div class="mut" style="margin:12px 0 4px">Per-Screen Ad Toggle</div>
   ${["home","matches","promo","wallet","profile","game"].map(sc=>tg(sc[0].toUpperCase()+sc.slice(1),`adConfig.screens.${sc}`,"1")).join("")}`;
 }
