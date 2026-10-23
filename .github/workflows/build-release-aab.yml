@@ -1,11 +1,13 @@
 name: Build Play Store AAB (signed)
 
-# Phone se: GitHub -> Actions -> "Build Play Store AAB (signed)" -> Run workflow.
+# Phone se: secrets daalne ke baad Actions -> "Build Play Store AAB (signed)" run kholo -> Re-run all jobs.
 # Output: artifact "play-store-aab" (app-release.aab) + "mapping" (R8 mapping, Play Console me upload karo).
 # Secrets (Settings -> Secrets and variables -> Actions -> Secrets):
 #   RELEASE_KEYSTORE_BASE64, RELEASE_KEYSTORE_PASSWORD, RELEASE_KEY_ALIAS, RELEASE_KEY_PASSWORD
 # Variables (optional, real ad ids): ADMOB_APP_ID, ADMOB_REWARDED_ID, ADMOB_BANNER_ID, UNITY_GAME_ID
 on:
+  push:
+    branches: [ aab-build ]   # is branch par push hote hi AAB banta hai (workflow_dispatch tab tak nahi dikhta jab tak file main branch me na ho)
   workflow_dispatch:
     inputs:
       allow_test_ads:
@@ -31,7 +33,7 @@ jobs:
           ADMOB_APP_ID: ${{ vars.ADMOB_APP_ID }}
           ADMOB_REWARDED_ID: ${{ vars.ADMOB_REWARDED_ID }}
           ADMOB_BANNER_ID: ${{ vars.ADMOB_BANNER_ID }}
-          ALLOW_TEST: ${{ github.event.inputs.allow_test_ads }}
+          ALLOW_TEST: ${{ github.event.inputs.allow_test_ads || 'true' }}
         run: |
           miss=""
           [ -z "$KS" ] && miss="$miss RELEASE_KEYSTORE_BASE64"
