@@ -5,6 +5,7 @@ plugins {
 // Public AdMob identifiers (not secrets). Defaults are Google's official TEST ids; CI injects production ids
 // from repo variables ADMOB_APP_ID / ADMOB_REWARDED_ID.
 def admobAppId = System.getenv("ADMOB_APP_ID") ?: "ca-app-pub-3940256099942544~3347511713"
+def runNumber = Integer.parseInt(System.getenv("GITHUB_RUN_NUMBER") ?: "1")   // auto-increments every CI build (Play rejects duplicates)
 def admobRewardedId = System.getenv("ADMOB_REWARDED_ID") ?: "ca-app-pub-3940256099942544/5224354917"
 
 android {
@@ -15,7 +16,7 @@ android {
         applicationId "com.mobile.esports"
         minSdk 24
         targetSdk 34
-        versionCode (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInteger()   // auto-increments every CI build (Play rejects duplicates)
+        versionCode runNumber
         versionName "1.0.0"
         resValue "string", "admob_app_id", admobAppId
         resValue "string", "admob_rewarded_id", admobRewardedId
