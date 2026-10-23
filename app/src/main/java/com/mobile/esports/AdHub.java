@@ -207,7 +207,7 @@ class AdHub {
         if (alInitStarted) { if (alReady) loadApplovin(); return; }
         alInitStarted = true;
         try {
-            AppLovinSdkInitializationConfiguration cfg = AppLovinSdkInitializationConfiguration.builder(alKey).setMediationProvider("max").build();
+            AppLovinSdkInitializationConfiguration cfg = AppLovinSdkInitializationConfiguration.builder(alKey, act).setMediationProvider("max").build();
             AppLovinSdk.getInstance(act).initialize(cfg, c -> act.runOnUiThread(() -> { alReady = true; loadApplovin(); refreshBanner(); }));
         } catch (Exception e) { alInitStarted = false; }
     }
