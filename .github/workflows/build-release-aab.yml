@@ -36,7 +36,6 @@ jobs:
           ALLOW_TEST: ${{ github.event.inputs.allow_test_ads || 'true' }}
         run: |
           miss=""
-          [ -z "$KS" ] && miss="$miss RELEASE_KEYSTORE_BASE64"
           [ -z "$KSP" ] && miss="$miss RELEASE_KEYSTORE_PASSWORD"
           [ -z "$KA" ] && miss="$miss RELEASE_KEY_ALIAS"
           [ -z "$KP" ] && miss="$miss RELEASE_KEY_PASSWORD"
@@ -52,14 +51,14 @@ jobs:
           mkdir -p "$ANDROID_HOME/licenses"
           printf '\n24333f8a63b6825ea9c5514f83c2829b004d1fee\n8933bad161af4178b1185d1a37fbf41ea5269c55\nd56f5187479451eabf01fb78af6dfcb131a6481e\n84831b9409646a918e30573bab4c9c91346d8abd\n' > "$ANDROID_HOME/licenses/android-sdk-license"
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null 2>&1 || true
-      - name: Decode keystore
+      - name: Decrypt keystore
         env:
-          KS: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          KSP: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
         run: |
-          printf '%s' "$KS" | tr -d ' \r\n\t"' | base64 -d > "$RUNNER_TEMP/release.jks" 2>/dev/null \
-            || { echo "::error title=Keystore secret galat::RELEASE_KEYSTORE_BASE64 ki value galat/adhoori hai. GITHUB-SECRETS-paste-karo.txt ki sabse neeche wali lambi line POORI copy karke secret UPDATE karo."; exit 1; }
-          keytool -list -keystore "$RUNNER_TEMP/release.jks" -storepass "${{ secrets.RELEASE_KEYSTORE_PASSWORD }}" >/dev/null 2>&1 \
-            || { echo "::error title=Keystore khul nahi raha::RELEASE_KEYSTORE_PASSWORD galat hai ya keystore adhoora hai."; exit 1; }
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -in release-key.jks.enc -out "$RUNNER_TEMP/release.jks" -pass env:KSP 2>/dev/null \
+            || { echo "::error title=Password galat::RELEASE_KEYSTORE_PASSWORD galat hai. GITHUB-SECRETS-paste-karo.txt me jo Value likhi hai wahi daalo (copy-paste, koi space nahi)."; exit 1; }
+          keytool -list -keystore "$RUNNER_TEMP/release.jks" -storepass "$KSP" >/dev/null 2>&1 \
+            || { echo "::error title=Keystore khul nahi raha::password galat hai."; exit 1; }
       - name: Build release AAB
         env:
           RELEASE_KEYSTORE_PATH: ${{ runner.temp }}/release.jks
