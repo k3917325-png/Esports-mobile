@@ -392,7 +392,7 @@ const TERMS_HTML = `
 <p>App install/use/signup karke user in sabhi Terms & Conditions aur hamari Privacy Policy se agree (sehmat) hota hai.</p>`;
 const PRIVACY_HTML = `
 <h3 style="margin-top:0">1. Information We Collect</h3>
-<p>Signup ke waqt hum basic information collect karte hain: naam, mobile number (OTP verification ke liye) aur country. Gameplay ke dauraan scores, coins, RP, tournament history aur withdrawal requests ka data bhi store hota hai.</p>
+<p>Login ke waqt hum aapka Gmail address, naam aur country (IP se) collect karte hain. Fraud rokne ke liye ek device-ID (hashed) aur IP/VPN check bhi hota hai. Gameplay ke dauraan scores, coins, RP, tournament history aur withdrawal requests ka data store hota hai. Ads dikhane ke liye ad networks device/advertising ID use kar sakte hain.</p>
 <h3>2. How We Use Your Information</h3>
 <p>Collected data ka use account verification, rewards/leaderboard calculate karne, withdrawal process karne, fraud prevention, aur app ki services improve karne ke liye hota hai. Aapka data kisi third party ko bina zaroorat ke becha ya share nahi kiya jaata.</p>
 <h3>3. Third-Party Services</h3>
@@ -402,7 +402,7 @@ const PRIVACY_HTML = `
 <h3>5. Payout Information</h3>
 <p>Withdrawal ke liye diya gaya UPI ID / mobile number / email / wallet ID sirf payout process karne ke liye use hota hai aur secure backend ke zariye handle kiya jaata hai.</p>
 <h3>6. Your Rights</h3>
-<p>Aap kisi bhi waqt apna account delete karne ya apne data ke baare mein query karne ke liye Support Team se contact kar sakte hain.</p>
+<p>Aap app mein <b>Profile → Account delete karo</b> se apna account aur data kabhi bhi delete kar sakte hain. Withdrawal/payment ke purane records tax aur fraud-check ke liye kanooni zaroorat tak rakhe ja sakte hain. Questions ke liye Profile → Support/Report use karo.</p>
 <h3>7. Policy Changes</h3>
 <p>Yeh Privacy Policy samay-samay par update ho sakti hai. App ka use jaari rakhke aap updated policy se agree karte hain.</p>`;
 function legalBox(type){
@@ -544,8 +544,8 @@ let _unused_ = 0, tab = "home", sub = "matches", cap = "", lbShown = 100;
 /* ===== Firebase backend (Firestore + Auth over plain REST - no SDK, no external script) =====
    These three values are PUBLIC identifiers (not secrets). Real protection = Firestore Security Rules (firestore.rules).
    Admin PIN = password of the admin Firebase account; it is never stored in the app. */
-const APP_VER = 13;   // integer app version used by Force Update (admin sets "minimum allowed version")
-const APP_BUILD = "v14.4-admin-nobanner-2026-10-23";
+const APP_VER = 15;   // integer app version used by Force Update (admin sets "minimum allowed version")
+const APP_BUILD = "v15-play-delete-account-2026-10-24";
 console.log("build", APP_BUILD);
 const FB = {apiKey:"AIzaSyBHEpJcFl_0ROchiOCZni8JmG9qYUgNR1Q", projectId:"esports-reward", adminEmail:"praveen4477766@gmail.com", googleClientId:"__GOOGLE_WEB_CLIENT_ID__"};
 const FB_READY = !!FB.apiKey && !!FB.projectId && FB.apiKey.indexOf("__")!==0 && FB.projectId.indexOf("__")!==0;
@@ -2786,8 +2786,44 @@ function me(){
     ${S.isGuest?'':`<div class="card"><h3>🧾 Withdrawal History</h3>${wdHistory()}</div>`}
     <div class="card"><h3>☁️ Cloud Sync</h3><div class="mut" id="cloudStat">${cloudStatText()}</div></div>
     ${supportLinksCard()}
-    ${legalLinksCard()}
-    <button class="btn s" onclick="logoutBox()">Logout</button>`;
+    <button class="btn s" onclick="logoutBox()">Logout</button>
+    ${S.isGuest?'':`<div style="text-align:center;margin:14px 0 6px"><a href="#" onclick="event.preventDefault();delAccBox()" style="color:#ff6b61;font-size:13px;text-decoration:underline">🗑️ Account delete karo</a></div>`}`;
+}
+function delAccBox(){
+  const o = document.createElement("div"); o.id = "delbox";
+  o.style.cssText = "position:fixed;inset:0;z-index:99;background:#000000b0;display:flex;align-items:center;justify-content:center;padding:20px";
+  o.onclick = e => { if(e.target===o) o.remove(); };
+  o.innerHTML = `<div style="background:var(--card);border:1px solid #ff3b30;border-radius:16px;padding:20px;max-width:330px;width:100%">
+    <h3 style="margin:0 0 8px;color:#ff6b61">🗑️ Account delete</h3>
+    <div style="font-size:13px;line-height:1.55;margin-bottom:10px">Aapka account, coins, RP, naam, email aur game progress <b>hamesha ke liye delete</b> ho jayega. Wapas nahi aayega.<br>Withdrawal/payment ke purane records tax aur fraud-check ke liye kuch samay tak rakhe jaate hain.</div>
+    <div class="mut" style="margin-bottom:4px">Confirm karne ke liye <b>DELETE</b> likho:</div>
+    <input id="delIn" placeholder="DELETE" autocapitalize="characters" style="margin-bottom:8px">
+    <div id="delMsg" class="mut" style="color:#ff6b61;min-height:16px;margin-bottom:8px"></div>
+    <div class="row" style="gap:8px"><button class="btn s" onclick="document.getElementById('delbox').remove()">Cancel</button><button class="btn" id="delGo" style="background:#c0281d" onclick="doDeleteAccount()">Delete</button></div></div>`;
+  document.body.appendChild(o);
+}
+async function doDeleteAccount(){
+  const msg = m => { const e = $("#delMsg"); if(e) e.textContent = m; };
+  if(!S || S.isGuest) return;
+  if(($("#delIn").value||"").trim().toUpperCase() !== "DELETE") return msg("DELETE likhna zaroori hai");
+  if((S.wd||[]).some(w=>w && w.status==="Pending")) return msg("Pehle pending withdrawal poora hone do, phir delete karo");
+  const btn = $("#delGo"); if(btn) btn.disabled = true; msg("Delete ho raha hai...");
+  try{
+    const tok = await fbToken("user"), uid = S.phone;
+    const r = await fbJson(AUTH_URL("accounts:delete"), {idToken:tok});
+    if(!r.ok){
+      const code = (r.d && r.d.error && r.d.error.message) || "";
+      if(btn) btn.disabled = false;
+      return msg(/CREDENTIAL_TOO_OLD|TOKEN_EXPIRED/.test(code) ? "Security ke liye: Logout karo, dobara login karo aur turant delete karo" : "Delete nahi hua ("+(code||"network")+") — baad mein try karo");
+    }
+    // account is gone on the auth side; the ID token stays valid for a while, so remove the profile document with it
+    try{ await fetch(FS_ROOT()+docPath("users",uid), {method:"DELETE", headers:{Authorization:"Bearer "+tok}}); }catch(e){}
+    try{ localStorage.clear(); }catch(e){}
+    await fbSignOutUser();
+    const bx = $("#delbox"); if(bx) bx.remove();
+    S = null; tab = "home"; sub = "matches"; render();
+    alert("Aapka account delete ho gaya.");
+  }catch(e){ if(btn) btn.disabled = false; msg("Delete nahi hua — internet check karo"); }
 }
 function logoutBox(){
   const o = document.createElement("div"); o.id = "lgbox";

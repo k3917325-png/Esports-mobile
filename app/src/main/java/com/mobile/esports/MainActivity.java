@@ -84,6 +84,13 @@ public class MainActivity extends AppCompatActivity {
         bannerHolder = new FrameLayout(this);
         bannerHolder.setVisibility(android.view.View.GONE);
         root.addView(bannerHolder, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        root.setBackgroundColor(android.graphics.Color.parseColor("#140a2e"));
+        // targetSdk 35+ forces edge-to-edge: keep the page clear of the status bar / navigation bar / cutout
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+            androidx.core.graphics.Insets b = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars() | androidx.core.view.WindowInsetsCompat.Type.displayCutout() | androidx.core.view.WindowInsetsCompat.Type.ime());
+            v.setPadding(b.left, b.top, b.right, b.bottom);
+            return androidx.core.view.WindowInsetsCompat.CONSUMED;
+        });
         setContentView(root);
         hub = new AdHub(this, bannerHolder, (id, ok) -> jsAdResult(id, ok));
 

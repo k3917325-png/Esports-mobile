@@ -12,12 +12,12 @@ def admobRewardedId = System.getenv("ADMOB_REWARDED_ID") ?: "ca-app-pub-39402560
 
 android {
     namespace "com.mobile.esports"
-    compileSdk 34
+    compileSdk 36
 
     defaultConfig {
         applicationId "com.mobile.esports"
         minSdk 24
-        targetSdk 34
+        targetSdk 36
         versionCode runNumber
         versionName "1.0.0"
         resValue "string", "admob_app_id", admobAppId

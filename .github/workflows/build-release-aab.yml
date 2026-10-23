@@ -1,0 +1,91 @@
+name: Build Play Store AAB (signed)
+
+# Phone se: GitHub -> Actions -> "Build Play Store AAB (signed)" -> Run workflow.
+# Output: artifact "play-store-aab" (app-release.aab) + "mapping" (R8 mapping, Play Console me upload karo).
+# Secrets (Settings -> Secrets and variables -> Actions -> Secrets):
+#   RELEASE_KEYSTORE_BASE64, RELEASE_KEYSTORE_PASSWORD, RELEASE_KEY_ALIAS, RELEASE_KEY_PASSWORD
+# Variables (optional, real ad ids): ADMOB_APP_ID, ADMOB_REWARDED_ID, ADMOB_BANNER_ID, UNITY_GAME_ID
+on:
+  workflow_dispatch:
+    inputs:
+      allow_test_ads:
+        description: "Google TEST ad IDs ke saath bana do (sirf Play Internal testing ke liye; production se pehle real IDs lagao)"
+        type: boolean
+        default: true
+
+jobs:
+  aab:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Check secrets and ad ids
+        env:
+          KS: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          KSP: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          KA: ${{ secrets.RELEASE_KEY_ALIAS }}
+          KP: ${{ secrets.RELEASE_KEY_PASSWORD }}
+          ADMOB_APP_ID: ${{ vars.ADMOB_APP_ID }}
+          ADMOB_REWARDED_ID: ${{ vars.ADMOB_REWARDED_ID }}
+          ADMOB_BANNER_ID: ${{ vars.ADMOB_BANNER_ID }}
+          ALLOW_TEST: ${{ github.event.inputs.allow_test_ads }}
+        run: |
+          miss=""
+          [ -z "$KS" ] && miss="$miss RELEASE_KEYSTORE_BASE64"
+          [ -z "$KSP" ] && miss="$miss RELEASE_KEYSTORE_PASSWORD"
+          [ -z "$KA" ] && miss="$miss RELEASE_KEY_ALIAS"
+          [ -z "$KP" ] && miss="$miss RELEASE_KEY_PASSWORD"
+          if [ -n "$miss" ]; then echo "::error title=Secrets missing::GitHub Secrets banao:$miss"; exit 1; fi
+          for v in ADMOB_APP_ID ADMOB_REWARDED_ID ADMOB_BANNER_ID; do
+            val="${!v}"
+            if [ -z "$val" ] || [[ "$val" == ca-app-pub-3940256099942544* ]]; then
+              if [ "$ALLOW_TEST" = "true" ]; then echo "::warning title=Test ads::$v real nahi hai - Google TEST ads chalenge (production se pehle badlo)"; else echo "::error title=Real AdMob id chahiye::$v missing/test id"; exit 1; fi
+            fi
+          done
+      - name: Accept Android SDK licenses
+        run: |
+          mkdir -p "$ANDROID_HOME/licenses"
+          printf '\n24333f8a63b6825ea9c5514f83c2829b004d1fee\n8933bad161af4178b1185d1a37fbf41ea5269c55\nd56f5187479451eabf01fb78af6dfcb131a6481e\n84831b9409646a918e30573bab4c9c91346d8abd\n' > "$ANDROID_HOME/licenses/android-sdk-license"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null 2>&1 || true
+      - name: Decode keystore
+        run: echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/release.jks"
+      - name: Build release AAB
+        env:
+          RELEASE_KEYSTORE_PATH: ${{ runner.temp }}/release.jks
+          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+          ADMOB_APP_ID: ${{ vars.ADMOB_APP_ID }}
+          ADMOB_REWARDED_ID: ${{ vars.ADMOB_REWARDED_ID }}
+          ADMOB_BANNER_ID: ${{ vars.ADMOB_BANNER_ID }}
+          UNITY_GAME_ID: ${{ vars.UNITY_GAME_ID }}
+          UNITY_TEST_MODE: ${{ vars.UNITY_TEST_MODE }}
+        run: |
+          chmod +x gradlew
+          set +e
+          ./gradlew :app:bundleRelease --no-daemon 2>&1 | tee build.log
+          rc=${PIPESTATUS[0]}
+          if [ $rc -ne 0 ]; then
+            MSG=$(grep -E "error:|What went wrong|Could not|symbol:|location:|Execution failed|Missing class|R8" build.log | head -30 | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
+            echo "::error title=Build errors::$MSG"
+          fi
+          exit $rc
+      - name: Verify AAB is signed with the upload key
+        run: |
+          keytool -printcert -jarfile app/build/outputs/bundle/release/app-release.aab | grep -E "Owner|SHA1|SHA256" | head -4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: play-store-aab
+          path: app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mapping
+          path: app/build/outputs/mapping/release/mapping.txt
+          if-no-files-found: warn
+      - name: Cleanup keystore
+        if: always()
+        run: rm -f "$RUNNER_TEMP/release.jks"
