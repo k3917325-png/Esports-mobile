@@ -41,6 +41,16 @@ jobs:
             echo "::error title=Build errors::$MSG"
           fi
           exit $rc
+      - name: Check release build (R8/minify) compiles
+        run: |
+          set +e
+          ./gradlew :app:bundleRelease --no-daemon 2>&1 | tee rel.log
+          rc=${PIPESTATUS[0]}
+          if [ $rc -ne 0 ]; then
+            MSG=$(grep -E "error:|What went wrong|Could not|Missing class|R8|Execution failed" rel.log | head -30 | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
+            echo "::error title=Release build errors::$MSG"
+          fi
+          exit $rc
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
