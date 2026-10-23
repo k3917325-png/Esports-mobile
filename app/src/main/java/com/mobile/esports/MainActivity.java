@@ -1,10 +1,12 @@
 package com.mobile.esports;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.util.Base64;
 import android.view.KeyEvent;
 import android.webkit.ConsoleMessage;
@@ -26,6 +28,11 @@ import androidx.biometric.BiometricPrompt;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.tasks.Task;
 import com.google.android.gms.ads.AdError;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.FullScreenContentCallback;
@@ -39,6 +46,7 @@ import com.google.android.ump.UserMessagingPlatform;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.security.MessageDigest;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -64,6 +72,17 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Rooted phones are where coin-editing / hooking tools run: refuse to start there.
+        if (looksRooted()) {
+            new AlertDialog.Builder(this)
+                    .setTitle("Security")
+                    .setMessage("Yeh app rooted / modified phone par nahi chalta.")
+                    .setCancelable(false)
+                    .setPositiveButton(android.R.string.ok, (d, w) -> finishAndRemoveTask())
+                    .show();
+            return;
+        }
 
         webView = new WebView(this);
         setContentView(webView);
@@ -91,6 +110,7 @@ public class MainActivity extends AppCompatActivity {
         });
         webView.addJavascriptInterface(new AdsBridge(), "AndroidAds");
         webView.addJavascriptInterface(new AdminBridge(), "AndroidAdmin");
+        webView.addJavascriptInterface(new DeviceBridge(), "AndroidDevice");
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
             public boolean onConsoleMessage(ConsoleMessage cm) {
@@ -153,6 +173,77 @@ public class MainActivity extends AppCompatActivity {
             final String safeId = id == null ? "0" : id.replaceAll("[^0-9]", "");
             runOnUiThread(() -> showRewardedInternal(safeId));
         }
+    }
+
+    // ===================== Device binding + root check =====================
+    /** JS-facing bridge: window.AndroidDevice.id() -> stable per-device, per-app hash (never the raw ANDROID_ID). */
+    private class DeviceBridge {
+        /** Google sign-in: window.AndroidDevice.googleSignIn(webClientId) -> later window.__googleResult(idToken, error) */
+        @JavascriptInterface
+        public void googleSignIn(final String webClientId) {
+            runOnUiThread(() -> {
+                try {
+                    if (webClientId == null || !webClientId.matches("^[0-9]+-[a-z0-9]+\\.apps\\.googleusercontent\\.com$")) { googleDone(null, "Google Client ID galat/missing"); return; }
+                    GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                            .requestIdToken(webClientId).requestEmail().build();
+                    com.google.android.gms.auth.api.signin.GoogleSignInClient c = GoogleSignIn.getClient(MainActivity.this, gso);
+                    c.signOut().addOnCompleteListener(t -> startActivityForResult(c.getSignInIntent(), RC_GOOGLE)); // signOut first = account chooser every time
+                } catch (Exception e) { googleDone(null, "Google sign-in start nahi hua"); }
+            });
+        }
+
+        @JavascriptInterface
+        public String id() {
+            try {
+                String a = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+                if (a == null) a = "";
+                MessageDigest md = MessageDigest.getInstance("SHA-256");
+                byte[] h = md.digest((a + ":" + getPackageName()).getBytes("UTF-8"));
+                StringBuilder sb = new StringBuilder();
+                for (byte b : h) sb.append(String.format("%02x", b));
+                return sb.substring(0, 48);
+            } catch (Exception e) {
+                return "";
+            }
+        }
+    }
+
+    private static final int RC_GOOGLE = 9001;
+
+    private void googleDone(final String idToken, final String err) {
+        final String t = idToken == null ? "null" : "'" + idToken.replace("'", "") + "'";
+        final String e = err == null ? "''" : "'" + err.replace("'", " ") + "'";
+        webView.post(() -> webView.evaluateJavascript("window.__googleResult(" + t + "," + e + ")", null));
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != RC_GOOGLE) return;
+        try {
+            Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
+            GoogleSignInAccount acc = task.getResult(ApiException.class);
+            String tok = acc.getIdToken();
+            if (tok == null) googleDone(null, "Google ne token nahi diya (Web Client ID / SHA-1 check karo)");
+            else googleDone(tok, null);
+        } catch (ApiException ex) {
+            googleDone(null, "Google sign-in fail (code " + ex.getStatusCode() + ") - SHA-1 Firebase mein add hai?");
+        } catch (Exception ex) {
+            googleDone(null, "Google sign-in cancel");
+        }
+    }
+
+    /** Basic root indicators. Cheap to bypass for a determined attacker - it only stops casual tools. */
+    private boolean looksRooted() {
+        String tags = Build.TAGS;
+        if (tags != null && tags.contains("test-keys")) return true;
+        String[] paths = {"/system/app/Superuser.apk", "/sbin/su", "/system/bin/su", "/system/xbin/su", "/data/local/xbin/su",
+                "/data/local/bin/su", "/system/sd/xbin/su", "/system/bin/failsafe/su", "/data/local/su", "/su/bin/su",
+                "/system/xbin/daemonsu", "/data/adb/magisk", "/sbin/.magisk"};
+        for (String p : paths) {
+            try { if (new File(p).exists()) return true; } catch (Exception ignored) {}
+        }
+        return false;
     }
 
     // ===================== Admin fingerprint gate =====================
@@ -283,7 +374,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (keyCode == KeyEvent.KEYCODE_BACK && webView.canGoBack()) {
+        if (keyCode == KeyEvent.KEYCODE_BACK && webView != null && webView.canGoBack()) {
             webView.goBack();
             return true;
         }

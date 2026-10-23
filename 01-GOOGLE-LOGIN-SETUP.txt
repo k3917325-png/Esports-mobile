@@ -1,0 +1,36 @@
+GOOGLE LOGIN + COUNTRY CHECK  (v6.0)  -- kya badla aur kya karna hai
+====================================================================
+
+KYA BADLA
+ 1. Phone number + OTP login poora hata diya. Ab sirf "Continue with Google" (Gmail) + Guest.
+ 2. Withdrawal form se Mobile Number / OTP hata diya. Uski jagah Country dropdown hai.
+ 3. Withdraw dabate hi app user ke IP se country detect karti hai. Dropdown ki country aur IP ki country
+    alag ho (jaise IP Pakistan, select USA) -> request AUTO REJECT (coins kategi nahi, admin ko dikhne ki zarurat nahi).
+ 4. Admin -> Countries tab: "WD: Blocked" = us country se withdrawal band (dropdown aur IP dono par).
+    Save karte hi list database (config/blocked) mein jaati hai aur Firestore RULES bhi isko check karte hain.
+ 5. Admin panel mein ab Gmail aur country (selected / IP) dikhte hain. Ban: Gmail ya user ID se.
+ 6. Account ID = Google account ki Firebase UID. Same Gmail kisi bhi phone par wahi account.
+    (Ek phone = ek account wala device lock pehle jaisa chalu hai.)
+
+KARNA KYA HAI  (Firebase Console)
+ A. Authentication -> Sign-in method -> Google -> Enable karo (support email chuno) -> Save.
+ B. Wahi Google provider kholo -> "Web SDK configuration" -> "Web client ID" copy karo.
+    Ye dikhta hai: 1234567890-abcdefg.apps.googleusercontent.com   -> mujhe bhej do (ya HTML mein
+    `googleClientId:"__GOOGLE_WEB_CLIENT_ID__"` ki jagah paste karo).
+ C. Project settings -> Your apps -> Android app add karo: package = com.mobile.esports,
+    aur SHA-1 daalo (Android Studio: Gradle -> signingReport; Play Console release ke liye
+    "App signing" wala SHA-1 bhi add karna). Bina SHA-1 ke Google login "code 10" error dega.
+ D. Firestore -> Rules: NAYA firestore.rules paste karo (admin UID wali line pehle jaisi), Publish.
+ E. Authentication -> Settings -> Authorized domains: kuch nahi badalna (native app ke liye zarurat nahi).
+
+ZAROORI SACH
+ * Google Sign-In AppMint jaise plain "HTML to APK" WebView wrapper mein NAHI chalega: Google WebView mein
+   login block karta hai aur wahan native bridge hota nahi. Ye sirf is zip ke Android project se bani APK
+   mein chalega (MainActivity mein Google bridge likha hai). Android code yahan compile nahi hua.
+ * IP country check CLIENT par hota hai. Rules ye check karte hain ki bheje gaye selected country aur ipCountry
+   barabar hon aur blacklist mein na hon, lekin "ipCountry" sach hai ya nahi, ye rules khud nahi jaante.
+   Tez user app modify karke dono fields jhooth likh sakta hai. Sakht (tamper-proof) check ke liye
+   Cloud Function (Blaze plan) chahiye jo request ke asli IP se country nikaale. Abhi ye aam logon / VPN
+   galtiyon ko rokta hai, hacker ko nahi.
+ * VPN wala user jo VPN ki country select kare, wo pass ho jaata hai (IP wahi dikhegi).
+ * Purane phone-number wale users ko ek baar Google se dobara login karna padega.

@@ -35,7 +35,8 @@ android {
 
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true          // R8: shrink + obfuscate Java code
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             def ksPath = System.getenv("RELEASE_KEYSTORE_PATH")
             if (ksPath != null && file(ksPath).exists()) {
@@ -59,4 +60,5 @@ dependencies {
     implementation 'androidx.biometric:biometric:1.1.0'
     implementation 'com.google.android.gms:play-services-ads:23.3.0'
     implementation 'com.google.android.ump:user-messaging-platform:2.2.0'
+    implementation 'com.google.android.gms:play-services-auth:21.2.0'   // Google Sign-In
 }

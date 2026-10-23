@@ -430,25 +430,26 @@ function legalLinksCard(){
 }
 const WD_ID = {1:"Upi", 2:"Paypal", 3:"Paytm", 4:"Phonepe", 5:"Binance", 6:"Bybit"};
 const WD_METHOD = {1:"UPI", 2:"PayPal", 3:"Paytm", 4:"PhonePe", 5:"Binance", 6:"Bybit"};
-function tdsPctFor(opt){ // PayPal/Binance have no TDS (processing fee only); UPI/Paytm/PhonePe each have their own admin-set TDS %
-  const c = cfg();
-  if(opt===3) return c.paytmTdsPct;
-  if(opt===4) return c.phonepeTdsPct;
-  return c.upiTdsPct;
+// Tax (TDS) / processing fee per method: admin toggle <m>_fee_enabled + percent <m>_fee_percent. OFF -> 0% (full amount paid).
+const auditW = (action, target, detail) => wUpdate("audit", "A"+Date.now().toString(36).toUpperCase()+Math.random().toString(36).slice(2,6).toUpperCase(), {admin:FB.adminEmail, action, target:cleanTxt(target,120), detail:cleanTxt(detail,300)}, {exists:false, now:["at"]});
+function feeMap(c){ const o = {}; Object.keys(FEE_KEY).forEach(m=>{ o[m] = appliedPct(m, c); }); return o; }
+const METHODS_ALL = ["UPI","PayPal","Paytm","PhonePe","Binance","Bybit"];
+const FEE_KEY = {UPI:"upi", Paytm:"paytm", PhonePe:"phonepe", PayPal:"paypal", Binance:"binance", Bybit:"bybit"};
+const FEE_DEFAULT = {UPI:30, Paytm:30, PhonePe:30, PayPal:18, Binance:18, Bybit:18};
+function appliedPct(method, c){
+  c = c || cfg(); const k = FEE_KEY[method]; if(!k) return 0;
+  if(c[k+"_fee_enabled"] === false) return 0;
+  const v = Number(c[k+"_fee_percent"]);
+  return (isFinite(v) && v>=0 && v<=100) ? v : FEE_DEFAULT[method];
 }
-function tdsPctForMethod(method){
-  const c = cfg();
-  if(method==="Paytm") return c.paytmTdsPct;
-  if(method==="PhonePe") return c.phonepeTdsPct;
-  return c.upiTdsPct;
-}
+function tdsPctFor(opt){ return appliedPct(WD_METHOD[opt]); }
+function tdsPctForMethod(method){ return appliedPct(method); }
 function isFeeOpt(opt){ return opt===2 || opt===5 || opt===6; } // fee-based (no TDS) methods: PayPal, Binance
 function isFeeMethod(method){ return method==="PayPal" || method==="Binance" || method==="Bybit"; }
-function bybitFee(){ const v = cfg().bybitFeePct; return (typeof v==='number' && v>=0) ? v : 6; } // Bybit processing fee (admin-set, default 6%)
 function isUsdtOpt(o){ return o===5 || o===6; }
 function isUsdtMethod(m){ return m==="Binance" || m==="Bybit"; }
-function feePctFor(opt){ const c = cfg(); return opt===6 ? bybitFee() : opt===5 ? c.binanceFeePct : c.paypalFeePct; }
-function feePctForMethod(method){ const c = cfg(); return method==="Bybit" ? bybitFee() : method==="Binance" ? cfg().binanceFeePct : cfg().paypalFeePct; }
+function feePctFor(opt){ return appliedPct(WD_METHOD[opt]); }
+function feePctForMethod(method){ return appliedPct(method); }
 const now = () => Date.now(), MIN = 60000;
 function defaultConfig(){ return {
   rate: 1500, // coins per $1
@@ -463,11 +464,16 @@ function defaultConfig(){ return {
   wdTimeEnabled: false, wdTimeStart: "18:00", wdTimeEnd: "22:00", // sirf is window mein withdrawal allowed
   wdDaysEnabled: false, wdDays: [0,1,2,3,4,5,6], // sirf in weekdays par withdrawal allowed (0=Sun...6=Sat)
   presetAmounts: [1.32,2.50,3.50,5.50,7,10],
-  upiEnabled: true, upiTdsPct: 30, paypalEnabled: true, paypalFeePct: 18, usdToInr: 83,
-  binanceEnabled: true, binanceFeePct: 6,
-  bybitEnabled: true, bybitFeePct: 6,
+  lbServerPayout: false,
+  loginRestrictOn: true, wdRestrictOn: true, vpnBlock: true, gpsRequired: true, extAppOn: false, extAppName: "", extAppPkg: "", extAppUrl: "",
+  maintenanceOn: false, maintenanceMsg: "App abhi maintenance par hai. Thodi der baad dobara aao.", forceUpdateOn: false, minVersion: 1, updateUrl: "", updateMsg: "App ka naya version aa gaya hai. Aage use karne ke liye update karo.",
+  upiEnabled: true, paypalEnabled: true, usdToInr: 83,
+  binanceEnabled: true,
+  bybitEnabled: true,
+  upi_fee_enabled: true, upi_fee_percent: 30, paytm_fee_enabled: true, paytm_fee_percent: 30, phonepe_fee_enabled: true, phonepe_fee_percent: 30,
+  paypal_fee_enabled: true, paypal_fee_percent: 18, binance_fee_enabled: true, binance_fee_percent: 18, bybit_fee_enabled: true, bybit_fee_percent: 18,
   manualTours: [], // admin-created extra tournaments [{id,g,pool,min}]
-  paytmEnabled: true, phonepeEnabled: true, paytmTdsPct: 30, phonepeTdsPct: 30,
+  paytmEnabled: true, phonepeEnabled: true,
   tourDurationMin: 30,
   gamesEnabled: {arctic:true,hoop:true,loop:true,colorbounce:true,bubble:true,drive:true,shooter:true,knife:true,blockmatch:true,dollar:true,candle:true,dollarbox:true},
   gamesOrder: ["arctic","hoop","loop","colorbounce","bubble","drive","shooter","knife","blockmatch","dollar","candle","dollarbox"],
@@ -527,11 +533,544 @@ function wdCountLeft(){
   return Math.max(0, (cfg().wdMaxPerDay||1) - used);
 }
 function wdAvailable(){ return wdInTimeWindow() && wdDayOk() && wdCountLeft()>0; }
-let S = load() || null, tab = "home", sub = "matches", cap = "", lbShown = 100;
+let S = load() || null;
+if(S && !S.isGuest && !/^[A-Za-z0-9]{20,40}$/.test(String(S.phone||""))){ S = null; try{ localStorage.removeItem("esp_app"); }catch(e){} }   // old phone-number session: must log in with Google
+if(S && Array.isArray(S.wd)) S.wd.forEach(w=>{ if(w) w.sending = false; });
+let _unused_ = 0, tab = "home", sub = "matches", cap = "", lbShown = 100;
 
-// ===== Google Sheets: public URL (holds NO secret). Build workflow injects the real URL. =====
-const SHEETS_URL = "";
-// ===== Remote settings (Sheet "Config" tab) - admin edits there, every user app reads them =====
+// ===== Firebase backend (public identifiers only). =====
+/* ===== Firebase backend (Firestore + Auth over plain REST - no SDK, no external script) =====
+   These three values are PUBLIC identifiers (not secrets). Real protection = Firestore Security Rules (firestore.rules).
+   Admin PIN = password of the admin Firebase account; it is never stored in the app. */
+const APP_VER = 13;   // integer app version used by Force Update (admin sets "minimum allowed version")
+const APP_BUILD = "v13.1-server-lb-payout-2026-10-20";
+console.log("build", APP_BUILD);
+const FB = {apiKey:"AIzaSyBHEpJcFl_0ROchiOCZni8JmG9qYUgNR1Q", projectId:"esports-reward", adminEmail:"praveen4477766@gmail.com", googleClientId:"__GOOGLE_WEB_CLIENT_ID__"};
+const FB_READY = !!FB.apiKey && !!FB.projectId && FB.apiKey.indexOf("__")!==0 && FB.projectId.indexOf("__")!==0;
+const SHEETS_URL = FB_READY ? "firebase" : "";   // legacy name: truthy => backend enabled
+const FB_HOST = (typeof window!=="undefined" && window.__FB_TEST_HOST) || "";   // test hook only (empty in production)
+const FS_ROOT = () => (FB_HOST ? FB_HOST+"/fs" : "https://firestore.googleapis.com") + "/v1/projects/"+FB.projectId+"/databases/(default)/documents";
+const FS_DB = () => "projects/"+FB.projectId+"/databases/(default)/documents";
+const AUTH_URL = p => (FB_HOST ? FB_HOST+"/auth/" : "https://identitytoolkit.googleapis.com/v1/") + p + "?key=" + encodeURIComponent(FB.apiKey);
+const TOKEN_URL = () => (FB_HOST ? FB_HOST+"/token" : "https://securetoken.googleapis.com/v1/token") + "?key=" + encodeURIComponent(FB.apiKey);
+const MAX_WD_PER_DAY = 5, COIN_TOLERANCE = 30000, MAX_COIN_JUMP = 200000;
+
+/* ---- typed value (de)serialisation ---- */
+function toV(v){
+  if(v === null || v === undefined) return {nullValue:null};
+  if(typeof v === "boolean") return {booleanValue:v};
+  if(typeof v === "number") return Number.isInteger(v) ? {integerValue:String(v)} : {doubleValue:v};
+  if(typeof v === "string") return {stringValue:v};
+  if(Array.isArray(v)) return {arrayValue:{values:v.map(toV)}};
+  const f = {}; Object.keys(v).forEach(k=>{ f[k] = toV(v[k]); }); return {mapValue:{fields:f}};
+}
+function fromV(x){
+  if(!x) return null;
+  if("stringValue" in x) return x.stringValue;
+  if("integerValue" in x) return Number(x.integerValue);
+  if("doubleValue" in x) return x.doubleValue;
+  if("booleanValue" in x) return x.booleanValue;
+  if("timestampValue" in x) return x.timestampValue;
+  if("nullValue" in x) return null;
+  if("arrayValue" in x) return (x.arrayValue.values||[]).map(fromV);
+  if("mapValue" in x){ const o = {}; const f = x.mapValue.fields||{}; Object.keys(f).forEach(k=>{ o[k] = fromV(f[k]); }); return o; }
+  return null;
+}
+const toFields = o => { const f = {}; Object.keys(o).forEach(k=>{ f[k] = toV(o[k]); }); return f; };
+const fromDoc = d => { if(!d || !d.fields) return null; const o = {}; Object.keys(d.fields).forEach(k=>{ o[k] = fromV(d.fields[k]); }); return o; };
+const istTime = ts => { try{ return new Date(ts).toLocaleString("sv-SE",{timeZone:"Asia/Kolkata"}); }catch(e){ return String(ts||""); } };
+
+/* ---- auth sessions: "user" (anonymous, persisted) and "admin" (email+PIN, memory only) ---- */
+const FBS = {user:null, admin:null};
+async function fbJson(url, body){
+  const r = await fetch(url, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)});
+  const d = await r.json().catch(()=>({})); return {ok:r.ok, d};
+}
+function setSess(kind, d){
+  FBS[kind] = {idToken:d.idToken||d.id_token, refresh:d.refreshToken||d.refresh_token, uid:d.localId||d.user_id, exp:Date.now()+(Number(d.expiresIn||d.expires_in||3600)-60)*1000};
+  if(kind==="user"){ try{ localStorage.setItem("fb_user", JSON.stringify({refresh:FBS.user.refresh, uid:FBS.user.uid})); }catch(e){} }
+}
+async function fbToken(kind){
+  if(kind==="none") return "";
+  let s = FBS[kind];
+  if(kind==="user" && !s){
+    try{ const p = JSON.parse(localStorage.getItem("fb_user")||"null"); if(p && p.refresh) FBS.user = s = {idToken:"", refresh:p.refresh, uid:p.uid, exp:0}; }catch(e){}
+  }
+  if(s && s.idToken && Date.now() < s.exp) return s.idToken;
+  if(s && s.refresh){
+    const r = await fetch(TOKEN_URL(), {method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"}, body:"grant_type=refresh_token&refresh_token="+encodeURIComponent(s.refresh)});
+    const d = await r.json().catch(()=>({}));
+    if(r.ok && (d.id_token||d.idToken)){ setSess(kind, d); return FBS[kind].idToken; }
+    FBS[kind] = null; if(kind==="admin") return "";
+  }
+  if(kind==="admin") return "";
+  const a = await fbJson(AUTH_URL("accounts:signUp"), {returnSecureToken:true});   // anonymous account for this install
+  if(!a.ok || !a.d.idToken) throw new Error("auth");
+  setSess("user", a.d); return FBS.user.idToken;
+}
+async function fs(kind, method, path, body){
+  const tok = await fbToken(kind);
+  if(kind==="admin" && !tok){ const e = new Error("noauth"); e.auth = true; throw e; }
+  const h = {"Content-Type":"application/json"}; if(tok) h.Authorization = "Bearer "+tok;
+  const r = await fetch(path.indexOf("http")===0 ? path : FS_ROOT()+path, {method, headers:h, body: body===undefined ? undefined : JSON.stringify(body)});
+  const d = await r.json().catch(()=>({}));
+  if(!r.ok){ const e = new Error((d.error&&d.error.status)||("http"+r.status)); e.status = r.status; e.auth = (r.status===401||r.status===403); throw e; }
+  return d;
+}
+const docPath = (c, id) => "/"+c+"/"+encodeURIComponent(id);
+async function getDoc(kind, c, id){
+  try{ return fromDoc(await fs(kind, "GET", docPath(c,id))); }
+  catch(e){ if(e.status===404) return null; throw e; }
+}
+async function commit(kind, writes){ return fs(kind, "POST", ":commit", {writes}); }
+const wUpdate = (c, id, obj, o) => {
+  o = o || {};
+  const w = {update:{name:FS_DB()+docPath(c,id), fields:toFields(obj)}};
+  if(o.mask) w.updateMask = {fieldPaths:o.mask};
+  if(o.exists !== undefined) w.currentDocument = {exists:o.exists};
+  if(o.now && o.now.length) w.updateTransforms = o.now.map(f=>({fieldPath:f, setToServerValue:"REQUEST_TIME"}));
+  return w;
+};
+const wDelete = (c, id) => ({delete:FS_DB()+docPath(c,id)});
+async function runQuery(kind, q){
+  const rows = await fs(kind, "POST", ":runQuery", {structuredQuery:q});
+  return rows.filter(r=>r.document).map(r=>fromDoc(r.document)).filter(Boolean);
+}
+async function countQuery(kind, q){
+  try{
+    const r = await fs(kind, "POST", ":runAggregationQuery", {structuredAggregationQuery:{structuredQuery:q, aggregations:[{alias:"n", count:{}}]}});
+    const x = r[0] && r[0].result && r[0].result.aggregateFields && r[0].result.aggregateFields.n;
+    return x ? Number(x.integerValue) : 0;
+  }catch(e){ if(e.auth) throw e; return 0; }
+}
+const fEq = (f, v) => ({fieldFilter:{field:{fieldPath:f}, op:"EQUAL", value:toV(v)}});
+const andF = fl => fl.length===1 ? fl[0] : {compositeFilter:{op:"AND", filters:fl}};
+const digitsOf = s => String(s||"").replace(/\D/g,"");
+// Account id = Firebase UID of the signed-in Google account (stable across devices). Rules require doc id == request.auth.uid.
+const acctOf = s => /^[A-Za-z0-9]{20,40}$/.test(String(s||"")) ? String(s) : "";
+const cleanCc = s => { s = String(s||"").toUpperCase(); if(s==="UK") s = "GB"; return /^[A-Z]{2}$/.test(s) ? s : ""; };
+/* ---------- Google sign-in -> Firebase (accounts:signInWithIdp) ---------- */
+let FBUSER = {email:"", name:""};
+try{ FBUSER = JSON.parse(localStorage.getItem("fb_profile")||"null") || FBUSER; }catch(e){}
+async function fbGoogleLogin(idToken){
+  const r = await fbJson(AUTH_URL("accounts:signInWithIdp"), {postBody:"id_token="+encodeURIComponent(idToken)+"&providerId=google.com", requestUri:"http://localhost", returnSecureToken:true, returnIdpCredential:true});
+  if(!r.ok || !r.d.idToken) throw new Error((r.d.error&&r.d.error.message)||"google login failed");
+  setSess("user", r.d);
+  FBUSER = {email:String(r.d.email||"").toLowerCase(), name:String(r.d.displayName||"")};
+  try{ localStorage.setItem("fb_profile", JSON.stringify(FBUSER)); }catch(e){}
+  return {uid:r.d.localId, email:FBUSER.email, name:FBUSER.name};
+}
+/* ---------- Gmail + password login with e-mail verification: works inside ANY WebView (AppMint etc.) ---------- */
+const GMAIL_RE = /^[a-z0-9._]{6,40}@gmail\.com$/;
+async function fbEmailAuth(mode, email, pass){
+  email = String(email||"").trim().toLowerCase();
+  if(!GMAIL_RE.test(email)) throw new Error("Sahi Gmail address daalo (example@gmail.com, '+' allowed nahi)");
+  if(String(pass||"").length < 8) throw new Error("Password kam se kam 8 characters ka rakho");
+  const r = await fbJson(AUTH_URL(mode==="new" ? "accounts:signUp" : "accounts:signInWithPassword"), {email, password:pass, returnSecureToken:true});
+  if(!r.ok || !r.d.idToken){
+    const m = String((r.d.error&&r.d.error.message)||"");
+    if(/EMAIL_EXISTS/.test(m)) throw new Error("Ye Gmail pehle se registered hai — 'Login' dabao");
+    if(/INVALID_LOGIN|INVALID_PASSWORD|EMAIL_NOT_FOUND/.test(m)) throw new Error("Gmail ya password galat (naya hai to 'Naya Account' dabao)");
+    if(/TOO_MANY/.test(m)) throw new Error("Bahut zyada try — thodi der baad dobara");
+    if(/OPERATION_NOT_ALLOWED/.test(m)) throw new Error("Firebase mein Email/Password sign-in ON nahi hai");
+    throw new Error("Login nahi hua ("+(m||"network")+")");
+  }
+  const lk = await fbJson(AUTH_URL("accounts:lookup"), {idToken:r.d.idToken});
+  const verified = !!(lk.ok && lk.d.users && lk.d.users[0] && lk.d.users[0].emailVerified);
+  if(!verified){
+    await fbJson(AUTH_URL("accounts:sendOobCode"), {requestType:"VERIFY_EMAIL", idToken:r.d.idToken}).catch(()=>{});
+    return {verified:false, email};
+  }
+  setSess("user", r.d);
+  FBUSER = {email, name:email.split("@")[0]};
+  try{ localStorage.setItem("fb_profile", JSON.stringify(FBUSER)); }catch(e){}
+  return {verified:true, uid:r.d.localId, email, name:FBUSER.name};
+}
+async function fbResetPassword(email){
+  email = String(email||"").trim().toLowerCase();
+  if(!GMAIL_RE.test(email)) throw new Error("Pehle apna Gmail address daalo");
+  const r = await fbJson(AUTH_URL("accounts:sendOobCode"), {requestType:"PASSWORD_RESET", email});
+  if(!r.ok) throw new Error("Reset mail nahi ja payi — Gmail check karo");
+}
+const IN_WEBVIEW = /; wv\)|Version\/[\d.]+ Chrome\//.test(navigator.userAgent||"");   // Android WebView (AppMint etc.): Google blocks OAuth here, so only Gmail+password is offered
+// Native Android bridge (MainActivity) -> window.__googleResult(idToken, error). Web fallback: Google Identity Services button (works in Chrome, NOT in plain WebView wrappers).
+let gWait = null;
+window.__googleResult = function(tok, err){ const w = gWait; gWait = null; if(!w) return; if(tok) w.ok(String(tok)); else w.no(new Error(err||"Google sign-in cancel")); };
+function googleIdToken(){
+  return new Promise((ok,no)=>{
+    if(window.AndroidDevice && window.AndroidDevice.googleSignIn){
+      gWait = {ok,no}; setTimeout(()=>{ if(gWait){ gWait = null; no(new Error("Google sign-in timeout")); } }, 120000);
+      try{ window.AndroidDevice.googleSignIn(FB.googleClientId); }catch(e){ gWait = null; no(e); }
+      return;
+    }
+    if(!/^[0-9]+-[a-z0-9]+\.apps\.googleusercontent\.com$/i.test(FB.googleClientId)) return no(new Error("Google Client ID set nahi hai"));
+    const go = () => {
+      try{
+        google.accounts.id.initialize({client_id:FB.googleClientId, callback:r=>r&&r.credential?ok(r.credential):no(new Error("Google sign-in cancel"))});
+        let h = document.getElementById("gsiHost");
+        if(!h){ h = document.createElement("div"); h.id = "gsiHost"; h.style.cssText = "display:flex;justify-content:center;margin:10px 0"; (document.getElementById("gbtn")||document.body).appendChild(h); }
+        google.accounts.id.renderButton(h, {theme:"filled_blue", size:"large", text:"continue_with", width:260});
+        google.accounts.id.prompt();
+      }catch(e){ no(e); }
+    };
+    if(window.google && google.accounts && google.accounts.id) return go();
+    const sc = document.createElement("script"); sc.src = "https://accounts.google.com/gsi/client"; sc.async = true; sc.onload = go; sc.onerror = ()=>no(new Error("Google script load nahi hua")); document.head.appendChild(sc);
+  });
+}
+/* ---------- IP -> country (fraud check). Free no-key services, tried in order. Client-side only: see SECURITY notes. ---------- */
+const IPC = {cc:"", risk:"", t:0};
+// Country + VPN/proxy/Tor/datacenter flags of the CURRENT public IP. ipapi.is gives both; the others give the country only (risk unknown = "").
+async function ipInfo(force){
+  if(!force && IPC.cc && Date.now()-IPC.t < 300000) return IPC;
+  const srcs = [
+    async sg => { const d = await (await fetch("https://api.ipapi.is/", {signal:sg, cache:"no-store"})).json(); const rk = []; if(d.is_vpn) rk.push("VPN"); if(d.is_proxy) rk.push("PROXY"); if(d.is_tor) rk.push("TOR"); if(d.is_datacenter) rk.push("DATACENTER"); return {cc:(d.location&&d.location.country_code)||"", risk:rk.join(",")}; },
+    async sg => { const d = await (await fetch("https://api.country.is/", {signal:sg, cache:"no-store"})).json(); return {cc:d.country, risk:""}; },
+    async sg => { const d = await (await fetch("https://ipwho.is/", {signal:sg, cache:"no-store"})).json(); return {cc:d.success===false ? "" : d.country_code, risk:""}; },
+    async sg => { const d = await (await fetch("https://ipapi.co/json/", {signal:sg, cache:"no-store"})).json(); return {cc:d.country_code || d.country, risk:""}; }
+  ];
+  for(const f of srcs){
+    try{ const ac = new AbortController(), tm = setTimeout(()=>ac.abort(), 6000); const v = await f(ac.signal); clearTimeout(tm); const cc = cleanCc(v.cc); if(cc){ IPC.cc = cc; IPC.risk = String(v.risk||"").slice(0,40); IPC.t = Date.now(); return IPC; } }catch(e){}
+  }
+  return {cc:"", risk:"", t:0};
+}
+async function ipCountry(force){ return (await ipInfo(force)).cc; }
+const cleanTxt = (s, n) => String(s==null?"":s).replace(/[\u0000-\u001f]/g," ").trim().substring(0,n);
+const cleanDev = d => /^[A-Za-z0-9\-]{16,64}$/.test(String(d||"")) ? String(d) : "";
+
+/* ---- actions (same names/replies the app and admin panel already use) ---- */
+const FBA = {
+  async config(){
+    const c = await getDoc("none","config","app").catch(()=>null);
+    if(!c) return {ok:true, doc:null, unityAds:"ON"};
+    let doc = null; try{ doc = JSON.parse(c.json||"null"); }catch(e){}
+    const un = String(c.unityAds||"ON").toUpperCase()==="OFF" ? "OFF" : "ON";
+    if(doc){ doc.adConfig = doc.adConfig||{}; doc.adConfig.unityOn = un!=="OFF"; }
+    return {ok:true, doc, unityAds:un};
+  },
+  async checkBan(b){ const m = acctOf(b.mobile); if(!m) return {ok:true, banned:false}; return {ok:true, banned: !!(await getDoc("user","bans",m))}; },
+  async userSync(b){
+    const m = acctOf(b.mobile); if(!m) return {ok:false, error:"bad account"};
+    const dev = cleanDev(b.device);
+    const uid = (await fbToken("user"), FBS.user.uid);
+    if(uid !== m) return {ok:false, error:"login required"};
+    const banned = !!(await getDoc("user","bans",m));
+    if(banned) return {ok:true, banned:true};
+    if(!dev) return {ok:true, banned:false};
+    const dv = await getDoc("user","devices",dev);
+    if(dv && dv.mobile !== m) return {ok:true, banned:false, deviceLimit:true};          // one device = one account
+    const coins = Math.max(0, Math.min(1e9, Math.floor(Number(b.coins)||0))), rp = Math.max(0, Math.min(1e12, Math.floor(Number(b.rp)||0)));
+    const prof = {name:cleanTxt(b.name,40), email:String(FBUSER.email||"").slice(0,100), code:cleanTxt(b.code,12), country:cleanTxt(b.country,4), coins, rp, device:dev, ownerUid:uid};
+    let cur; try{ cur = await getDoc("user","users",m); }catch(e){ if(!e.auth) throw e; cur = "DENIED"; }   // doc owned by an older install of this device
+    const writes = [];
+    if(!dv) writes.push(wUpdate("devices", dev, {mobile:m, ownerUid:uid}, {exists:false}));
+    if(cur==="DENIED"){
+      writes.push(wUpdate("users", m, prof, {exists:true, mask:Object.keys(prof), now:["seen"]}));
+    } else if(!cur){
+      writes.push(wUpdate("users", m, Object.assign({mobile:m, banned:false, flag:""}, prof), {exists:false, now:["first","seen"]}));
+    } else {
+      const gain = coins - (cur.coins||0);
+      const flag = gain > MAX_COIN_JUMP ? ("COIN JUMP +"+gain+" @"+istTime(Date.now())) : (cur.flag||"");
+      prof.flag = flag;
+      writes.push(wUpdate("users", m, prof, {exists:true, mask:Object.keys(prof), now:["seen"]}));
+    }
+    try{ await commit("user", writes); }
+    catch(e){ if(e.auth || e.status===409 || e.status===400) return {ok:true, banned:false, throttled:true, note:e.message}; throw e; }
+    return {ok:true, banned:false};
+  },
+  async submit(b){
+    const bad = msg => ({ok:false, permanent:true, error:msg});
+    const id = String(b.requestId||""), digits = acctOf(b.mobile);
+    const method = String(b.method||""), to = String(b.to||"").trim(), coins = Number(b.coins), net = Number(b.net);
+    let gross = Number(b.gross); const cur = String(b.currency||""), name = cleanTxt(b.name,40), dev = cleanDev(b.device);
+    const country = cleanCc(b.country), ipc = cleanCc(b.ipCountry), risk = String(b.risk||"").replace(/[^A-Z,]/g,"").slice(0,40);
+    if(!/^WD\d{3,9}$/.test(id)) return bad("invalid request id");
+    if(!digits) return bad("invalid account");
+    if(!country || !ipc) return bad("country check missing");
+    if(country !== ipc) return bad("Your location does not match the selected country. Please select your actual country of residence.");
+    if(["UPI","PayPal","Paytm","PhonePe","Binance","Bybit"].indexOf(method)<0) return bad("invalid method");
+    if(["INR","USD","USDT"].indexOf(cur)<0) return bad("invalid currency");
+    if(!(coins>=1) || coins!==Math.floor(coins) || coins>1000000) return bad("invalid coins");
+    if(!(net>=0) || net>1000000) return bad("invalid amount");
+    if(!(gross>=net) || gross>1000000) gross = net;
+    const pct = Number(b.pct);
+    if(!(pct>=0 && pct<=100)) return bad("invalid fee percent");
+    if(method==="UPI" && !/^[A-Za-z0-9._\-]{2,64}@[A-Za-z]{2,32}$/.test(to)) return bad("invalid UPI ID");
+    if(method==="PayPal" && !/^[^\s@]{1,64}@[^\s@]{1,128}\.[A-Za-z]{2,}$/.test(to)) return bad("invalid PayPal email");
+    if((method==="Paytm"||method==="PhonePe") && !/^[\d+ ]{7,16}$/.test(to)) return bad("invalid number");
+    if((method==="Binance"||method==="Bybit") && !/^[A-Za-z0-9@._\-]{3,64}$/.test(to)) return bad("invalid exchange ID");
+    if(!dev) return {ok:false, error:"account sync pending"};
+    const uid = (await fbToken("user"), FBS.user.uid);
+    if(uid !== digits) return bad("login required");
+    const ex = await getDoc("user","withdrawals",id);
+    if(ex) return {ok:true, duplicate:true};
+    if(await getDoc("user","bans",digits)) return bad("account blocked");
+    const u = await getDoc("user","users",digits);
+    if(!u || u.ownerUid!==uid || u.device!==dev) return {ok:false, error:"account sync pending"};
+    const dv = await getDoc("user","devices",dev);
+    if(!dv || dv.mobile!==digits) return bad("is device par doosra account bhi hai");
+    if(coins > (u.coins||0) + COIN_TOLERANCE) return bad("coins server balance se zyada hain");
+    const now = new Date(), wc = await getDoc("user","wdc",digits);
+    const same = wc && wc.year===now.getUTCFullYear() && wc.month===now.getUTCMonth()+1 && wc.day===now.getUTCDate();
+    const count = same ? (wc.count||0)+1 : 1;
+    if(count > MAX_WD_PER_DAY) return bad("daily request limit reached");
+    const g2 = Math.round(gross*100)/100, n2 = Math.round(net*100)/100, tax = Math.round((g2-n2)*100)/100;
+    if(Math.abs(g2*pct/100 - tax) > 1.5) return bad("tax/fee calculation mismatch");
+    const w = {id, uid, mobile:digits, email:String(FBUSER.email||"").slice(0,100), country, ipCountry:ipc, risk, to, method, coins, appVer:Math.max(0,Math.floor(Number(b.appVer)||0)), gross_amount:g2, tax_or_fee_deducted:tax, net_payable_amount:n2, applied_fee_percent:pct, currency:cur, name, status:"Pending", txn:"", device:dev};
+    const wcDoc = {uid, year:now.getUTCFullYear(), month:now.getUTCMonth()+1, day:now.getUTCDate(), count, lastId:id};
+    try{
+      await commit("user", [wUpdate("withdrawals", id, w, {exists:false, now:["created"]}), wUpdate("wdc", digits, wcDoc, {})]);
+    }catch(e){
+      if(e.status===409) return {ok:true, duplicate:true};
+      if(e.auth) return bad("server ne request reject ki (limit/ban/check)");
+      throw e;
+    }
+    return {ok:true};
+  },
+  async status(b){
+    const digits = acctOf(b.mobile), ids = (Array.isArray(b.ids)?b.ids:[]).slice(0,50).map(String).filter(x=>/^WD\d{3,9}$/.test(x));
+    if(!digits || !ids.length) return {ok:false, error:"bad request"};
+    const rows = await Promise.all(ids.map(i=>getDoc("user","withdrawals",i).catch(()=>null)));
+    return {ok:true, items: rows.filter(r=>r && r.mobile===digits).map(r=>({id:r.id, status:r.status, txn:r.txn||""}))};
+  },
+
+  /* ---------- admin ---------- */
+  async adminLogin(b){
+    const pin = String(b.pin||""); if(!pin) return {ok:false, error:"PIN daalo"};
+    const r = await fbJson(AUTH_URL("accounts:signInWithPassword"), {email:FB.adminEmail, password:pin, returnSecureToken:true});
+    if(!r.ok){
+      const m = String((r.d.error&&r.d.error.message)||"");
+      if(/TOO_MANY_ATTEMPTS/.test(m)) return {ok:false, error:"Bahut zyada galat try — thodi der baad dobara"};
+      if(/EMAIL_NOT_FOUND|INVALID_LOGIN|INVALID_PASSWORD|INVALID_EMAIL/.test(m)||!m) return {ok:false, error:"Galat PIN ya email"+(m?" ("+m+")":"")};
+      return {ok:false, error:"Firebase: "+m};
+    }
+    setSess("admin", r.d); return {ok:true, token:"firebase"};
+  },
+  async adminConfigGet(){
+    const c = await getDoc("admin","config","app"), p = await getDoc("admin","config","private");
+    let doc = null, payout = {auto:false, providers:[], merchantId:"", webhookUrl:""};
+    try{ doc = c ? JSON.parse(c.json||"null") : null; }catch(e){}
+    try{ const x = p ? JSON.parse(p.json||"null") : null; if(x) payout = x; }catch(e){}
+    const un = c && String(c.unityAds||"ON").toUpperCase()==="OFF" ? "OFF" : "ON";
+    if(doc){ doc.adConfig = doc.adConfig||{}; doc.adConfig.unityOn = un!=="OFF"; }
+    const bans = (await runQuery("admin",{from:[{collectionId:"bans"}], limit:1000}).catch(()=>[])).map(x=>String(x.mobile||""));
+    return {ok:true, doc, unityAds:un, bans, payout};
+  },
+  async adminConfigSet(b){
+    const d = b.doc; if(!d || typeof d!=="object" || Array.isArray(d)) return {ok:false, error:"bad config"};
+    const doc = {config:Object.assign({}, d.config||{}), adConfig:Object.assign({}, d.adConfig||{}), promos:{}};   // COPIES: the admin panel passes its live objects, deleting unityOn here used to flip the Unity switch back ON after every Save
+    Object.keys(d.promos||{}).forEach(k=>{ const v = Math.floor(Number(d.promos[k])); if(/^\d{6}$/.test(k) && v>=1 && v<=10000000) doc.promos[k] = v; });
+    ["bannedPhones","payoutMerchantId","payoutWebhookUrl","payoutAutoMode","payoutProviders"].forEach(k=>{ delete doc.config[k]; });
+    const wantUnity = doc.adConfig.unityOn !== false; delete doc.adConfig.unityOn;
+    const json = JSON.stringify(doc); if(json.length > 700000) return {ok:false, error:"config too large"};
+    const wdOn = doc.config.wdRestrictOn !== false, loginOn = doc.config.loginRestrictOn !== false;
+    const blk = wdOn ? Array.from(new Set((doc.config.blockedWithdrawCountries||[]).map(cleanCc).filter(Boolean))) : [];
+    const lblk = loginOn ? Array.from(new Set((doc.config.blockedLoginCountries||[]).map(cleanCc).filter(Boolean))) : [];
+    await commit("admin",[wUpdate("config","app",{json, unityAds: wantUnity?"ON":"OFF"},{now:["updated"]}), wUpdate("config","blocked",{list:blk, loginList:lblk},{now:["updated"]}), wUpdate("config","fees",{pct:feeMap(doc.config)},{now:["updated"]}),
+      wUpdate("config","flags",{maintenance:doc.config.maintenanceOn===true, vpnBlock: wdOn && doc.config.vpnBlock!==false, minVer: doc.config.forceUpdateOn===true ? Math.max(0,Math.floor(Number(doc.config.minVersion)||0)) : 0},{now:["updated"]}),
+      auditW("settings saved","config","maintenance="+(doc.config.maintenanceOn===true?"ON":"off")+" • force-update="+(doc.config.forceUpdateOn===true?"ON(min v"+doc.config.minVersion+")":"off")+" • blocked countries="+blk.length)]);
+    return {ok:true};
+  },
+  async adminUnitySet(b){
+    const on = b.on===true || b.on==="ON";
+    const c = await getDoc("admin","config","app");
+    if(c) await commit("admin",[wUpdate("config","app",{unityAds:on?"ON":"OFF"},{mask:["unityAds"], exists:true})]);
+    else await commit("admin",[wUpdate("config","app",{json:"null", unityAds:on?"ON":"OFF"},{})]);
+    return {ok:true, unityAds:on?"ON":"OFF"};
+  },
+  async adminPayoutSet(b){
+    const p = b.payout||{}, url = String(p.webhookUrl||"").trim();
+    if(url && !/^https:\/\/[^\s]{4,300}$/i.test(url)) return {ok:false, error:"Webhook URL https:// se shuru hona chahiye"};
+    const list = ["upi","phonepe","paytm","paypal","binance","bybit"];
+    const out = {auto:p.auto===true, providers:(Array.isArray(p.providers)?p.providers:[]).filter(x=>list.indexOf(x)>=0), merchantId:cleanTxt(p.merchantId,80), webhookUrl:url};
+    await commit("admin",[wUpdate("config","private",{json:JSON.stringify(out)},{})]);
+    return {ok:true, payout:out};
+  },
+  async adminList(b){
+    const filter = b.filter==="all" ? "all" : (["Pending","Paid","Rejected"].indexOf(b.filter)>=0 ? b.filter : "Pending");
+    const month = /^\d{4}-\d{2}$/.test(String(b.month||"")) ? String(b.month) : "";
+    const mfilter = ["UPI","PayPal","Paytm","PhonePe","Binance","Bybit"].indexOf(String(b.method||""))>=0 ? String(b.method) : "";
+    const fl = [];
+    if(filter!=="all") fl.push(fEq("status", filter));
+    if(mfilter) fl.push(fEq("method", mfilter));
+    const q = {from:[{collectionId:"withdrawals"}], limit: month?5000:300};
+    if(fl.length) q.where = andF(fl);
+    let rows = await runQuery("admin", q);
+    if(month){   // month filter done here (IST) so no composite index is needed in Firestore
+      const y = +month.slice(0,4), m = +month.slice(5,7), s0 = new Date(`${month}-01T00:00:00+05:30`).getTime(), e0 = new Date(`${m===12?y+1:y}-${String(m===12?1:m+1).padStart(2,"0")}-01T00:00:00+05:30`).getTime();
+      rows = rows.filter(r=>{ const t = new Date(r.created).getTime(); return t>=s0 && t<e0; });
+    }
+    rows.sort((a,b)=>String(b.created).localeCompare(String(a.created)));
+    const flags = {};
+    if(!month){ (await runQuery("admin",{from:[{collectionId:"users"}], where:{fieldFilter:{field:{fieldPath:"flag"}, op:"GREATER_THAN", value:{stringValue:""}}}, limit:500}).catch(()=>[])).forEach(u=>{ flags[u.mobile] = u.flag; }); }
+    const counts = {Pending:0, Paid:0, Rejected:0};
+    for(const s of Object.keys(counts)) counts[s] = await countQuery("admin",{from:[{collectionId:"withdrawals"}], where:fEq("status", s)});
+    const items = rows.map(r=>({time:istTime(r.created), mobile:r.mobile, email:r.email||"", country:r.country||"", ipCountry:r.ipCountry||"", risk:r.risk||"", to:r.to, coins:String(r.coins), status:r.status, txn:r.txn||"", id:r.id, method:r.method,
+      net:Number(r.net_payable_amount!==undefined?r.net_payable_amount:r.net).toFixed(2), currency:r.currency, name:r.name||"", gross:Number(r.gross_amount!==undefined?r.gross_amount:r.gross).toFixed(2), pct:r.applied_fee_percent, taxFee:Number(r.tax_or_fee_deducted||0).toFixed(2), flag:flags[r.mobile]||""}));
+    return {ok:true, items, counts};
+  },
+  // Report rows: ONE range query on `created` (single-field index = automatic, no composite index to deploy); country / method / status are filtered here.
+  async adminReport(b){
+    const okD = x => /^\d{4}-\d{2}-\d{2}$/.test(String(x||""));
+    if(!okD(b.from) || !okD(b.to)) return {ok:false, error:"Start aur End date chuno"};
+    const t0 = new Date(b.from+"T00:00:00+05:30"), t1 = new Date(new Date(b.to+"T00:00:00+05:30").getTime()+86400000);
+    if(!(t1>t0)) return {ok:false, error:"End date Start date ke baad honi chahiye"};
+    const q = {from:[{collectionId:"withdrawals"}], limit:5000,
+      where:{compositeFilter:{op:"AND", filters:[
+        {fieldFilter:{field:{fieldPath:"created"}, op:"GREATER_THAN_OR_EQUAL", value:{timestampValue:t0.toISOString()}}},
+        {fieldFilter:{field:{fieldPath:"created"}, op:"LESS_THAN", value:{timestampValue:t1.toISOString()}}}]}},
+      orderBy:[{field:{fieldPath:"created"}, direction:"DESCENDING"}]};
+    const raw = await runQuery("admin", q);
+    const kind = ["in","gl","all"].indexOf(b.kind)>=0 ? b.kind : "all";
+    const st = ({Paid:"Paid", Pending:"Pending", Rejected:"Rejected"})[b.status] || "";
+    const mth = METHODS_ALL.indexOf(b.method)>=0 ? b.method : "", cc = cleanCc(b.country);
+    const num = (a, c2) => { const v = a!==undefined && a!==null ? a : c2; return Number(v)||0; };   // old docs (gross/net) still readable
+    const rows = raw.filter(r=>{
+      const isIn = r.country==="IN", m = r.method;
+      if(kind==="in" && !(isIn && ["UPI","Paytm","PhonePe"].indexOf(m)>=0)) return false;
+      if(kind==="gl" && !(!isIn && ["PayPal","Binance","Bybit"].indexOf(m)>=0)) return false;
+      if(st && r.status!==st) return false;
+      if(mth && m!==mth) return false;
+      if(cc && r.country!==cc) return false;
+      return true;
+    }).sort((a,b2)=>String(b2.created).localeCompare(String(a.created))).map(r=>{
+      const gross = num(r.gross_amount, r.gross), net = num(r.net_payable_amount, r.net);
+      return {id:r.id, date:istTime(r.created), uid:r.mobile||r.uid||"", email:r.email||"", country:r.country||"", method:r.method, currency:r.currency||"",
+        gross, pct:(r.applied_fee_percent!==undefined?Number(r.applied_fee_percent):null), tax:num(r.tax_or_fee_deducted, gross-net), net, to:r.to||"", status:r.status, risk:r.risk||""};
+    });
+    return {ok:true, rows, truncated: raw.length>=5000};
+  },
+  /* ===== v10: ops controls ===== */
+  async lbEpoch(){ const c = await getDoc("user","config","lb").catch(()=>null); return {ok:true, epoch: c && c.epoch ? String(c.epoch) : ""}; },
+  // receipts written by the scheduled Cloud Function: users/{uid}/payouts/{YYYY-MM-DD}  {rank, rpSnap, prize}
+  async lbReceipts(){
+    const uid = (await fbToken("user"), FBS.user.uid);
+    const r = await fs("user","POST","/users/"+encodeURIComponent(uid)+":runQuery",{structuredQuery:{from:[{collectionId:"payouts"}], orderBy:[{field:{fieldPath:"__name__"}, direction:"DESCENDING"}], limit:10}});
+    return {ok:true, items:r.filter(x=>x.document).map(x=>{ const f = fromDoc(x.document)||{}; return {id:String(f.dayKey||x.document.name.split("/").pop()), rank:Number(f.rank)||0, prize:Number(f.prize)||0, rpSnap:Number(f.rpSnap)||0}; })};
+  },
+  async broadcast(){ const c = await getDoc("user","config","broadcast").catch(()=>null); return {ok:true, bc:c||null}; },
+  async ticketSubmit(b){
+    const uid = (await fbToken("user"), FBS.user.uid);
+    const subject = cleanTxt(b.subject,80), message = cleanTxt(b.message,1000);
+    if(subject.length<3) return {ok:false, error:"Subject kam se kam 3 akshar ka likho"};
+    if(message.length<5) return {ok:false, error:"Message thoda detail mein likho"};
+    const id = "T"+Date.now().toString(36).toUpperCase()+Math.random().toString(36).slice(2,6).toUpperCase();
+    try{ await commit("user",[wUpdate("tickets",id,{id, uid, email:String(FBUSER.email||"").slice(0,100), name:cleanTxt(b.name,40), subject, message, status:"Open", reply:""},{exists:false, now:["created"]})]); }
+    catch(e){ if(e.auth) return {ok:false, error:"Ticket server ne reject kiya — login check karo"}; throw e; }
+    return {ok:true, id};
+  },
+  async ticketList(){
+    const uid = (await fbToken("user"), FBS.user.uid);
+    const rows = await runQuery("user",{from:[{collectionId:"tickets"}], where:fEq("uid",uid), limit:30});
+    rows.sort((a,b)=>String(b.created).localeCompare(String(a.created)));
+    return {ok:true, items:rows.map(r=>({id:r.id, subject:r.subject, message:r.message, status:r.status, reply:r.reply||"", time:istTime(r.created)}))};
+  },
+  async adjFetch(){
+    const uid = (await fbToken("user"), FBS.user.uid);
+    const rows = await runQuery("user",{from:[{collectionId:"adjustments"}], where:fEq("uid",uid), limit:100});
+    return {ok:true, items:rows.filter(r=>r.applied!==true).map(r=>({id:r.id, delta:Number(r.delta)||0, reason:r.reason||""}))};
+  },
+  async adjAck(b){
+    const id = String(b.id||""); if(!/^J[A-Za-z0-9]{6,30}$/.test(id)) return {ok:false, error:"bad id"};
+    try{ await commit("user",[wUpdate("adjustments",id,{applied:true},{mask:["applied"], exists:true, now:["appliedAt"]})]); }catch(e){ if(e.auth) return {ok:true}; throw e; }
+    return {ok:true};
+  },
+  async adminSummary(){
+    const pend = await runQuery("admin",{from:[{collectionId:"withdrawals"}], where:fEq("status","Pending"), limit:1000});
+    const amt = {}; pend.forEach(r=>{ const c = r.currency||"INR"; amt[c] = Math.round(((amt[c]||0)+(Number(r.net_payable_amount)||0))*100)/100; });
+    const total = await countQuery("admin",{from:[{collectionId:"users"}]});
+    const since = new Date(Date.now()-86400000).toISOString();
+    const active = await countQuery("admin",{from:[{collectionId:"users"}], where:{fieldFilter:{field:{fieldPath:"seen"}, op:"GREATER_THAN_OR_EQUAL", value:{timestampValue:since}}}});
+    const tk = await countQuery("admin",{from:[{collectionId:"tickets"}], where:fEq("status","Open")});
+    return {ok:true, pendCount:pend.length, amt, total, active, openTickets:tk};
+  },
+  async adminAudit(){
+    const rows = await runQuery("admin",{from:[{collectionId:"audit"}], orderBy:[{field:{fieldPath:"at"}, direction:"DESCENDING"}], limit:200});
+    return {ok:true, items:rows.map(r=>({time:istTime(r.at), admin:r.admin||"", action:r.action||"", target:r.target||"", detail:r.detail||""}))};
+  },
+  async adminAdjust(b){
+    let m = acctOf(b.mobile);
+    if(!m){ const em = String(b.mobile||"").trim().toLowerCase(); if(/^[^\s@]+@[^\s@]+$/.test(em)){ const f = await runQuery("admin",{from:[{collectionId:"users"}], where:fEq("email", em), limit:1}).catch(()=>[]); if(f[0]) m = acctOf(f[0].mobile); } }
+    if(!m) return {ok:false, error:"account nahi mila"};
+    const delta = Math.trunc(Number(b.delta)), reason = cleanTxt(b.reason,100);
+    if(!delta || Math.abs(delta)>1000000) return {ok:false, error:"Coins 1 se 10,00,000 ke beech daalo (+ credit / - debit)"};
+    if(reason.length<3) return {ok:false, error:"Reason zaroor likho (audit ke liye)"};
+    const u = await getDoc("admin","users",m); if(!u) return {ok:false, error:"user database mein nahi hai"};
+    const id = "J"+Date.now().toString(36).toUpperCase()+Math.random().toString(36).slice(2,6).toUpperCase();
+    await commit("admin",[wUpdate("adjustments",id,{id, uid:m, email:String(u.email||"").slice(0,100), delta, reason, applied:false},{exists:false, now:["at"]}),
+      auditW(delta>0?"coin credit":"coin debit", String(u.email||m), (delta>0?"+":"")+delta+" coins • "+reason)]);
+    return {ok:true};
+  },
+  async adminBroadcast(b){
+    const title = cleanTxt(b.title,80), body = cleanTxt(b.body,500), url = String(b.url||"").trim();
+    if(title.length<2 || body.length<2) return {ok:false, error:"Title aur message likho"};
+    if(url && !/^https:\/\/\S{4,300}$/i.test(url)) return {ok:false, error:"Link https:// se shuru hona chahiye"};
+    const id = String(Date.now());
+    await commit("admin",[wUpdate("config","broadcast",{id, title, body, url},{now:["at"]}), auditW("broadcast", title, body.slice(0,120))]);
+    return {ok:true};
+  },
+  async adminTickets(b){
+    const f = ["Open","Resolved"].indexOf(b.filter)>=0 ? b.filter : "";
+    const q = {from:[{collectionId:"tickets"}], limit:300}; if(f) q.where = fEq("status", f);
+    const rows = await runQuery("admin", q); rows.sort((a,b2)=>String(b2.created).localeCompare(String(a.created)));
+    return {ok:true, items:rows.map(r=>({id:r.id, email:r.email||"", name:r.name||"", subject:r.subject||"", message:r.message||"", status:r.status, reply:r.reply||"", time:istTime(r.created)}))};
+  },
+  async adminTicketReply(b){
+    const id = String(b.id||""); if(!/^T[A-Za-z0-9]{6,20}$/.test(id)) return {ok:false, error:"bad id"};
+    const reply = cleanTxt(b.reply,1000), st = b.resolve===true ? "Resolved" : "Open";
+    if(!reply && st!=="Resolved") return {ok:false, error:"Reply likho"};
+    await commit("admin",[wUpdate("tickets",id,{status:st, reply},{mask:["status","reply"], exists:true, now:["repliedAt"]}), auditW("ticket "+st.toLowerCase(), id, reply.slice(0,120))]);
+    return {ok:true};
+  },
+  async adminSet(b){
+    const id = String(b.id||""), status = String(b.status||""), txn = cleanTxt(b.txn,40);
+    if(["Paid","Rejected"].indexOf(status)<0) return {ok:false, error:"bad status"};
+    if(!/^WD\d{3,9}$/.test(id)) return {ok:false, error:"bad id"};
+    if(status==="Paid" && !/^[A-Za-z0-9\-_]{4,40}$/.test(txn)) return {ok:false, error:"Transaction ID / UTR required (4-40 letters/digits)"};
+    const cur = await getDoc("admin","withdrawals",id);
+    if(!cur) return {ok:false, error:"not found"};
+    if(cur.status!=="Pending") return {ok:false, error:"already "+cur.status};
+    try{ await commit("admin",[wUpdate("withdrawals",id,{status, txn: status==="Paid"?txn:""},{mask:["status","txn"], exists:true, now:["decidedAt"]}), auditW(status==="Paid"?"withdrawal approved (paid)":"withdrawal rejected", id+" • "+(cur.email||cur.mobile||""), (status==="Paid"?"UTR "+txn+" • ":"")+(cur.method||"")+" "+(cur.currency||"")+" "+(cur.net_payable_amount!=null?cur.net_payable_amount:""))]); }
+    catch(e){ if(e.auth) throw e; return {ok:false, error:"update fail"}; }
+    return {ok:true};
+  },
+  async adminUsers(b){
+    const q = String(b.q||"").replace(/[^\w+ @.\-]/g,"").toLowerCase().trim();
+    const rows = await runQuery("admin",{from:[{collectionId:"users"}], limit:500});
+    const total = await countQuery("admin",{from:[{collectionId:"users"}]});
+    const bans = new Set((await runQuery("admin",{from:[{collectionId:"bans"}], limit:1000}).catch(()=>[])).map(x=>String(x.mobile||"")));
+    const items = rows.filter(u=>!q || String(u.mobile).toLowerCase().indexOf(q)>=0 || String(u.email||"").toLowerCase().indexOf(q)>=0 || String(u.name||"").toLowerCase().indexOf(q)>=0)
+      .sort((a,b)=>String(b.seen).localeCompare(String(a.seen)))
+      .map(u=>({mobile:u.mobile, email:u.email||"", name:u.name||"", coins:String(u.coins||0), rp:String(u.rp||0), code:u.code||"", country:u.country||"", banned:bans.has(u.mobile)||u.banned===true,
+        first:istTime(u.first), seen:istTime(u.seen), device:String(u.device||"").substring(0,8), flag:u.flag||""}));
+    return {ok:true, items, total, bans:Array.from(bans)};
+  },
+  async adminBan(b){
+    let m = acctOf(b.mobile);
+    if(!m){   // admin typed an e-mail: find the account
+      const em = String(b.mobile||"").trim().toLowerCase();
+      if(/^[^\s@]+@[^\s@]+$/.test(em)){ const f = await runQuery("admin",{from:[{collectionId:"users"}], where:fEq("email", em), limit:1}).catch(()=>[]); if(f[0]) m = acctOf(f[0].mobile); }
+    }
+    if(!m) return {ok:false, error:"account nahi mila (uid ya Gmail daalo)"};
+    const ban = b.banned===true;
+    await commit("admin",[ban ? wUpdate("bans",m,{mobile:m,banned:true},{now:["at"]}) : wDelete("bans",m), auditW(ban?"user banned":"user unbanned", m, "")]);
+    try{ await commit("admin",[wUpdate("users",m,{banned:ban},{mask:["banned"], exists:true})]); }catch(e){ if(e.auth) throw e; }
+    return {ok:true};
+  }
+};
+const FB_ADMIN = new Set(["adminSummary","adminAudit","adminAdjust","adminBroadcast","adminTickets","adminTicketReply","adminReport","adminLogin","adminConfigGet","adminConfigSet","adminUnitySet","adminPayoutSet","adminList","adminSet","adminUsers","adminBan"]);
+async function sheetsCall(body){   // legacy name kept: now talks to Firestore
+  const f = FBA[body && body.action];
+  if(!FB_READY) return {ok:false, error:"Firebase config set nahi hai"};
+  if(!f) return {ok:false, error:"bad action"};
+  try{ return await f(body); }
+  catch(e){
+    if(e && e.auth && FB_ADMIN.has(body.action)){ if(e.status){ return {ok:false, error:"auth", auth:true, why:(e.message||"")+" (http "+e.status+") • app ke admin login ki UID: "+(FBS.admin&&FBS.admin.uid||"?")}; } FBS.admin = null; return {ok:false, error:"auth", auth:true}; }
+    if(e && e.message==="noauth") return {ok:false, error:"auth", auth:true};
+    return {ok:false, error:"server error"+(e&&e.message?" ("+String(e.message).slice(0,90)+")":"")};
+  }
+}
+
+// ===== Remote settings (database config/app) - admin edits in the admin panel, every user app reads them =====
 function mergeDeep(b, o){
   if(Array.isArray(o)) return o.slice();
   if(o && typeof o === "object"){
@@ -553,6 +1092,65 @@ function setRemote(doc){
 function applyRemoteToS(){ if(!S) return; if(RCFG) S.config = RCFG; if(RADS) S.adConfig = RADS; if(RPROMOS) S.promos = RPROMOS; }
 try{ const r = JSON.parse(localStorage.getItem("esp_remote") || "null"); if(r && r.doc){ setRemote(r.doc); lastRemoteJson = JSON.stringify(r.doc); } }catch(e){}
 var rpBusy = false;
+function checkGate(){
+  const c = cfg(); let h = "";
+  const mm = (t,sub,btn) => `<div style="font-size:54px">${t}</div><h2 style="margin:10px 0">${sub[0]}</h2><div style="opacity:.85;max-width:300px;margin:0 auto 18px;line-height:1.5">${esc(sub[1])}</div>${btn||""}`;
+  if(c.forceUpdateOn===true && APP_VER < (Number(c.minVersion)||0)){
+    const u = String(c.updateUrl||""), ok = /^https:\/\//i.test(u);
+    h = mm("⬆️", ["Update Required", c.updateMsg||"Naya version aa gaya hai. Update karke dobara aao."], ok ? `<a href="${esc(u)}" target="_blank" rel="noopener" style="display:inline-block;background:#7c3aed;color:#fff;padding:12px 28px;border-radius:12px;font-weight:800;text-decoration:none">Update Now</a>` : "");
+  } else if(c.maintenanceOn===true){
+    h = mm("🚧", ["Under Maintenance", c.maintenanceMsg||"App abhi maintenance par hai."], "");
+  }
+  let el = document.getElementById("gate");
+  if(!h){ if(el) el.remove(); return; }
+  if(!el){ el = document.createElement("div"); el.id = "gate"; el.style.cssText = "position:fixed;inset:0;z-index:2147483000;background:#160c2e;color:#f3ecff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px"; document.body.appendChild(el); }
+  el.innerHTML = `<div class="logo" style="font-size:22px;margin-bottom:26px">ESPORTS<span>REWARD</span></div>`+h;
+}
+async function geoCheck(){
+  try{
+    let el = document.getElementById("geoGate");
+    if(!S || S.isGuest || cfg().loginRestrictOn === false || !(cfg().blockedLoginCountries||[]).length){ if(el) el.remove(); return; }
+    const cc = await ipCountry();
+    if(cc && loginBlockedCc(cc)){
+      if(!el){ el = document.createElement("div"); el.id = "geoGate"; el.style.cssText = "position:fixed;inset:0;z-index:2147482900;background:#160c2e;color:#f3ecff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px"; document.body.appendChild(el); }
+      el.innerHTML = `<div style="font-size:54px">🚫</div><h2 style="margin:10px 0">Access restricted in your region.</h2><div style="opacity:.85;max-width:300px;line-height:1.5">Aapki country (${esc(cc)}) se ye app use karna allowed nahi hai.</div>`;
+    } else if(el) el.remove();
+  }catch(e){}
+}
+async function broadcastCheck(){
+  if(!SHEETS_URL) return;
+  try{
+    const d = await sheetsCall({action:"broadcast"}); const b = d && d.bc; if(!b || !b.id) return;
+    let seen = ""; try{ seen = localStorage.getItem("esp_bc")||""; }catch(e){}
+    if(String(b.id) === seen || !S) return;
+    try{ localStorage.setItem("esp_bc", String(b.id)); }catch(e){}
+    const o = document.createElement("div"); o.style.cssText = "position:fixed;inset:0;z-index:2147482000;background:#000000b0;display:flex;align-items:center;justify-content:center;padding:20px";
+    const u = String(b.url||""), ok = /^https:\/\//i.test(u);
+    o.innerHTML = `<div style="background:var(--card);border-radius:16px;padding:20px;max-width:330px;width:100%;text-align:center"><div style="font-size:34px">📣</div><h3 style="margin:6px 0">${esc(b.title)}</h3><div style="font-size:14px;line-height:1.5;margin-bottom:14px;white-space:pre-wrap">${esc(b.body)}</div>${ok?`<a href="${esc(u)}" target="_blank" rel="noopener" class="btn" style="display:block;margin-bottom:8px;text-decoration:none;text-align:center">Open</a>`:""}<button class="btn s" id="bcX">Close</button></div>`;
+    document.body.appendChild(o); o.querySelector("#bcX").onclick = ()=>o.remove();
+  }catch(e){}
+}
+let adjBusy = false;
+async function applyAdjustments(){
+  if(!SHEETS_URL || !S || S.isGuest || !S.phone || adjBusy) return; adjBusy = true;
+  try{
+    const d = await sheetsCall({action:"adjFetch"});
+    if(d && d.ok && d.items && d.items.length){
+      S.adjDone = S.adjDone || {}; let msg = "";
+      for(const it of d.items){
+        if(!S.adjDone[it.id]){
+          S.coins = Math.max(0, (S.coins||0) + it.delta); S.adjDone[it.id] = 1;
+          msg = (it.delta>0 ? "✅ Admin ne +"+it.delta+" coins add kiye" : "⚠️ Admin ne "+Math.abs(it.delta)+" coins kam kiye")+(it.reason?" ("+it.reason+")":"");
+          S.adjLog = (S.adjLog||[]).concat({t:Date.now(), d:it.delta, r:it.reason}).slice(-20);
+        }
+        saveLocal();                                    // credit is stored locally BEFORE the server is told, so a crash can never double-credit
+        await sheetsCall({action:"adjAck", id:it.id});
+      }
+      if(msg){ S.wdNotify = msg; save(); const bl = $(".bal"); if(bl) bl.textContent = balText(); if(typeof G==="undefined"||!G) render(); }
+    }
+  }catch(e){}
+  adjBusy = false;
+}
 async function remotePull(){
   if(!SHEETS_URL || rpBusy) return; rpBusy = true;
   try{
@@ -563,6 +1161,7 @@ async function remotePull(){
         lastRemoteJson = j; setRemote(d.doc);
         try{ localStorage.setItem("esp_remote", JSON.stringify({doc:d.doc})); }catch(e){}
         applyRemoteToS(); reconcileTours(); if(S) save();
+        checkGate(); geoCheck();
         const ae = document.activeElement;
         if(!(typeof G!=="undefined" && G) && !(ae && /INPUT|TEXTAREA|SELECT/.test(ae.tagName)) && typeof render==="function") render();
       }
@@ -570,19 +1169,50 @@ async function remotePull(){
   }catch(e){}
   rpBusy = false;
 }
-setInterval(remotePull, 300000);
+setInterval(remotePull, 900000);   // 15 min (keeps Firestore reads inside the free quota)
 document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) remotePull(); });
 // ===== Users tab sync (display-only profile; never used to pay anyone) + ban enforcement =====
-var usT = null, usLast = 0;
-function userSyncQueue(){ if(!SHEETS_URL || !S || S.isGuest || !S.phone || usT) return; usT = setTimeout(()=>{ usT = null; userSyncNow(); }, 20000); }
+var usT = null, usLast = 0, usSig = "";
+function userSyncQueue(){ if(!SHEETS_URL || !S || S.isGuest || !S.phone || usT) return; usT = setTimeout(()=>{ usT = null; const sg = (S.coins||0)+"|"+(S.rp||0)+"|"+(S.name||""); if(sg===usSig) return; userSyncNow(); }, 180000); }   // debounced 3 min + skipped when nothing changed (Firestore free-quota friendly)
+let lbEpochBusy = false;
+async function lbEpochSync(){
+  // Server pays the leaderboard (Cloud Function, 9:00 AM IST). It already added the prize to the server copy and zeroed the server RP;
+  // here the phone applies the SAME receipt once: + prize coins, - the RP that was paid out. Idempotent per day (S.lbApplied).
+  if(!SHEETS_URL || !S || S.isGuest || !S.phone || cfg().lbServerPayout !== true || lbEpochBusy) return;
+  lbEpochBusy = true;
+  try{
+    const d = await sheetsCall({action:"lbReceipts"});
+    if(d && d.ok && d.items){
+      S.lbApplied = S.lbApplied || {}; let msg = "";
+      d.items.slice().reverse().forEach(it=>{                       // oldest first
+        if(S.lbApplied[it.id]) return;
+        S.lbApplied[it.id] = 1;
+        S.rp = Math.max(0, (S.rp||0) - it.rpSnap);
+        if(it.prize > 0){ S.coins = (S.coins||0) + it.prize; msg = "🏆 Leaderboard rank #"+it.rank+": +"+it.prize+" coins mile! RP reset ho gaya."; }
+        else if(!msg) msg = "Leaderboard reset ho gaya — naya din, naye RP. (Aapka rank #"+it.rank+")";
+        S.lastLbPayout = new Date().toDateString();
+      });
+      const keys = Object.keys(S.lbApplied); if(keys.length>60) keys.sort().slice(0, keys.length-60).forEach(k=>delete S.lbApplied[k]);
+      if(msg){
+        S.wdNotify = msg; saveLocal(); try{ toast(msg); }catch(e){}
+        const bl = $(".bal"); if(bl) bl.textContent = balText();
+        if(typeof G==="undefined" || !G){ try{ render(); }catch(e){} }
+      }
+    }
+  }catch(e){}
+  lbEpochBusy = false;
+}
 async function userSyncNow(){
   if(!SHEETS_URL || !S || S.isGuest || !S.phone) return;
+  await lbEpochSync();
   usLast = Date.now();
   try{
-    const d = await sheetsCall({action:"userSync", mobile:S.phone, name:S.name||"", coins:S.coins||0, rp:S.rp||0, code:S.code||"", country:S.countryId||""});
+    const d = await sheetsCall({action:"userSync", mobile:S.phone, name:S.name||"", coins:S.coins||0, rp:S.rp||0, code:S.code||"", country:S.countryId||"", device:deviceId()});
     if(d && d.ok){
-      if(d.banned && !S.banned){ S.banned = true; saveLocal(); showBan(); }
-      else if(!d.banned && S.banned){ S.banned = false; saveLocal(); hideBan(); }
+      if(!d.throttled) usSig = (S.coins||0)+"|"+(S.rp||0)+"|"+(S.name||"");
+      if(d.deviceLimit){ if(!S.banned || !S.devBlocked){ S.banned = true; S.devBlocked = true; saveLocal(); } showBan(); }
+      else if(d.banned && !S.banned){ S.banned = true; S.devBlocked = false; saveLocal(); showBan(); }
+      else if(!d.banned && S.banned){ S.banned = false; S.devBlocked = false; saveLocal(); hideBan(); }
     }
   }catch(e){}
 }
@@ -590,7 +1220,7 @@ function showBan(){
   if(document.getElementById("banGate")) return;
   const o = document.createElement("div"); o.id = "banGate";
   o.style.cssText = "position:fixed;inset:0;z-index:2147483200;background:#160c2e;color:#f3ecff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:30px;text-align:center;font-family:inherit";
-  o.innerHTML = '<div style="font-size:54px">🚫</div><div style="font-size:18px;font-weight:800">Account blocked</div><div style="font-size:13px;opacity:.75">Is number ko admin ne block kar diya hai. Support se sampark karo.</div>';
+  o.innerHTML = '<div style="font-size:54px">🚫</div><div style="font-size:18px;font-weight:800">Account blocked</div><div style="font-size:13px;opacity:.75">' + ((S && S.devBlocked) ? 'Is phone par pehle se doosra account chal raha hai. Ek phone par sirf ek account allowed hai. Support se sampark karo.' : 'Is number ko admin ne block kar diya hai. Support se sampark karo.') + '</div>';
   document.body.appendChild(o);
 }
 function hideBan(){ const o = document.getElementById("banGate"); if(o) o.remove(); }
@@ -654,37 +1284,10 @@ async function cloudRegister(){
   try{
     const r = await cloudCall("POST", "/api/register", { phone:S.phone, name:S.name, cc:S.cc, countryId:S.countryId });
     if(r.status===200){ S.cloudToken = r.data.token; S.cloudRev = 0; cloudStatus = "ok"; saveLocal(); cloudQueue(); }
-    else if(r.status===409){ cloudRestoreBox(); }
+    else if(r.status===409){ cloudStatus = "err"; }
     else cloudStatus = "err";
   }catch(e){ cloudStatus = "err"; }
   const el = $("#cloudStat"); if(el) el.innerHTML = cloudStatText();
-}
-function cloudRestoreBox(){
-  if($("#cbox")) return;
-  const o = document.createElement("div"); o.id = "cbox";
-  o.style.cssText = "position:fixed;inset:0;z-index:99;background:#000000a0;display:flex;align-items:center;justify-content:center;padding:20px";
-  o.innerHTML = `<div style="background:var(--card);border-radius:16px;padding:20px;max-width:320px;width:100%;text-align:center">
-    <h3 style="margin:0 0 8px">☁️ Purana progress restore karo</h3>
-    <div class="mut" style="margin-bottom:10px">Is number ka cloud account pehle se hai. SMS OTP daalo to coins/progress wapas aa jayega.</div>
-    <input id="cotp" placeholder="6-digit OTP" maxlength="6" inputmode="numeric" style="text-align:center;letter-spacing:5px;font-weight:700">
-    <div class="mut" id="cmsg" style="min-height:18px;margin-bottom:8px"></div>
-    <div class="row" style="gap:8px"><button class="btn s" onclick="document.getElementById('cbox').remove()">Skip</button><button class="btn" onclick="cloudOtpVerify()">Restore</button></div>
-    <div style="margin-top:8px"><a href="#" onclick="event.preventDefault();cloudOtpSend()" style="color:var(--acc);font-size:13px">OTP dobara bhejo</a></div></div>`;
-  document.body.appendChild(o); cloudOtpSend();
-}
-async function cloudOtpSend(){
-  const m = $("#cmsg"); if(m) m.textContent = "OTP bhej rahe hain...";
-  try{ const r = await cloudCall("POST","/api/otp/send",{phone:S.phone});
-    if(m) m.textContent = r.status===200 ? "OTP bheja gaya"+(r.data.devOtp?" (dev: "+r.data.devOtp+")":"") : (r.data.error||"OTP nahi ja paya");
-  }catch(e){ if(m) m.textContent = "Server tak nahi pahunch paye"; }
-}
-async function cloudOtpVerify(){
-  const m = $("#cmsg"), code = ($("#cotp").value||"").trim();
-  if(!/^\d{6}$/.test(code)){ if(m) m.textContent = "6 digit OTP daalo"; return; }
-  try{ const r = await cloudCall("POST","/api/otp/verify",{phone:S.phone, code});
-    if(r.status===200){ S.cloudToken = r.data.token; cloudStatus = "ok"; const o = $("#cbox"); if(o) o.remove(); cloudAdopt(r.data); }
-    else if(m) m.textContent = r.data.error || "Verify nahi hua";
-  }catch(e){ if(m) m.textContent = "Server tak nahi pahunch paye"; }
 }
 // Tournament score -> server validates/caps it per round (tamper-resistant winning report data)
 async function cloudScore(t, score, boost, elapsedSec){
@@ -899,46 +1502,71 @@ function genLeaderboardTop(count){
   return list;
 }
 
-let otpStep = 1, genOtp = "", pendingSignup = null;
-let admCountryQ = "";
-function sendOtp(){
-  const name = $("#ln").value.trim(), countryId = $("#lc").value, ph = $("#lp").value.replace(/\D/g,""), ref = $("#lr").value.trim();
-  const cObj0 = COUNTRIES.find(c=>c.id===countryId);
-  if(!name) return $("#lm").textContent = "Naam daalo";
-  if(!cObj0) return $("#lm").textContent = "Valid country select karo";
-  if((cfg().blockedLoginCountries||[]).includes(countryId)) return $("#lm").textContent = "Is country se login/signup abhi allowed nahi hai";
-  const cc = cObj0.code;
-  if(ph.length < 6 || ph.length > 12) return $("#lm").textContent = "Valid phone number daalo";
-  if(!$("#ltc").checked) return $("#lm").textContent = "Aage badhne ke liye Terms & Conditions aur Privacy Policy accept karna zaroori hai";
-  pendingSignup = {name, cc, countryId, ph, ref};
-  genOtp = String(Math.floor(100000+Math.random()*900000));
-  otpStep = 2; render();
+let admCountryQ = "", loginBusy = false;
+function loginMsg(t, ok){ const m = $("#lm"); if(m){ m.className = "msg "+(ok?"ok":"err"); m.textContent = t; } }
+function loginGate(){
+  if(!$("#ltc").checked){ loginMsg("Aage badhne ke liye Terms & Conditions aur Privacy Policy accept karna zaroori hai"); return false; }
+  if(!SHEETS_URL){ loginMsg("Firebase config set nahi hai"); return false; }
+  return true;
 }
-function resendOtp(){
-  genOtp = String(Math.floor(100000+Math.random()*900000));
-  toast("Naya OTP bheja gaya (demo)");
-  render();
-}
-function backToPhone(){ otpStep = 1; render(); }
-async function verifyOtp(){
-  const entered = $("#lo").value.trim();
-  if(!/^\d{6}$/.test(entered)) return $("#lm").textContent = "6 digit OTP daalo";
-  if(entered !== genOtp) return $("#lm").textContent = "Galat OTP, dobara try karo";
-  const {name, cc, countryId, ph, ref} = pendingSignup, fullPhone = cc+" "+ph;
-  if(loadBans().includes(fullPhone)){ $("#lm").textContent = "Yeh number banned hai, login nahi ho sakta"; return; }
-  if(SHEETS_URL){ try{ const bd = await sheetsCall({action:"checkBan", mobile:fullPhone}); if(bd && bd.banned){ $("#lm").textContent = "Yeh number banned hai, login nahi ho sakta"; return; } }catch(e){} }
-  S = {name, phone:fullPhone, cc, countryId, coins:100 + (ref?50:0), code:"ESP"+Math.floor(1000+Math.random()*9000), lastBonus:"", joined:{}, tours:seedT(), rp:0, best:{}, wd:[], streak:0,
+async function loginDone(g, ref, ip){
+  const bd = await sheetsCall({action:"checkBan", mobile:g.uid}).catch(()=>null);
+  if(bd && bd.banned){ await fbSignOutUser(); loginMsg("Ye account banned hai, login nahi ho sakta"); return; }
+  const acc = loadAccounts()[g.uid];
+  S = {name:g.name || g.email.split("@")[0] || "Player", phone:g.uid, email:g.email, cc:"", countryId:ip||"", coins:(acc?acc.coins||0:100 + (ref?50:0)), code:(acc&&acc.code)||("ESP"+Math.floor(1000+Math.random()*9000)), lastBonus:"", joined:{}, tours:seedT(), rp:0, best:{}, wd:[], streak:0,
     config: defaultConfig(), adConfig:{on:true, id:"", bannerId:"", interstitialId:"", rewardedId:"", network:"mediation",
       networks:{admob:{bannerId:"",interstitialId:"",rewardedId:""}, unity:{gameId:"",bannerId:"",interstitialId:"",rewardedId:""}, applovin:{bannerId:"",interstitialId:"",rewardedId:""}},
       screens:{home:true,matches:true,promo:true,wallet:true,profile:true,game:true}}};
-  // Same phone number logging in again: restore the coins they already earned (RP/leaderboard always starts fresh)
-  const accounts = loadAccounts(), existing = accounts[fullPhone];
-  if(existing){ S.coins = existing.coins||0; S.code = existing.code || S.code; S.rp = 0; }
-  otpStep = 1; genOtp = ""; pendingSignup = null;
   applyRemoteToS(); reconcileTours();
   save(); tab="home"; render();
   cloudRegister(); userSyncNow();
 }
+async function loginCountryOk(){
+  const ip = await ipCountry(true);
+  if(!ip && cfg().loginRestrictOn !== false && (cfg().blockedLoginCountries||[]).length){ loginMsg("Country detect nahi hui — internet check karke dobara try karo"); return null; }
+  if(ip && loginBlockedCc(ip)){ loginMsg("Access restricted in your region."); blockPopup("Access restricted in your region.", "Aapki country ("+ip+") se is app mein login / signup allowed nahi hai."); return null; }
+  return ip||"";
+}
+async function googleLogin(){
+  if(loginBusy || !loginGate()) return;
+  const ref = ($("#lr").value||"").trim(); loginBusy = true; loginMsg("Google se connect ho raha hai...", true);
+  try{
+    const ip = await loginCountryOk(); if(ip===null){ loginBusy = false; return; }
+    const g = await fbGoogleLogin(await googleIdToken());
+    await loginDone(g, ref, ip);
+  }catch(e){ loginMsg("Google login nahi hua: "+String((e&&e.message)||e).slice(0,120)); }
+  loginBusy = false;
+}
+// Gmail + password: mode "new" (create account + verification mail) or "login"
+async function emailLogin(mode){
+  if(loginBusy || !loginGate()) return;
+  const email = ($("#le").value||"").trim(), pass = $("#lpw").value||"", ref = ($("#lr").value||"").trim();
+  loginBusy = true; loginMsg("Please wait...", true);
+  try{
+    const ip = await loginCountryOk(); if(ip===null){ loginBusy = false; return; }
+    const g = await fbEmailAuth(mode, email, pass);
+    if(!g.verified){
+      window.__vp = {mode, email, pass, ref, ip};
+      loginMsg("📧 "+g.email+" par verification mail bheji hai. Mail kholkar link dabao, phir yahan 'Maine verify kar liya' dabao. (Spam folder bhi dekho)", true);
+      const b = $("#lvb"); if(b) b.style.display = "block";
+    } else { const b = $("#lvb"); if(b) b.style.display = "none"; await loginDone(g, ref, ip); }
+  }catch(e){ loginMsg(String((e&&e.message)||e).slice(0,160)); }
+  loginBusy = false;
+}
+async function emailVerified(){
+  const v = window.__vp; if(!v) return;
+  if(loginBusy) return; loginBusy = true; loginMsg("Check ho raha hai...", true);
+  try{
+    const g = await fbEmailAuth("login", v.email, v.pass);
+    if(!g.verified) loginMsg("Abhi verify nahi hua. Mail ka link dabao (naya mail bhej diya gaya hai), phir dobara dabao.");
+    else { window.__vp = null; await loginDone(g, v.ref, v.ip); }
+  }catch(e){ loginMsg(String((e&&e.message)||e).slice(0,160)); }
+  loginBusy = false;
+}
+async function emailForgot(){
+  try{ await fbResetPassword($("#le").value); loginMsg("Password reset ka mail bhej diya — Gmail check karo", true); }catch(e){ loginMsg(String((e&&e.message)||e)); }
+}
+async function fbSignOutUser(){ FBS.user = null; try{ localStorage.removeItem("fb_user"); localStorage.removeItem("fb_profile"); }catch(e){} FBUSER = {email:"",name:""}; }
 function loginAsGuest(){
   S = {name:"Guest", phone:"", cc:"", isGuest:true, coins:100, code:"GUEST"+Math.floor(1000+Math.random()*9000), lastBonus:"", joined:{}, tours:seedT(), rp:0, best:{}, wd:[], streak:0,
     config: defaultConfig(), adConfig:{on:true, id:"", bannerId:"", interstitialId:"", rewardedId:"", network:"mediation",
@@ -953,39 +1581,25 @@ function toast(t,ok=true){ const m=$("#msg"); if(m){ m.textContent=t; m.classNam
 function render(){
   const r = $("#root");
   if(!S){
-    if(otpStep===2){
-      const cObj = COUNTRIES.find(c=>c.id===pendingSignup.countryId) || COUNTRIES.find(c=>c.code===pendingSignup.cc);
-      r.innerHTML = `<div class="login"><div class="logo" style="font-size:26px;margin-bottom:6px">ESPORTS<span>REWARD</span></div>
-      <p class="mut">Mobile number verification</p>
-      <div class="mut" style="margin-bottom:10px">OTP bheja gaya: <b style="color:var(--text)">${cObj?cObj.flag:""} ${esc(pendingSignup.cc)} ${esc(pendingSignup.ph)}</b></div>
-      <input id="lo" placeholder="6-digit OTP" maxlength="6" inputmode="numeric" style="text-align:center;letter-spacing:6px;font-size:20px;font-weight:700">
-      <div class="mut" style="margin:-6px 0 10px">Demo mode (no SMS backend): OTP hai <b style="color:var(--acc)">${genOtp}</b></div>
-      <div class="msg err" id="lm"></div>
-      <button class="btn" onclick="verifyOtp()">Verify & Login (+100 coins)</button>
-      <div class="row" style="margin-top:10px"><button class="btn s sm" onclick="backToPhone()">‹ Number Badlo</button><button class="btn s sm" onclick="resendOtp()">Resend OTP</button></div>
-      </div>`; return;
-    }
     r.innerHTML = `<div class="login"><div class="logo" style="font-size:26px;margin-bottom:6px">ESPORTS<span>REWARD</span></div>
     <p class="mut">Games khelo, coins kamao, redeem karo.</p>
-    <input id="ln" placeholder="Aapka naam" value="${pendingSignup?esc(pendingSignup.name):""}">
-    <div class="msg err" id="lm" style="margin:-6px 0 10px"></div>
-    <div style="display:flex;gap:8px;margin-bottom:10px">
-      <select id="lc" style="flex:0 0 auto;width:auto;max-width:150px;padding:12px 8px;border-radius:10px;border:2px solid transparent;background:var(--in);color:var(--text);font-size:14px;outline:none">
-        ${COUNTRIES.filter(c=>!(cfg().blockedLoginCountries||[]).includes(c.id)).map(c=>`<option value="${c.id}" ${pendingSignup&&pendingSignup.countryId===c.id?"selected":(!pendingSignup&&c.id==="IN"?"selected":"")}>${c.flag} ${c.name} (${c.code})</option>`).join("")}
-      </select>
-      <input id="lp" placeholder="Phone number" inputmode="numeric" style="flex:1;margin-bottom:0" value="${pendingSignup?esc(pendingSignup.ph):""}">
-    </div>
-    <div class="mut" style="margin:-6px 0 10px">Apna country select karo aur phone number daalo</div>
-    <input id="lr" placeholder="Referral code (optional, +50 coins)" value="${pendingSignup?esc(pendingSignup.ref):""}">
+    <input id="lr" placeholder="Referral code (optional, +50 coins)">
     <label style="display:flex;align-items:flex-start;gap:8px;margin:4px 0 14px;font-size:12.5px;color:var(--muted);text-align:left;cursor:pointer">
       <input id="ltc" type="checkbox" style="width:auto;margin:2px 0 0;flex:0 0 auto">
       <span>I agree to the <a href="#" onclick="event.preventDefault();legalBox('terms')" style="color:var(--acc);text-decoration:underline">Terms & Conditions</a> and <a href="#" onclick="event.preventDefault();legalBox('privacy')" style="color:var(--acc);text-decoration:underline">Privacy Policy</a></span>
     </label>
-    <button class="btn" onclick="sendOtp()">Send OTP</button>
+    <div class="msg err" id="lm" style="margin:-6px 0 10px"></div>
+    <input id="le" type="email" placeholder="Gmail address (example@gmail.com)" autocapitalize="off" autocomplete="username">
+    <input id="lpw" type="password" placeholder="Password (min 8 characters)" autocomplete="current-password">
+    <div class="row" style="gap:8px"><button class="btn" onclick="emailLogin('login')">Login</button><button class="btn g" onclick="emailLogin('new')">Naya Account</button></div>
+    <div id="lvb" style="display:none;margin-top:8px"><button class="btn s" onclick="emailVerified()">✅ Maine verify kar liya</button></div>
+    <div style="text-align:center;margin:8px 0"><a href="#" onclick="event.preventDefault();emailForgot()" style="color:var(--acc);font-size:13px">Password bhool gaye?</a></div>
+    ${(window.AndroidDevice&&window.AndroidDevice.googleSignIn)||(!IN_WEBVIEW&&/^[0-9]+-[a-z0-9]+\.apps\.googleusercontent\.com$/i.test(FB.googleClientId))?`<div class="row" style="align-items:center;gap:10px;margin:6px 0"><div style="flex:1;height:1px;background:var(--in)"></div><span class="mut" style="font-size:12px">YA</span><div style="flex:1;height:1px;background:var(--in)"></div></div>`+`    <div id="gbtn"><button class="btn" onclick="googleLogin()" style="display:flex;align-items:center;justify-content:center;gap:10px"><svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.9 2.4 30.4 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.9-6.1C.9 16.4 0 20.1 0 24s.9 7.6 2.6 10.8l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>Continue with Google</button></div>
+`:""}
     <div class="row" style="align-items:center;gap:10px;margin:14px 0"><div style="flex:1;height:1px;background:var(--in)"></div><span class="mut" style="font-size:12px">OR</span><div style="flex:1;height:1px;background:var(--in)"></div></div>
     <button class="btn s" onclick="loginAsGuest()">👤 Continue as Guest</button>
-    <div class="mut" style="text-align:center;margin-top:6px;font-size:12px">Guest sirf games khel sakta hai — withdrawal ke liye real number se login zaroori hai</div>
-    <p class="mut" style="text-align:center;margin-top:14px">Mobile number 6-digit OTP se verify hoga. Demo mode: real SMS backend ke saath lagega.</p></div>`; return; }
+    <div class="mut" style="text-align:center;margin-top:6px;font-size:12px">Guest sirf games khel sakta hai — withdrawal ke liye Google login zaroori hai</div>
+    <p class="mut" style="text-align:center;margin-top:14px">Sirf Gmail se login (mail verify hota hai). Koi OTP ya phone number nahi.</div>`; return; }
   r.innerHTML = `<header><div class="logo">ESPORTS<span>REWARD</span></div><div class="bal">${balText()}</div></header>
     <main id="view"></main>
     <nav>${[["home","🏠","Home"],["play","🎮","Matches"],["promo","🎟️","Promo"],["wallet","💰","Wallet"],["me","👤","Profile"]].map(t=>`<button class="${tab===t[0]?"on":""}" onclick="tab='${t[0]}';render()"><span>${t[1]}</span>${t[2]}</button>`).join("")}</nav>`;
@@ -1035,7 +1649,8 @@ function home(){
   const bonusSub = claimed ? (c.dailyBonusIntervalDays>1 ? `Har ${c.dailyBonusIntervalDays} din mein ek baar free RP` : "Roz free RP claim karo")
     : waitingForWindow ? `Sirf ${fmtT(c.dailyBonusTimeStart)} - ${fmtT(c.dailyBonusTimeEnd)} ke beech available`
     : (c.dailyBonusIntervalDays>1 ? `Har ${c.dailyBonusIntervalDays} din mein ek baar free RP` : "Roz free RP claim karo");
-  $("#view").innerHTML = adBox('home') + noticeBanner('home')
+  const extCard = (c.extAppOn===true && (c.extAppPkg||c.extAppUrl)) ? `<div class="card" style="display:flex;justify-content:space-between;align-items:center"><div><h3 style="margin:0 0 2px">🎮 ${esc(c.extAppName||"Partner Game")}</h3><div class="mut">Game / app kholo</div></div><button class="btn sm" onclick="openExternalApp(cfg().extAppPkg, cfg().extAppUrl)">Open</button></div>` : "";
+  $("#view").innerHTML = adBox('home') + noticeBanner('home') + extCard
     + (("Notification" in window) ? `<div class="row" style="margin-bottom:8px"><span class="mut">🔔 Reminders ${(S.notifyEnabled && Notification.permission==="granted")?"ON ✅":"OFF"}</span>${(S.notifyEnabled && Notification.permission==="granted")?"":`<button class="btn s sm" onclick="enableNotifications()">Enable</button>`}</div>` : "")
     + `<div class="card" style="background:linear-gradient(135deg,#3a1f78,#6d2fe0);display:flex;justify-content:space-between;align-items:center">
       <div><h3 style="color:#fff;margin:0 0 2px">🎁 Daily Bonus</h3><div style="color:#e4d9ff;font-size:12px">${bonusSub}</div></div>
@@ -1098,7 +1713,7 @@ function dailyPeriodDayNum(offsetMs){
   const d = new Date(now()+(offsetMs||0));
   const p = new Date(d);
   if(d.getHours() < cfg().lbResetHour) p.setDate(p.getDate()-1);
-  return Math.floor(p.getTime()/86400000);
+  return Math.floor((p.getTime() - p.getTimezoneOffset()*60000)/86400000);   // LOCAL day number (was UTC: in India the daily bonus reset 5:30h late)
 }
 function bonusIntervalOk(){
   const interval = cfg().dailyBonusIntervalDays || 1;
@@ -1207,7 +1822,7 @@ setInterval(()=>{
       lbDayOk = Math.round((todMid-lastMid)/86400000) >= iv;
     }
   } else { lbDayOk = true; }
-  if(lbDayOk && d.getHours()>=lbc.lbResetHour && S.lastLbPayout !== todayStr){
+  if(!lbc.lbServerPayout && lbDayOk && d.getHours()>=lbc.lbResetHour && S.lastLbPayout !== todayStr){
     const rnk = estimateRank(S.rp||0), prize = lbPrizeTable()[rnk+1];
     if(prize){ S.coins = (S.coins||0)+prize; }
     S.rp = 0; // daily leaderboard reset: har din prize milne ke baad RP zero, rank dobara se shuru
@@ -1845,64 +2460,48 @@ function redeemPromo(){
 }
 
 function wallet(){
+  setTimeout(applyAdjustments, 0); setTimeout(wdIpHint, 0); setTimeout(()=>{ try{ syncWdStatuses(); }catch(e){} }, 0);
   if(S.isGuest){
     $("#view").innerHTML = adBox('wallet') + `<div class="card" style="text-align:center">
       <div style="font-size:40px">🔒</div>
       <h3>Guest Account</h3>
-      <div class="mut" style="margin:8px 0 16px">Guest account se withdrawal allowed nahi hai. Apne earned coins withdraw karne ke liye real mobile number se login/signup karo — tumhare abhi tak ke coins is device par safe rahenge jab tak tum login nahi karte.</div>
-      <button class="btn g" onclick="logoutBox()">📱 Real Number se Login Karo</button>
+      <div class="mut" style="margin:8px 0 16px">Guest account se withdrawal allowed nahi hai. Apne earned coins withdraw karne ke liye Google (Gmail) se login karo — tumhare abhi tak ke coins is device par safe rahenge jab tak tum login nahi karte.</div>
+      <button class="btn g" onclick="logoutBox()">Google se Login Karo</button>
     </div>`;
     return;
   }
   const notify = S.wdNotify, c = cfg();
   const upiOn = c.upiEnabled!==false, paypalOn = c.paypalEnabled!==false, paytmOn = c.paytmEnabled!==false, phonepeOn = c.phonepeEnabled!==false, binanceOn = c.binanceEnabled!==false;
-  const enabledOpts = [upiOn&&1, paypalOn&&2, paytmOn&&3, phonepeOn&&4, binanceOn&&5, 6].filter(Boolean);
-  if(!window.opt || !enabledOpts.includes(window.opt)) window.opt = enabledOpts[0] || 1;
+  const selCc = window.wdIpCc || "";
+  const enabledOpts = wdOptsFor(selCc);
+  if(!window.opt || !enabledOpts.includes(window.opt)) window.opt = enabledOpts[0] || 0;
   const presets = (c.presetAmounts&&c.presetAmounts.length) ? c.presetAmounts : defaultConfig().presetAmounts;
   const isINR = !isFeeOpt(window.opt);
-  const domesticWrap = (o, label) => `<div id="wm${WD_ID[o]}Wrap" style="display:${window.opt==o?"flex":"none"};flex-direction:column;gap:6px;margin-bottom:10px">
-      <div style="display:flex;gap:8px">
-        <div style="flex:0 0 auto;padding:12px 10px;border-radius:10px;background:var(--in);font-size:14px;display:flex;align-items:center">🇮🇳 +91</div>
-        <input id="wm${WD_ID[o]}" placeholder="Mobile Number" inputmode="numeric" style="flex:1;margin-bottom:0" oninput="resetWdOtp(${o})">
-        <button class="btn s sm" style="flex:0 0 auto" onclick="sendWdOtp(${o})">Verify</button>
-      </div>
-      <div id="wm${WD_ID[o]}OtpBox" style="display:none;gap:6px"><input id="wm${WD_ID[o]}Otp" placeholder="6-digit OTP" maxlength="6" inputmode="numeric" style="flex:1;margin-bottom:0"><button class="btn g sm" style="flex:0 0 auto" onclick="verifyWdOtp(${o})">Confirm</button></div>
-      <div class="mut" id="wm${WD_ID[o]}Status"></div>
-    </div>`;
-  const internationalWrap = o => `<div id="wm${WD_ID[o]}Wrap" style="display:${window.opt==o?"flex":"none"};flex-direction:column;gap:6px;margin-bottom:10px">
-      <div style="display:flex;gap:8px">
-        <select id="wmc${WD_ID[o]}" style="flex:0 0 auto;width:auto;max-width:150px;padding:12px 8px;border-radius:10px;border:2px solid transparent;background:var(--in);color:var(--text);font-size:14px;outline:none">
-          ${COUNTRIES.filter(cn=>cn.id!=="IN" && !(cfg().blockedWithdrawCountries||[]).includes(cn.id)).map(cn=>`<option value="${cn.id}" ${cn.id===S.countryId?"selected":""}>${cn.flag} ${cn.name} (${cn.code})</option>`).join("")}
-        </select>
-        <input id="wm${WD_ID[o]}" placeholder="Mobile Number" inputmode="numeric" style="flex:1;margin-bottom:0" oninput="resetWdOtp(${o})">
-        <button class="btn s sm" style="flex:0 0 auto" onclick="sendWdOtp(${o})">Verify</button>
-      </div>
-      <div id="wm${WD_ID[o]}OtpBox" style="display:none;gap:6px"><input id="wm${WD_ID[o]}Otp" placeholder="6-digit OTP" maxlength="6" inputmode="numeric" style="flex:1;margin-bottom:0"><button class="btn g sm" style="flex:0 0 auto" onclick="verifyWdOtp(${o})">Confirm</button></div>
-      <div class="mut" id="wm${WD_ID[o]}Status"></div>
-    </div>`;
   $("#view").innerHTML = adBox('wallet') + noticeBanner('wallet')
     + (notify?`<div class="card" style="background:linear-gradient(135deg,#0f766e,#14532d);color:#fff;text-align:center"><b>✅ ${esc(notify)}</b></div>`:"")
     + `<div class="card" style="text-align:center"><div class="mut">Balance</div><div style="font-size:30px;font-weight:800;color:var(--gold)">🪙 ${S.coins}</div><div class="mut">${c.rate.toLocaleString()} coins = $1 • Min $${c.minWithdrawUsd} • Max $${c.maxWithdrawUsd} per withdrawal</div></div>
     <div class="card"><h3>Redeem</h3>
-    ${(upiOn||paytmOn||phonepeOn)?`<div class="mut" style="margin-bottom:6px">🇮🇳 Domestic (India)</div>
+    <div style="margin-bottom:10px">
+      <div class="mut" style="margin-bottom:4px">🌍 Aapki country (IP se automatic — badal nahi sakte)</div>
+      <div id="wcCtry" style="padding:12px;border-radius:10px;background:var(--in);font-weight:700">${selCc?(()=>{const cn=COUNTRIES.find(x=>x.id===selCc);return (cn?cn.flag+" "+cn.name:esc(selCc))+(wdBlockedCc(selCc)?` <span style="color:#ff6b61">• withdrawal is region mein band</span>`:"");})():"📡 Detect ho rahi hai..."}</div>
+      <div class="mut" id="wcIp" style="margin-top:4px"></div>
+    </div>
+
+    ${!selCc?`<div class="mut" style="margin:6px 0 10px">📡 IP se country detect ho rahi hai — us ke hisaab se payment options dikhenge. <button class="chip" onclick="wdIpHint(true)">🔄 Retry</button></div>`:""}
+    ${(selCc==="IN" && (upiOn||paytmOn||phonepeOn))?`<div class="mut" style="margin-bottom:6px">🇮🇳 India</div>
     <div class="chips" style="flex-wrap:wrap;margin-bottom:12px">
       ${upiOn?`<button class="chip ${window.opt==1?"on":""}" id="o1" onclick="setOpt(1)" style="display:flex;align-items:center;gap:5px"><span style="background:#fff;color:#1a1a1a;font-weight:900;font-size:12px;padding:1px 6px;border-radius:4px;letter-spacing:.5px"><span style="color:#ed7a1c">U</span><span style="color:#097d3c">P</span><span style="color:#ed7a1c">I</span></span></button>`:""}
       ${paytmOn?`<button class="chip ${window.opt==3?"on":""}" id="o3" onclick="setOpt(3)" style="display:flex;align-items:center;gap:5px"><span style="background:#002e6e;color:#00baf2;font-weight:900;font-style:italic;font-size:12px;padding:1px 6px;border-radius:4px">Paytm</span></button>`:""}
       ${phonepeOn?`<button class="chip ${window.opt==4?"on":""}" id="o4" onclick="setOpt(4)" style="display:flex;align-items:center;gap:5px"><span style="background:#5f259f;color:#fff;font-weight:900;font-size:12px;padding:1px 6px;border-radius:4px">Phone<span style="color:#ffe082">Pe</span></span></button>`:""}
     </div>`:""}
-    ${true?`<div class="mut" style="margin-bottom:6px">🌍 International</div>
+    ${(selCc && selCc!=="IN" && enabledOpts.length)?`<div class="mut" style="margin-bottom:6px">🌍 Global</div>
     <div class="chips" style="flex-wrap:wrap">
-      ${paypalOn?`<button class="chip ${window.opt==2?"on":""}" id="o2" onclick="setOpt(2)" style="display:flex;align-items:center;gap:5px"><span style="background:#003087;color:#fff;font-weight:900;font-style:italic;font-size:12px;padding:1px 5px;border-radius:4px">Pay<span style="color:#009cde">Pal</span></span> (Processing Fee ${c.paypalFeePct}%)</button>`:""}
-      ${binanceOn?`<button class="chip ${window.opt==5?"on":""}" id="o5" onclick="setOpt(5)" style="display:flex;align-items:center;gap:5px"><span style="background:#0B0E11;color:#F3BA2F;font-weight:900;font-size:12px;padding:1px 6px;border-radius:4px">Binance</span> (Processing Fee ${c.binanceFeePct}%)</button>`:""}
-      ${c.bybitEnabled!==false?`<button class="chip ${window.opt==6?"on":""}" id="o6" onclick="setOpt(6)" style="display:flex;align-items:center;gap:5px"><span style="background:#0B0E11;color:#F7A600;font-weight:900;font-size:12px;padding:1px 6px;border-radius:4px">Bybit</span> (Processing Fee ${bybitFee()}%)</button>`:""}
+      ${paypalOn?`<button class="chip ${window.opt==2?"on":""}" id="o2" onclick="setOpt(2)" style="display:flex;align-items:center;gap:5px"><span style="background:#003087;color:#fff;font-weight:900;font-style:italic;font-size:12px;padding:1px 5px;border-radius:4px">Pay<span style="color:#009cde">Pal</span></span> (Processing Fee ${appliedPct('PayPal')}%)</button>`:""}
+      ${binanceOn?`<button class="chip ${window.opt==5?"on":""}" id="o5" onclick="setOpt(5)" style="display:flex;align-items:center;gap:5px"><span style="background:#0B0E11;color:#F3BA2F;font-weight:900;font-size:12px;padding:1px 6px;border-radius:4px">Binance</span> (Processing Fee ${appliedPct('Binance')}%)</button>`:""}
+      ${c.bybitEnabled!==false?`<button class="chip ${window.opt==6?"on":""}" id="o6" onclick="setOpt(6)" style="display:flex;align-items:center;gap:5px"><span style="background:#0B0E11;color:#F7A600;font-weight:900;font-size:12px;padding:1px 6px;border-radius:4px">Bybit</span> (Processing Fee ${appliedPct('Bybit')}%)</button>`:""}
     </div>`:""}
-    <input id="wa" placeholder="${({1:"UPI ID (name@upi)",2:"PayPal Email",3:"Paytm Number / UPI ID",4:"PhonePe Number / UPI ID",5:"Binance Pay ID / Email",6:"Bybit UID / Email"})[window.opt]}">
-    ${domesticWrap(1)}
-    ${internationalWrap(2)}
-    ${domesticWrap(3)}
-    ${domesticWrap(4)}
-    ${internationalWrap(5)}
-    ${internationalWrap(6)}
+    ${selCc && !enabledOpts.length?`<div class="mut" style="margin:6px 0">Is country ke liye abhi koi payment method ON nahi hai.</div>`:""}
+    <input id="wa" ${enabledOpts.length?"":"disabled"} placeholder="${({0:"—",1:"UPI ID (name@upi)",2:"PayPal Email",3:"Paytm Number / UPI ID",4:"PhonePe Number / UPI ID",5:"Binance Pay ID / Email",6:"Bybit UID / Email"})[window.opt]}">
     <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">${presets.map(d=>{
       const label = isINR ? `₹${Math.round(d*c.usdToInr).toLocaleString("en-IN")}` : (isUsdtOpt(window.opt)?`USDT ${d}`:`$${d}`);
       return `<button class="chip" style="flex:1 1 auto;min-width:56px;text-align:center" onclick="setAmt(${d})">${label}</button>`;
@@ -1912,48 +2511,37 @@ function wallet(){
     <div class="mut" id="wcUsd" style="margin:-4px 0 8px;text-align:right">≈ $0.00</div>
     <div class="msg" id="msg"></div><button class="btn" ${wdAvailable()?"":"disabled"} onclick="withdraw()">${wdAvailable()?"Withdraw Request":(wdCountLeft()<=0?"✅ Aaj ki limit khatam":"⏰ Abhi Band")}</button>
     <div class="mut" style="margin-top:6px;text-align:center">Din mein max ${c.wdMaxPerDay||1} withdrawal${(c.wdMaxPerDay||1)>1?"s":""} allowed hai (${wdCountLeft()} bache hain)${c.wdTimeEnabled?` • Timing: ${wdWindowFmt()}`:""}${c.wdDaysEnabled?` • Din: ${(c.wdDays||[]).map(i=>["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][i]).join(", ")||"Koi nahi"}`:""}</div></div>
-    <h3>History</h3>${S.wd.length?S.wd.slice().reverse().map(w=>{
+    <h3>History</h3>${wdHistory()}`;
+  if(notify){ S.wdNotify = null; save(); }
+}
+// India -> UPI, Paytm, PhonePe.  Every other country -> PayPal, Binance, Bybit.  Admin ON/OFF toggles still apply on top.
+function wdOptsFor(cc){
+  const c = cfg(), on = {1:c.upiEnabled!==false, 3:c.paytmEnabled!==false, 4:c.phonepeEnabled!==false, 2:c.paypalEnabled!==false, 5:c.binanceEnabled!==false, 6:c.bybitEnabled!==false};
+  if(!cc) return [];
+  return (cc==="IN" ? [1,3,4] : [2,5,6]).filter(o=>on[o]);
+}
+
+function wdHistory(){
+  return S.wd.length?S.wd.slice().reverse().map(w=>{
       const badge = {PENDING:["⏳ Pending","#8a93a8"],APPROVED:["✔️ Approved","#38bdf8"],SUCCESS:["✅ Success","#1fa971"],REJECTED:["❌ Rejected","#ff5c5c"]}[w.status]||["",w.status];
       const inr = usd => Math.round(parseFloat(usd)*cfg().usdToInr).toLocaleString("en-IN");
       const mainLine = !isFeeMethod(w.method)
-        ? `${esc(w.method)} • ₹${inr(w.net)} net <span class="mut">(req ₹${inr(w.requested)}, TDS ${tdsPctForMethod(w.method)}%: ₹${inr(w.tds)})</span>`
-        : `${esc(w.method)} • ${isUsdtMethod(w.method)?"USDT ":"$"}${w.net} net <span class="mut">(req ${isUsdtMethod(w.method)?"USDT ":"$"}${w.requested}, TDS: N/A)</span>`;
-      return `<div class="lb" style="flex-wrap:wrap"><span class="n">${mainLine}${w.mobile?`<br><span class="mut">📱 ${esc(w.mobile)}</span>`:""}${w.utr?`<br><span class="mut">UTR: ${esc(w.utr)}</span>`:""}</span><span style="color:${badge[1]};font-weight:700;font-size:12px">${badge[0]}</span></div>`;
-    }).join(""):`<div class="mut">Abhi koi request nahi.</div>`}`;
-  if(notify){ S.wdNotify = null; save(); }
+        ? `${esc(w.method)} • ₹${inr(w.net)} net <span class="mut">(req ₹${inr(w.requested)}, TDS ${w.pct!=null?w.pct:tdsPctForMethod(w.method)}%: -₹${inr(w.tds)})</span>`
+        : `${esc(w.method)} • ${isUsdtMethod(w.method)?"USDT ":"$"}${w.net} net <span class="mut">(req ${isUsdtMethod(w.method)?"USDT ":"$"}${w.requested}, Fee ${w.pct!=null?w.pct:feePctForMethod(w.method)}%: -${isUsdtMethod(w.method)?"USDT ":"$"}${(parseFloat(w.requested)-parseFloat(w.net)).toFixed(2)})</span>`;
+      return `<div class="lb" style="flex-wrap:wrap"><span class="n">${mainLine}${w.country?`<br><span class="mut">🌍 ${esc(w.country)}${w.autoReject?" • "+esc(w.autoReject):""}</span>`:""}${w.utr?`<br><span class="mut">UTR: ${esc(w.utr)}</span>`:""}<br><span class="mut">📅 ${esc(new Date(w.created||Date.now()).toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}))} • ${w.status==="REJECTED"?"Coins wapas mil gaye":"🪙 "+esc(w.coins)+" coins"}</span></span><span style="color:${badge[1]};font-weight:700;font-size:12px">${badge[0]}</span></div>`;
+    }).join(""):`<div class="mut">Abhi koi request nahi.</div>`;
+}
+function wdIpHint(force){
+  ipCountry(force===true).then(cc=>{
+    const el = document.getElementById("wcIp"); if(!el) return;
+    if(!cc){ el.style.color = "#ff5c5c"; el.textContent = "IP country detect nahi hui — internet check karke Retry dabao"; return; }
+    el.textContent = "";
+    if(window.wdIpCc !== cc){ window.wdIpCc = cc; wallet(); }
+  });
 }
 function setOpt(n){
   window.opt = n;
   wallet(); // full re-render: preset amounts & calculator switch currency (₹ for UPI/Paytm/PhonePe, $ for PayPal, USDT for Binance)
-}
-function sendWdOtp(opt){
-  const numEl = $("#wm"+WD_ID[opt]);
-  const num = numEl.value.trim().replace(/\D/g,"");
-  const status = $("#wm"+WD_ID[opt]+"Status");
-  if(!num || num.length<6 || num.length>12){ if(status){ status.style.color="#ff5c5c"; status.textContent = "Pehle valid mobile number daalo"; } return; }
-  if(!window.wdOtp) window.wdOtp = {};
-  const code = String(Math.floor(100000+Math.random()*900000));
-  window.wdOtp[opt] = {code, verifiedNum:""};
-  const box = $("#wm"+WD_ID[opt]+"OtpBox");
-  if(box) box.style.display = "flex";
-  if(status){ status.style.color="var(--muted)"; status.textContent = `OTP bheja gaya (demo, no SMS backend): ${code}`; }
-}
-function verifyWdOtp(opt){
-  const otpEl = $("#wm"+WD_ID[opt]+"Otp");
-  const numEl = $("#wm"+WD_ID[opt]);
-  const entered = otpEl.value.trim();
-  const rec = (window.wdOtp||{})[opt];
-  const status = $("#wm"+WD_ID[opt]+"Status");
-  if(!rec || !/^\d{6}$/.test(entered) || entered!==rec.code){ if(status){ status.style.color="#ff5c5c"; status.textContent = "Galat OTP, dobara try karo"; } return; }
-  rec.verifiedNum = numEl.value.trim().replace(/\D/g,"");
-  if(status){ status.style.color="var(--ok)"; status.textContent = "✅ Mobile number verified"; }
-  const box = $("#wm"+WD_ID[opt]+"OtpBox");
-  if(box) box.style.display = "none";
-}
-function resetWdOtp(opt){
-  if(window.wdOtp && window.wdOtp[opt]) window.wdOtp[opt].verifiedNum = "";
-  const status = $("#wm"+WD_ID[opt]+"Status");
-  if(status){ status.style.color="var(--muted)"; status.textContent = ""; }
 }
 function setAmt(d){
   const coins = Math.round(d*cfg().rate), isINR = !isFeeOpt(window.opt);
@@ -1961,37 +2549,58 @@ function setAmt(d){
   $("#wc").value = isINR ? `₹${Math.round(d*cfg().usdToInr).toLocaleString("en-IN")} (${coins} coins)` : `${isUsdtOpt(window.opt)?"USDT "+d:"$"+d} (${coins} coins)`;
   updateWcUsd();
 }
+function wdBreakup(coins, opt){
+  const m = WD_METHOD[opt] || "UPI", gross = coins/cfg().rate, pct = appliedPct(m), fee = isFeeOpt(opt);
+  const inr = !fee, mul = inr ? cfg().usdToInr : 1, sy = inr ? "₹" : (isUsdtOpt(opt) ? "USDT " : "$");
+  const f = v => inr ? Math.round(v).toLocaleString("en-IN") : v.toFixed(2);
+  const g = gross*mul, cut = g*pct/100, net = g-cut;
+  return {m, pct, sy, g, cut, net, label: fee ? "Processing Fee" : "Tax (TDS)", html:
+    `<div style="display:flex;justify-content:space-between"><span>Requested Amount</span><b>${sy}${f(g)}</b></div>
+     <div style="display:flex;justify-content:space-between;color:#ff9b5c"><span>${fee?"Processing Fee":"Tax (TDS)"} (${pct}%)</span><b>-${sy}${f(cut)}</b></div>
+     <div style="display:flex;justify-content:space-between;border-top:1px solid #ffffff22;margin-top:4px;padding-top:4px"><span>Net Payable Amount</span><b style="color:var(--ok)">${sy}${f(net)}</b></div>`};
+}
 function updateWcUsd(){
-  const c = parseInt($("#wcCoins").value,10)||0, gross = c/cfg().rate, el = $("#wcUsd");
+  const c = parseInt($("#wcCoins").value,10)||0, el = $("#wcUsd");
   if(!el) return;
-  if(isFeeOpt(window.opt)){
-    const feePct = feePctFor(window.opt), net = gross*(1-feePct/100), sym = isUsdtOpt(window.opt)?"USDT ":"$";
-    el.textContent = `≈ ${sym}${gross.toFixed(2)} − Processing Fee ${feePct}% = ${sym}${net.toFixed(2)} milega`;
-  } else {
-    const tdsPct = tdsPctFor(window.opt), grossInr = gross*cfg().usdToInr, tdsInr = grossInr*(tdsPct/100), netInr = grossInr-tdsInr;
-    el.textContent = `≈ ₹${grossInr.toLocaleString("en-IN",{maximumFractionDigits:0})} − TDS ${tdsPct}% (₹${tdsInr.toLocaleString("en-IN",{maximumFractionDigits:0})}) = ₹${netInr.toLocaleString("en-IN",{maximumFractionDigits:0})} milega`;
-  }
+  if(!c){ el.innerHTML = ""; return; }
+  el.style.textAlign = "left"; el.innerHTML = wdBreakup(c, window.opt).html;
+}
+function wdConfirmBox(html){
+  return new Promise(res=>{
+    const o = document.createElement("div"); o.style.cssText = "position:fixed;inset:0;z-index:99;background:#000000b0;display:flex;align-items:center;justify-content:center;padding:20px";
+    o.innerHTML = `<div style="background:var(--card);border-radius:16px;padding:20px;max-width:330px;width:100%"><h3 style="margin:0 0 10px;text-align:center">Withdrawal confirm karo</h3><div style="font-size:14px;line-height:1.9">${html}</div>
+      <div class="row" style="gap:8px;margin-top:14px"><button class="btn s" id="wcN">Cancel</button><button class="btn" id="wcY">Confirm</button></div></div>`;
+    document.body.appendChild(o);
+    o.querySelector("#wcN").onclick = ()=>{ o.remove(); res(false); }; o.querySelector("#wcY").onclick = ()=>{ o.remove(); res(true); };
+  });
 }
 // ===== Google Sheets backend (withdrawal requests) =====
 // Paste your Apps Script Web App URL below. This URL is public by design: it holds NO secret.
 // Admin actions need the owner's PIN, which lives only in the Apps Script project, never in this app.
-async function sheetsCall(body){
-  const r = await fetch(SHEETS_URL, {method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify(body)});
-  return await r.json();
+function deviceId(){
+  try{ if(window.AndroidDevice && window.AndroidDevice.id){ const v = String(window.AndroidDevice.id()||""); if(/^[A-Za-z0-9\-]{16,64}$/.test(v)) return v; } }catch(e){}
+  try{
+    let v = localStorage.getItem("esp_dev");
+    if(!v){ v = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now().toString(36)+Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2)); localStorage.setItem("esp_dev", v); }
+    return v.length>=16 ? v : v+"0000000000000000";
+  }catch(e){ return ""; }
 }
 function wdCurrency(m){ return m==="PayPal" ? "USD" : isUsdtMethod(m) ? "USDT" : "INR"; }
 async function sendWdToSheet(w){
-  if(!SHEETS_URL || w.sheetSent || w.refunded) return;
+  if(!SHEETS_URL || w.sheetSent || w.refunded || w.sending) return;
+  w.sending = true;   // one submit in flight per request (a parallel retry would be rejected by the server as a duplicate and wrongly refund)
   try{
     // Sheet amounts are in the PAYOUT currency: INR for UPI/Paytm/PhonePe (what the user saw), USD for PayPal, USDT for Binance/Bybit.
     const mult = isFeeMethod(w.method) ? 1 : (w.inrRate || cfg().usdToInr || 83);
     const fx = v => { const n = parseFloat(v)*mult; return isFeeMethod(w.method) ? +n.toFixed(2) : Math.round(n); };
-    const d = await sheetsCall({action:"submit", requestId:w.id, mobile:w.mobile, to:w.to, method:w.method,
-      coins:w.coins, net:fx(w.net), gross:fx(w.requested||w.net), currency:wdCurrency(w.method), name:S.name||""});
+    await userSyncNow();   // server must know this account (and its balance) before a payout request
+    const d = await sheetsCall({action:"submit", device:deviceId(), requestId:w.id, mobile:w.mobile, country:w.country||"", ipCountry:w.ipCountry||"", risk:w.risk||"", to:w.to, method:w.method,
+      coins:w.coins, appVer:APP_VER, pct:w.pct, net:fx(w.net), gross:fx(w.requested||w.net), currency:wdCurrency(w.method), name:S.name||""});
     if(d && d.ok){ w.sheetSent = true; w.sheetError = ""; }
-    else if(d && d.permanent){ w.sheetError = d.error||"rejected"; w.status = "REJECTED"; wdRefund(w); }
+    else if(d && d.permanent && !w.sheetSent){ w.sheetError = d.error||"rejected"; w.status = "REJECTED"; wdRefund(w); }
     else w.sheetError = (d && d.error) || "server error";
   }catch(e){ w.sheetError = "network"; }
+  w.sending = false;
   save(); if(tab==="wallet" && typeof render==="function") render();
 }
 function wdRefund(w){ if(w.refunded) return; w.refunded = true; S.coins = (S.coins||0) + w.coins; }
@@ -2022,19 +2631,45 @@ async function syncWdStatuses(){
   wdSyncBusy = false;
 }
 setInterval(syncWdStatuses, 60000);
-function withdraw(){
-  if(S.isGuest) return toast("Guest account withdrawal nahi kar sakta — real number se login karo", false);
+/* ===== v12: geo restrictions (admin switches) ===== */
+const loginBlockedCc = cc => cfg().loginRestrictOn !== false && (cfg().blockedLoginCountries||[]).includes(cc);
+const wdBlockedCc    = cc => cfg().wdRestrictOn !== false && (cfg().blockedWithdrawCountries||[]).includes(cc);
+function blockPopup(title, msg){
+  const old = document.getElementById("blkPop"); if(old) old.remove();
+  const o = document.createElement("div"); o.id = "blkPop";
+  o.style.cssText = "position:fixed;inset:0;z-index:2147482500;background:#000000c0;display:flex;align-items:center;justify-content:center;padding:20px";
+  o.innerHTML = `<div style="background:var(--card);border:1px solid #ff3b30;border-radius:16px;padding:22px;max-width:330px;width:100%;text-align:center"><div style="font-size:40px">🚫</div><h3 style="margin:6px 0;color:#ff6b61">${esc(title)}</h3><div style="font-size:14px;line-height:1.5;margin-bottom:16px">${esc(msg)}</div><button class="btn" id="blkOk">OK</button></div>`;
+  document.body.appendChild(o); o.querySelector("#blkOk").onclick = ()=>o.remove();
+}
+/* ===== v11: GPS permission + external app intent ===== */
+function getGps(){
+  return new Promise(res=>{
+    if(!navigator.geolocation) return res({ok:false, why:"nosupport"});
+    let done = false; const fin = v=>{ if(!done){ done = true; res(v); } };
+    setTimeout(()=>fin({ok:false, why:"timeout"}), 12000);
+    try{ navigator.geolocation.getCurrentPosition(
+      pos=>fin({ok:true, lat:pos.coords.latitude, lon:pos.coords.longitude, acc:pos.coords.accuracy}),
+      err=>fin({ok:false, why: err && err.code===1 ? "denied" : err && err.code===3 ? "timeout" : "off"}),
+      {enableHighAccuracy:true, timeout:10000, maximumAge:60000}); }catch(e){ fin({ok:false, why:"nosupport"}); }
+  });
+}
+const GPS_MSG = {denied:"❌ GPS / Location permission band hai. Phone Settings → App → Location → Allow karo, phir withdrawal karo.", off:"❌ Phone ka GPS (Location) OFF hai. Location ON karke dobara try karo.", timeout:"❌ GPS location nahi mil payi. Khule aasman mein location ON karke dobara try karo.", nosupport:"❌ Is app mein location access available nahi hai."};
+function openExternalApp(pkg, fallback){
+  pkg = String(pkg||"").trim(); fallback = String(fallback||"").trim();
+  const store = /^https:\/\//i.test(fallback) ? fallback : (/^[a-zA-Z][\w.]{2,}$/.test(pkg) ? "https://play.google.com/store/apps/details?id="+pkg : "");
+  if(!/^[a-zA-Z][\w.]{2,}$/.test(pkg)){ if(store) window.open(store, "_blank"); else toast("App link set nahi hai", false); return; }
+  let left = false; const onHide = ()=>{ if(document.hidden) left = true; };
+  document.addEventListener("visibilitychange", onHide);
+  try{ location.href = "intent://#Intent;package="+pkg+";action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end"; }catch(e){}
+  setTimeout(()=>{ document.removeEventListener("visibilitychange", onHide); if(!left && store){ toast("App installed nahi mila — Play Store khol rahe hain"); window.open(store, "_blank"); } }, 1800);
+}
+async function withdraw(){
+  if(cfg().maintenanceOn===true) return toast("App maintenance par hai — baad mein try karo", false);
+  if(S.isGuest) return toast("Guest account withdrawal nahi kar sakta — Google se login karo", false);
+  if(window.wdBusy) return;
   const a = $("#wa").value.trim(), c = parseInt($("#wcCoins").value,10), todayStr = new Date().toDateString();
   if(!a) return toast("Details daalo", false);
   if(!c) return toast("Upar se ek amount choose karo", false);
-  const mobileRaw = $("#wm"+WD_ID[window.opt]).value.trim().replace(/\D/g,"");
-  const wmcId = isFeeOpt(window.opt) ? $("#wmc"+WD_ID[window.opt]).value : "IN";
-  if(isFeeOpt(window.opt) && (cfg().blockedWithdrawCountries||[]).includes(wmcId)) return toast("Is country ke liye withdrawal abhi allowed nahi hai", false);
-  const mobileCc = isFeeOpt(window.opt) ? ((COUNTRIES.find(c=>c.id===wmcId)||{}).code || "") : "+91";
-  if(!mobileRaw || mobileRaw.length < 6 || mobileRaw.length > 12) return toast("Valid mobile number daalo", false);
-  const wdOtpRec = (window.wdOtp||{})[window.opt];
-  if(!wdOtpRec || wdOtpRec.verifiedNum !== mobileRaw) return toast("Mobile number OTP se verify karo pehle", false);
-  const mobile = mobileCc + " " + mobileRaw;
   if(S.wdCountDate !== todayStr){ S.wdCountDate = todayStr; S.wdCountToday = 0; }
   const maxPerDay = cfg().wdMaxPerDay || 1;
   if((S.wdCountToday||0) >= maxPerDay) return toast(`Din mein sirf ${maxPerDay} withdrawal${maxPerDay>1?"s":""} allowed hai${maxPerDay>1?"n":""}`, false);
@@ -2043,22 +2678,83 @@ function withdraw(){
   if(!c || c < minCoins()) return toast(`Minimum $${cfg().minWithdrawUsd} (${minCoins()} coins) chahiye`, false);
   if(c > maxCoins()) return toast(`Maximum $${cfg().maxWithdrawUsd} (${maxCoins()} coins) ek baar mein`, false);
   if(c > S.coins) return toast("Itne coins nahi hain", false);
+  // ---- 1) country is taken from the IP automatically (no manual selection) ----
+  window.wdBusy = true; toast("Country (IP se) verify ho rahi hai...");
+  let ipc = "", risk = "";
+  try{ const inf = await ipInfo(true); ipc = inf.cc; risk = inf.risk; }finally{ window.wdBusy = false; }
+  if(!ipc) return toast("IP se country detect nahi ho payi — internet check karke dobara try karo", false);
+  const country = ipc; window.wdIpCc = ipc;
+  const autoRej = (why, popupTitle, popupMsg)=>{
+    const rec = {id:"WD"+((S.wdSeq=(S.wdSeq||1000)+1)), user_id:S.phone, method:WD_METHOD[window.opt]||"UPI", to:a, mobile:S.phone, country, ipCountry:ipc, risk, coins:c, requested:(c/cfg().rate).toFixed(2), tds:"0.00", net:"0.00", status:"REJECTED", utr:"", created:now(), refunded:true, autoReject:why};
+    S.wd.push(rec); save(); render(); blockPopup(popupTitle, popupMsg);   // coins were never deducted = fully refunded
+  };
+  if(wdBlockedCc(ipc)) return autoRej("Blocked region ("+ipc+")", "Access restricted in your region.", "Aapki country ("+ipc+") se withdrawal allowed nahi hai. Request reject ho gayi, coins aapke account mein hi hain.");
+  if(cfg().vpnBlock !== false && cfg().wdRestrictOn !== false && /VPN|PROXY|TOR|DATACENTER/.test(String(risk)))
+    return autoRej("VPN/Proxy detected ("+risk+")", "VPN / Proxy detect hua", "VPN ya Proxy ke saath withdrawal allowed nahi hai. VPN band karke dobara try karo. Coins wapas aapke account mein hain.");
+  if(!wdOptsFor(country).includes(window.opt)){ wallet(); return toast("Aapki country ke hisaab se payment method update hua — dobara choose karo", false); }
+  // ---- 2) GPS ----
+  let gpsOk = null;
+  if(cfg().gpsRequired !== false){
+    window.wdBusy = true; toast("GPS location check ho rahi hai...");
+    try{ gpsOk = await getGps(); }finally{ window.wdBusy = false; }
+    if(!gpsOk.ok) return toast(GPS_MSG[gpsOk.why]||GPS_MSG.off, false);
+  }
+  // ---- 3) confirm ----
+  { const bk = wdBreakup(c, window.opt); if(!(await wdConfirmBox(bk.html))) return; }
   const gross = c/cfg().rate;
-  const tds = isFeeOpt(window.opt) ? 0 : gross*(tdsPctFor(window.opt)/100); // PayPal/Binance: no TDS, only processing fee. UPI/Paytm/PhonePe: each has its own admin-set TDS %.
-  const net = isFeeOpt(window.opt) ? gross*(1-feePctFor(window.opt)/100) : gross-tds;
+  const pct = appliedPct(WD_METHOD[window.opt] || "UPI"), cutUsd = gross*pct/100;   // one rule for every method: cut = requested x percent (0% if admin switched it OFF)
+  const tds = isFeeOpt(window.opt) ? 0 : cutUsd;
+  const net = gross - cutUsd;
   const method = WD_METHOD[window.opt] || "UPI";
   S.coins -= c; S.lastWithdraw = todayStr; S.wdCountDate = todayStr; S.wdCountToday = (S.wdCountToday||0)+1; // requested amount freezes instantly so user can't double-withdraw
   S.wdSeq = (S.wdSeq||1000)+1;
-  const wdRec = {id:"WD"+S.wdSeq, user_id:S.phone, method, to:a, mobile, coins:c,
-    requested:gross.toFixed(2), tds:tds.toFixed(2), net:net.toFixed(2), inrRate:cfg().usdToInr, status:"PENDING", utr:"", created:now()};
+  const wdRec = {id:"WD"+S.wdSeq, user_id:S.phone, method, to:a, mobile:S.phone, country, ipCountry:ipc, risk, coins:c,
+    requested:gross.toFixed(2), pct, tds:tds.toFixed(2), net:net.toFixed(2), inrRate:cfg().usdToInr, status:"PENDING", utr:"", created:now()};
   S.wd.push(wdRec);
   save(); render();
   sendWdToSheet(wdRec);
 }
+async function tkSubmit(){
+  const sub = ($("#tkS")||{}).value||"", msg = ($("#tkM")||{}).value||"", m = $("#tkMsg");
+  if(m){ m.className = "msg"; m.textContent = "Bhej rahe hain..."; }
+  const d = await sheetsCall({action:"ticketSubmit", subject:sub, message:msg, name:S.name||""});
+  if(m){ m.className = "msg "+(d.ok?"ok":"err"); m.textContent = d.ok ? "✅ Ticket bhej diya gaya (ID "+d.id+")" : (d.error||"Nahi gaya"); }
+  if(d.ok){ $("#tkS").value = ""; $("#tkM").value = ""; tkLoad(); }
+}
+async function tkLoad(){
+  const el = $("#tkList"); if(!el || !SHEETS_URL) return;
+  const d = await sheetsCall({action:"ticketList"}).catch(()=>null); if(!d || !d.ok){ return; }
+  const l = $("#tkList"); if(!l) return;
+  l.innerHTML = d.items.length ? "<div class=\"mut\" style=\"margin-bottom:4px\">Aapke tickets</div>"+d.items.map(t=>`<div class="lb" style="flex-wrap:wrap"><span class="n"><b>${esc(t.subject)}</b><br><span class="mut">${esc(t.time)}</span>${t.reply?`<br><span style="color:var(--ok)">💬 Support: ${esc(t.reply)}</span>`:""}</span><span style="font-weight:700;font-size:12px;color:${t.status==="Resolved"?"#1fa971":"#ffb020"}">${t.status==="Resolved"?"✅ Resolved":"⏳ Open"}</span></div>`).join("") : "";
+}
+function nameEdit(){
+  const b = $("#nmBox"); if(!b) return;
+  b.innerHTML = `<input id="nmIn" maxlength="25" placeholder="Naya naam (3-25 akshar)" value="${esc(S.name||"")}" style="text-align:center"><div class="msg" id="nmMsg"></div><div style="display:flex;gap:8px"><button class="btn sm" style="flex:1" onclick="nameSave()">Save</button><button class="btn s sm" style="flex:1" onclick="me()">Cancel</button></div><div class="mut" style="margin-top:6px">Sahi, asli naam rakho. Gaali, link, email ya number wale naam allowed nahi. Naam 24 ghante mein 1 baar badal sakte ho.</div>`;
+  const i = $("#nmIn"); if(i) i.focus();
+}
+function nameSave(){
+  const m = $("#nmMsg"), say = (t)=>{ if(m){ m.className = "msg err"; m.textContent = t; } };
+  let v = String(($("#nmIn")||{}).value||"").replace(/\s+/g," ").trim();
+  if(v === S.name) return me();
+  if(v.length < 3 || v.length > 25) return say("Naam 3 se 25 akshar ka hona chahiye");
+  if(!/^[\p{L}\p{N} ._-]+$/u.test(v)) return say("Naam mein sirf akshar, number, space, . _ - allowed hain");
+  if(/^[\d\s._-]+$/.test(v)) return say("Naam mein akshar bhi hone chahiye (sirf number nahi)");
+  if(/@|https?|www\.|\.(com|in|net|org|me|xyz)\b|t\.me|whatsapp|telegram/i.test(v)) return say("Naam mein link, email ya contact nahi likh sakte");
+  const bad = /(fuck|shit|bitch|asshole|bastard|slut|dick|porn|sex|madarch|behench|bhosd|chutiy|gaand|lund|randi|harami|mc\b|bc\b)/i;
+  if(bad.test(v.replace(/[\s._-]/g,""))) return say("Ye naam allowed nahi hai — koi achha naam rakho");
+  const last = S.nameChangedAt || 0;
+  if(Date.now() - last < 86400000) return say("Naam 24 ghante mein sirf 1 baar badal sakte ho — baad mein try karo");
+  S.name = v; S.nameChangedAt = Date.now(); save(); userSyncNow();
+  toast("✅ Naam badal gaya: "+v); render();
+}
 function me(){
-  $("#view").innerHTML = adBox('profile') + noticeBanner('profile') + `<div class="card" style="text-align:center"><div style="font-size:40px">🎯</div><h3>${esc(S.name)}${S.isGuest?' <span style="font-size:11px;background:var(--in);color:var(--muted);padding:2px 8px;border-radius:20px;vertical-align:middle">GUEST</span>':''}</h3><div class="mut">${S.isGuest?'Withdrawal ke liye real number se login karo':'📱 '+esc(S.phone)}</div></div>
+  setTimeout(tkLoad, 0);
+  $("#view").innerHTML = adBox('profile') + noticeBanner('profile') + `<div class="card" style="text-align:center"><div style="font-size:40px">🎯</div><h3>${esc(S.name)}${S.isGuest?' <span style="font-size:11px;background:var(--in);color:var(--muted);padding:2px 8px;border-radius:20px;vertical-align:middle">GUEST</span>':''}</h3><div class="mut">${S.isGuest?'Withdrawal ke liye Google se login karo':'✉️ '+esc(S.email||"")}</div>
+    ${S.isGuest?'':`<div id="nmBox" style="margin-top:10px"><button class="btn s sm" onclick="nameEdit()">✏️ Naam badlo</button></div>`}</div>
     ${S.isGuest?'':`<div class="card"><h3>👥 Referral Code</h3><div class="row"><b style="font-size:20px;color:var(--gold)">${S.code}</b><button class="btn sm" onclick="navigator.clipboard&&navigator.clipboard.writeText('${S.code}');this.textContent='Copied'">Copy</button></div>
     <div class="mut" style="margin-top:6px">Dost ko code do — signup par +50 coins aur aapko commission.</div></div>`}
+    ${S.isGuest?'':`<div class="card"><h3>🆘 Support / Report</h3><input id="tkS" placeholder="Subject (jaise: Withdrawal nahi mila)" maxlength="80"><textarea id="tkM" placeholder="Apni problem detail mein likho..." maxlength="1000" style="width:100%;min-height:70px;margin-bottom:8px"></textarea><div class="msg" id="tkMsg"></div><button class="btn" onclick="tkSubmit()">Submit Ticket</button><div id="tkList" style="margin-top:10px"></div></div>`}
+    ${S.isGuest?'':`<div class="card"><h3>🧾 Withdrawal History</h3>${wdHistory()}</div>`}
     <div class="card"><h3>☁️ Cloud Sync</h3><div class="mut" id="cloudStat">${cloudStatText()}</div></div>
     ${supportLinksCard()}
     ${legalLinksCard()}
@@ -2083,12 +2779,15 @@ function doLogout(){
     saveAccounts(accounts);
   }
   try{ localStorage.removeItem("esp_app"); }catch(e){}
-  S = null; tab = "home"; sub = "matches";
+  S = null; tab = "home"; sub = "matches"; fbSignOutUser();
   render();
 }
 render();
+checkGate();
 if(S && S.banned) showBan();
 remotePull();
+setTimeout(lbEpochSync, 2000); setTimeout(broadcastCheck, 2500); setTimeout(applyAdjustments, 3500); setTimeout(geoCheck, 3000);
+document.addEventListener("visibilitychange", ()=>{ if(!document.hidden){ remotePull(); lbEpochSync(); broadcastCheck(); applyAdjustments(); geoCheck(); } });
 userSyncNow();
 cloudPull();
 syncWdStatuses();
@@ -2123,7 +2822,7 @@ syncWdStatuses();
 <div id="adm"></div>
 <script>
 // ===== Hidden Admin View (same APK) =====
-// Entry: 10 taps on the logo within 3 s -> Android BiometricPrompt (fingerprint) -> admin PIN -> admin token (30 min).
+// Entry: 10 taps on the logo within 3 s -> admin PIN -> admin token (30 min).
 // SECURITY: no PIN / secret exists in this file. Every admin read/write is authorised by the Apps Script server
 // (ADMIN_SECRET in Script properties). The fingerprint + 10-tap only hide the screen on the owner's phone.
 (function(){
@@ -2138,11 +2837,14 @@ function sp(o,p,v){
   for(let i=0;i<ks.length-1;i++){ const k = ks[i]; if(a[k]==null || typeof a[k]!=="object") a[k] = /^\d+$/.test(ks[i+1]) ? [] : {}; a = a[k]; }
   a[ks[ks.length-1]] = v;
 }
-const A = {open:false, tok:"", doc:null, dirty:false, tab:"wd", saving:false, loading:false,
+const A = {sum:null, tk:{filter:"Open", items:[], loaded:false}, au:{items:[], loaded:false}, open:false, tok:"", doc:null, dirty:false, tab:"wd", saving:false, loading:false,
   wd:{filter:"Pending", method:"all", items:[], counts:{}, loaded:false},
-  us:{q:"", items:[], total:0, loaded:false}, cq:"", hiddenAt:0, msg:""};
-const CFG_TABS = ["games","lb","wal","bonus","ads","info","ctry","promo"];
-const TABS = [["wd","💸 Withdrawals"],["rep","📊 Reports"],["users","👥 Users"],["games","🎮 Games"],["lb","🏆 Leaderboard"],["wal","💰 Wallet"],["bonus","🎁 Bonus"],["ads","📺 Ads"],["info","📢 Notice & Links"],["ctry","🌍 Countries"],["promo","🎟 Promo"]];
+  us:{q:"", items:[], total:0, loaded:false}, cq:"", hiddenAt:0, msg:"",
+  payout:{auto:false, providers:[], merchantId:"", webhookUrl:""}, sent:{}};
+const PAYOUT_LIST = [["upi","UPI Payout Gateway (Razorpay/Cashfree etc.)"],["phonepe","PhonePe Business (Payouts)"],["paytm","Paytm for Business (Payouts)"],["paypal","PayPal Payouts (Mass Pay API)"],["binance","Binance Pay / Withdrawal API"],["bybit","Bybit Pay / Withdrawal API"]];
+try{ A.sent = JSON.parse(localStorage.getItem("adm_sent")||"{}") || {}; }catch(e){ A.sent = {}; }
+const CFG_TABS = ["games","lb","wal","bonus","ads","info","ctry","promo","ctl"];
+const TABS = [["wd","💸 Withdrawals"],["rep","📊 Reports"],["users","👥 Users"],["games","🎮 Games"],["lb","🏆 Leaderboard"],["wal","💰 Wallet"],["bonus","🎁 Bonus"],["ads","📺 Ads"],["info","📢 Notice & Links"],["ctry","🌍 Countries"],["promo","🎟 Promo"],["ctl","🛠 App Control"],["sup","🆘 Support"],["aud","🧾 Audit Log"]];
 const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 const METHODS = ["UPI","PayPal","Paytm","PhonePe","Binance","Bybit"];
 
@@ -2163,6 +2865,88 @@ function ask(o){
     if(o.input) m.querySelector("#amIn").focus();
   });
 }
+/* ===== Report file builders: CSV, XLSX (hand-written zip), PDF (hand-written) — no external libraries, work offline in a WebView ===== */
+function saveBlobFile(name, mime, bytes){
+  let bin = ""; for(let i=0;i<bytes.length;i+=8192) bin += String.fromCharCode.apply(null, bytes.subarray(i, i+8192));
+  const a = document.createElement("a"); a.href = "data:"+mime+";base64,"+btoa(bin); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+const U8 = str => new TextEncoder().encode(str);
+let _crcT = null;
+function crc32(b){ if(!_crcT){ _crcT = new Uint32Array(256); for(let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++) c = c&1 ? 0xEDB88320^(c>>>1) : c>>>1; _crcT[n]=c>>>0; } } let c=0xFFFFFFFF; for(let i=0;i<b.length;i++) c = _crcT[(c^b[i])&255]^(c>>>8); return (c^0xFFFFFFFF)>>>0; }
+function zipStore(files){   // files: [{name, data:Uint8Array}], no compression (valid .xlsx)
+  const parts = [], cd = []; let off = 0;
+  files.forEach(f=>{
+    const nm = U8(f.name), crc = crc32(f.data), h = new DataView(new ArrayBuffer(30));
+    h.setUint32(0,0x04034b50,true); h.setUint16(4,20,true); h.setUint16(6,0x0800,true); h.setUint16(8,0,true); h.setUint16(10,0,true); h.setUint16(12,0x21,true);
+    h.setUint32(14,crc,true); h.setUint32(18,f.data.length,true); h.setUint32(22,f.data.length,true); h.setUint16(26,nm.length,true); h.setUint16(28,0,true);
+    parts.push(new Uint8Array(h.buffer), nm, f.data);
+    const c = new DataView(new ArrayBuffer(46));
+    c.setUint32(0,0x02014b50,true); c.setUint16(4,20,true); c.setUint16(6,20,true); c.setUint16(8,0x0800,true); c.setUint16(10,0,true); c.setUint16(12,0,true); c.setUint16(14,0x21,true);
+    c.setUint32(16,crc,true); c.setUint32(20,f.data.length,true); c.setUint32(24,f.data.length,true); c.setUint16(28,nm.length,true); c.setUint32(42,off,true);
+    cd.push(new Uint8Array(c.buffer), nm);
+    off += 30 + nm.length + f.data.length;
+  });
+  let cdLen = 0; cd.forEach(x=>cdLen += x.length);
+  const e = new DataView(new ArrayBuffer(22)); e.setUint32(0,0x06054b50,true); e.setUint16(8,files.length,true); e.setUint16(10,files.length,true); e.setUint32(12,cdLen,true); e.setUint32(16,off,true);
+  const all = parts.concat(cd, [new Uint8Array(e.buffer)]); let n = 0; all.forEach(x=>n += x.length);
+  const out = new Uint8Array(n); let p2 = 0; all.forEach(x=>{ out.set(x,p2); p2 += x.length; }); return out;
+}
+const xmlEsc = v => String(v).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,"");
+const colName = i => { let s2 = "", n = i+1; while(n>0){ const m = (n-1)%26; s2 = String.fromCharCode(65+m)+s2; n = Math.floor((n-1)/26); } return s2; };
+// T = {title, sub, head:[...], rows:[[...]], sum:[[...]] }  (numbers stay numbers)
+function tableXlsx(T){
+  const all = [[T.title],[T.sub],[],T.head].concat(T.rows, [[]], T.sum), headIdx = 3, boldFrom = 4 + T.rows.length + 1;
+  const widths = T.head.map((h,i)=>Math.min(38, Math.max(String(h).length, ...T.rows.slice(0,300).map(r=>String(r[i]==null?"":r[i]).length))+2));
+  const rowsXml = all.map((r,ri)=>`<row r="${ri+1}">`+r.map((v,ci)=>{
+    if(v===null || v===undefined || v==="") return "";
+    const ref = colName(ci)+(ri+1), bold = (ri===headIdx || ri===0 || ri>=boldFrom) ? 1 : 0;
+    return typeof v==="number" ? `<c r="${ref}" s="${bold?3:2}"><v>${v}</v></c>` : `<c r="${ref}" t="inlineStr" s="${bold}"><is><t xml:space="preserve">${xmlEsc(v)}</t></is></c>`;
+  }).join("")+`</row>`).join("");
+  const sheet = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="4" topLeftCell="A5" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>${widths.map((w,i)=>`<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join("")}</cols><sheetData>${rowsXml}</sheetData></worksheet>`;
+  const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="#,##0.00"/></numFmts><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="4"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="164" fontId="1" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1"/></cellXfs></styleSheet>`;
+  const H = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+  return zipStore([
+    {name:"[Content_Types].xml", data:U8(H+'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>')},
+    {name:"_rels/.rels", data:U8(H+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>')},
+    {name:"xl/workbook.xml", data:U8(H+'<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Report" sheetId="1" r:id="rId1"/></sheets></workbook>')},
+    {name:"xl/_rels/workbook.xml.rels", data:U8(H+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>')},
+    {name:"xl/styles.xml", data:U8(styles)},
+    {name:"xl/worksheets/sheet1.xml", data:U8(sheet)}
+  ]);
+}
+function tableCsv(T){
+  const all = [[T.title],[T.sub],[],T.head].concat(T.rows, [[]], T.sum);
+  return all.map(r=>r.map(csvCell).join(",")).join("\r\n")+"\r\n";
+}
+function tablePdf(T){   // landscape A4, Helvetica (Latin-1 only: INR sign printed as "Rs")
+  const W = 842, Hh = 595, M = 24, FS = 7.2, RH = 11.5, usable = W-2*M;
+  const l1 = v => String(v==null?"":v).replace(/₹/g,"Rs ").replace(/[^\x20-\x7E]/g,"?");
+  const pdfEsc = v => l1(v).replace(/\\/g,"\\\\").replace(/\(/g,"\\(").replace(/\)/g,"\\)");
+  const n = T.head.length, mx = T.head.map((h,i)=>Math.min(34, Math.max(l1(h).length, ...T.rows.map(r=>l1(r[i]).length), ...T.sum.map(r=>l1(r[i]).length))));
+  const tot = mx.reduce((a,b)=>a+b+1.5,0), sc = Math.min(1.25, usable/(tot*FS*0.52));   // chars -> points
+  const cw = mx.map(m=>(m+1.5)*FS*0.52*sc), xs = []; let x = M; cw.forEach(w=>{ xs.push(x); x += w; });
+  const fit = (v, i) => { v = l1(v); const maxc = Math.max(3, Math.floor(cw[i]/(FS*0.52*sc)) - 1); return v.length>maxc ? v.slice(0,maxc-1)+"." : v; };
+  const pages = []; let cur = null;
+  const newPage = () => { cur = {ops:[]}; pages.push(cur); let y = Hh-M;
+    cur.ops.push(`BT /F2 11 Tf ${M} ${y} Td (${pdfEsc(T.title)}) Tj ET`); y -= 13;
+    cur.ops.push(`BT /F1 8 Tf ${M} ${y} Td (${pdfEsc(T.sub)}) Tj ET`); y -= 16;
+    T.head.forEach((h,i)=>cur.ops.push(`BT /F2 ${FS} Tf ${xs[i].toFixed(1)} ${y} Td (${pdfEsc(fit(h,i))}) Tj ET`));
+    cur.ops.push(`${M} ${y-3} m ${W-M} ${y-3} l S`); cur.y = y-RH-2; };
+  const line = (r, bold) => { if(!cur || cur.y < M+14) newPage();
+    r.forEach((v,i)=>{ if(v===""||v==null) return; cur.ops.push(`BT /${bold?"F2":"F1"} ${FS} Tf ${xs[i].toFixed(1)} ${cur.y.toFixed(1)} Td (${pdfEsc(fit(typeof v==="number"?v.toFixed(2):v,i))}) Tj ET`); }); cur.y -= RH; };
+  newPage(); T.rows.forEach(r=>line(r,false)); cur.y -= 6; if(cur.y < M+14*Math.max(1,T.sum.length)) newPage(); T.sum.forEach(r=>line(r,true));
+  pages.forEach((pg,i)=>pg.ops.push(`BT /F1 7 Tf ${W-M-60} 12 Td (Page ${i+1} / ${pages.length}) Tj ET`));
+  const objs = []; const add = o => (objs.push(o), objs.length);
+  add("<< /Type /Catalog /Pages 2 0 R >>"); add("PAGES"); add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>"); add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>");
+  const kids = [];
+  pages.forEach(pg=>{ const c = "0.5 w\n"+pg.ops.join("\n"); const ci = add(`<< /Length ${c.length} >>\nstream\n${c}\nendstream`); kids.push(add(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${Hh}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${ci} 0 R >>`)); });
+  objs[1] = `<< /Type /Pages /Kids [${kids.map(k=>k+" 0 R").join(" ")}] /Count ${kids.length} >>`;
+  let out = "%PDF-1.4\n"; const offs = [];
+  objs.forEach((o,i)=>{ offs.push(out.length); out += `${i+1} 0 obj\n${o}\nendobj\n`; });
+  const xr = out.length; out += `xref\n0 ${objs.length+1}\n0000000000 65535 f \n` + offs.map(o=>String(o).padStart(10,"0")+" 00000 n \n").join("") + `trailer\n<< /Size ${objs.length+1} /Root 1 0 R >>\nstartxref\n${xr}\n%%EOF`;
+  const b = new Uint8Array(out.length); for(let i=0;i<out.length;i++) b[i] = out.charCodeAt(i)&255; return b;
+}
 function saveCsvFile(name, csv){
   const a = document.createElement("a");
   a.href = "data:text/csv;charset=utf-8," + encodeURIComponent("﻿"+csv); a.download = name;
@@ -2170,7 +2954,7 @@ function saveCsvFile(name, csv){
 }
 const csvCell = v => { v = String(v==null?"":v); return /[",\n]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; };
 
-/* ---------- entry: 10 taps in 3 seconds -> fingerprint ---------- */
+/* ---------- entry: 10 taps in 3 seconds -> admin PIN ---------- */
 const taps = [];
 document.addEventListener("click", e=>{
   if(!e.target.closest || !e.target.closest(".logo")) return;
@@ -2178,31 +2962,25 @@ document.addEventListener("click", e=>{
   while(taps.length && t - taps[0] > 3000) taps.shift();
   if(taps.length >= 10){ taps.length = 0; gate(); }
 }, true);
-let pending = false;
 function gate(){
-  if(A.open || pending) return;
-  if(!SHEETS_URL){ flash("Sheets URL app mein set nahi hai"); return; }
-  if(!window.AndroidAdmin || !window.AndroidAdmin.authenticate){ flash("Admin sirf Android app mein (fingerprint ke saath) khulta hai"); return; }
-  pending = true;
-  try{ window.AndroidAdmin.authenticate(); }catch(e){ pending = false; flash("Fingerprint prompt nahi khul paya"); }
+  if(A.open) return;
+  if(!SHEETS_URL){ flash("Firebase config app mein set nahi hai"); return; }
+  openAdmin();   // no fingerprint in this build: access is protected by the admin PIN (Firebase password) on the server
 }
-// Called by MainActivity only. Ignored unless THIS page asked for it (pending). A forged call still gets nothing: the server needs the PIN.
-window.__adminAuth = function(ok, msg){
-  if(!pending) return; pending = false;
-  if(ok === true) openAdmin(); else flash(msg || "Fingerprint match nahi hua — admin band");
-};
 document.addEventListener("visibilitychange", ()=>{
   if(document.hidden){ A.hiddenAt = Date.now(); }
   else if(A.open && A.hiddenAt && Date.now() - A.hiddenAt > 60000){ closeAdmin(); flash("Admin auto-lock ho gaya"); }
 });
 
 function openAdmin(){ A.open = true; A.tok = ""; A.doc = null; A.dirty = false; A.tab = "wd"; A.wd.loaded = false; A.us.loaded = false; $adm.style.display = "block"; draw(); }
-function closeAdmin(){ A.open = false; A.tok = ""; A.doc = null; A.dirty = false; $adm.style.display = "none"; $adm.innerHTML = ""; }
+function closeAdmin(){ A.open = false; A.tok = ""; A.doc = null; A.payout = {auto:false, providers:[], merchantId:"", webhookUrl:""}; A.dirty = false; $adm.style.display = "none"; $adm.innerHTML = ""; }
 
 /* ---------- server calls ---------- */
 async function call(action, extra){
   const d = await sheetsCall(Object.assign({action, token:A.tok}, extra||{}));
-  if(d && d.auth){ closeAdmin(); flash("Session expire — dobara fingerprint se kholo"); throw new Error("auth"); }
+  if(d && d.auth){
+    if(d.why){ A.loading = false; A.msg = "Firebase ne mana kiya: "+d.why+" — Rules mein jo UID likhi hai wo upar wali UID se EXACT same honi chahiye (Authentication > Users mein admin account ki UID). Phir Publish karo."; draw(); throw new Error("rules"); }
+    closeAdmin(); flash("Session expire — admin PIN se dobara kholo"); throw new Error("auth"); }
   return d;
 }
 function buildDoc(r){
@@ -2219,9 +2997,9 @@ async function login(pin){
     A.tok = d.token;
     const r = await call("adminConfigGet");
     if(!r.ok){ A.loading = false; A.msg = r.error || "Config load fail"; draw(); return; }
-    A.doc = buildDoc(r); A.msg = "";
-    await loadWd(true);
-  }catch(e){ A.msg = "Network / URL error"; }
+    A.doc = buildDoc(r); A.msg = ""; if(r.payout) A.payout = {auto:r.payout.auto===true, providers:r.payout.providers||[], merchantId:r.payout.merchantId||"", webhookUrl:r.payout.webhookUrl||""};
+    await loadWd(true); loadSummary();
+  }catch(e){ if(String(e&&e.message)!=="rules") A.msg = "Network error"; }
   A.loading = false; draw();
 }
 async function loadWd(quiet){
@@ -2232,6 +3010,8 @@ async function loadWd(quiet){
   }catch(e){ if(e.message !== "auth") flash("Network error"); }
   if(!quiet) draw();
 }
+async function loadTk(){ try{ const d = await call("adminTickets",{filter:A.tk.filter}); if(d.ok){ A.tk.items = d.items; A.tk.loaded = true; draw(); } }catch(e){} }
+async function loadAud(){ try{ const d = await call("adminAudit",{}); if(d.ok){ A.au.items = d.items; A.au.loaded = true; draw(); } }catch(e){} }
 async function loadUsers(){
   try{
     const d = await call("adminUsers", {q:A.us.q});
@@ -2244,7 +3024,7 @@ async function saveCfg(){
   if(A.saving) return; A.saving = true; draw();
   try{
     const d = await call("adminConfigSet", {doc:A.doc});
-    if(d.ok){ A.dirty = false; flash("Sheet mein save ho gaya ✅ (users ko 5 min mein mil jayega)"); }
+    if(d.ok){ A.dirty = false; flash("Database mein save ho gaya ✅ (users ko 15 min mein mil jayega)"); }
     else flash(d.error || "Save fail");
   }catch(e){ if(e.message !== "auth") flash("Network error — save nahi hua"); }
   A.saving = false; draw();
@@ -2253,7 +3033,7 @@ async function setUnity(){
   const next = !(A.doc.adConfig.unityOn !== false);
   try{
     const d = await call("adminUnitySet", {on:next});
-    if(d.ok){ A.doc.adConfig.unityOn = (d.unityAds === "ON"); flash("Unity Ads " + d.unityAds + " — Sheet update ho gayi ✅"); }
+    if(d.ok){ A.doc.adConfig.unityOn = (d.unityAds === "ON"); flash("Unity Ads " + d.unityAds + " — database update ho gaya ✅"); }
     else flash(d.error || "Unity update fail");
   }catch(e){ if(e.message !== "auth") flash("Network error"); }
   draw();
@@ -2261,7 +3041,7 @@ async function setUnity(){
 
 /* ---------- field builders (all bound by data-p path into A.doc) ---------- */
 function inp(label, p, t, o){
-  o = o || {}; let v = gp(A.doc, p); if(t === "csv") v = (v||[]).join(",");
+  o = o || {}; let v = gp(A.doc, p); if(t === "csv" || t === "cc") v = (v||[]).join(",");
   const ty = (t==="n"||t==="i") ? 'type="number" step="any"' : (o.type ? `type="${o.type}"` : "");
   return `<div class="ar"><span class="mut">${label}</span><input data-p="${p}" data-t="${t}" ${ty} ${o.ph?`placeholder="${E(o.ph)}"`:""} value="${E(v==null?"":v)}" style="${o.w?`width:${o.w}px;`:""}margin:0"></div>`;
 }
@@ -2315,6 +3095,8 @@ function tLb(){
   const c = A.doc.config, mode = c.lbResetMode==="days"||c.lbResetMode==="interval" ? c.lbResetMode : "daily";
   const hours = Array.from({length:24},(_,h)=>[h, h===0?"12:00 AM":h<12?`${h}:00 AM`:h===12?"12:00 PM":`${h-12}:00 PM`]);
   return `<h3>2️⃣ Leaderboard & Prize Distribution</h3>
+  ${tg("☁️ Server Payout (Cloud Function, Daily Reset Hour par)","config.lbServerPayout","0")}
+  <div class="mut" style="margin-bottom:8px">ON karne se pehle Cloud Function deploy karo (Firebase/functions folder). ON hone par phone khud prize/RP reset nahi karta — server karta hai. Countdown sahi dikhane ke liye Daily Reset Hour = 9:00 AM rakho.</div>
   ${sel("Daily Reset Hour","config.lbResetHour",hours,"i")}
   <div class="ar"><span class="mut">Reset Frequency</span><select data-p="config.lbResetMode" data-t="t" data-rr="1">
     <option value="daily" ${mode==="daily"?"selected":""}>Daily (har din)</option><option value="days" ${mode==="days"?"selected":""}>Specific Days</option><option value="interval" ${mode==="interval"?"selected":""}>Fix Days (har N din)</option></select></div>
@@ -2324,7 +3106,7 @@ function tLb(){
   <div class="mut" style="margin-top:6px">≈ Total $ value = total ÷ coin rate (${E(c.rate)})</div>
   <div class="mut" style="margin:14px 0 6px">Manual Override</div>
   <button class="b s wf" data-a="resetMyRp">Is device ka RP 0 karo</button>
-  <div class="mut" style="margin-top:6px">Ban/Unban ab 👥 Users tab mein hai — Sheet se chalta hai, sabhi users par lagu hota hai.</div>`;
+  <div class="mut" style="margin-top:6px">Ban/Unban ab 👥 Users tab mein hai — sabhi users par lagu hota hai.</div>`;
 }
 function tWal(){
   return `<h3>3️⃣ Wallet & Withdrawal Controls</h3>
@@ -2336,16 +3118,25 @@ function tWal(){
   ${A.doc.config.wdDaysEnabled?days("Allowed days","config.wdDays"):""}
   <div class="mut" style="margin:10px 0 2px">Preset Withdrawal Amounts (comma se alag karo)</div>
   <input data-p="config.presetAmounts" data-t="csv" value="${E((A.doc.config.presetAmounts||[]).join(","))}">
-  <div class="mut" style="margin:12px 0 2px">UPI / Paytm / PhonePe (₹, TDS lagta hai)</div>
-  ${tg("UPI Enabled","config.upiEnabled","1")}${inp("UPI TDS (%)","config.upiTdsPct","n",{w:80})}
-  ${tg("Paytm Enabled","config.paytmEnabled","1")}${inp("Paytm TDS (%)","config.paytmTdsPct","n",{w:80})}
-  ${tg("PhonePe Enabled","config.phonepeEnabled","1")}${inp("PhonePe TDS (%)","config.phonepeTdsPct","n",{w:80})}
+  <div class="mut" style="margin:12px 0 2px">🇮🇳 UPI / Paytm / PhonePe — Tax (TDS), default 30%</div>
+  ${[["UPI","upi"],["Paytm","paytm"],["PhonePe","phonepe"]].map(([n,k])=>`${tg(n+" Method ON/OFF","config."+k+"Enabled","1")}${tg(n+" Tax (TDS) ON/OFF","config."+k+"_fee_enabled","1")}${inp(n+" Tax %","config."+k+"_fee_percent","n",{w:80})}`).join("")}
   ${inp("USD → INR Rate","config.usdToInr","n",{w:80})}
-  <div class="mut" style="margin:12px 0 2px">PayPal / Binance / Bybit (processing fee, TDS nahi)</div>
-  ${tg("PayPal Enabled","config.paypalEnabled","1")}${inp("PayPal Fee (%)","config.paypalFeePct","n",{w:80})}
-  ${tg("Binance Enabled","config.binanceEnabled","1")}${inp("Binance Fee (%)","config.binanceFeePct","n",{w:80})}
-  ${tg("Bybit Enabled","config.bybitEnabled","1")}${inp("Bybit Fee (%)","config.bybitFeePct","n",{w:80})}
-  <div class="mut" style="margin-top:10px;font-size:11px;line-height:1.5">💸 Payout manual hai: 💸 Withdrawals tab → "Pay via UPI app" / apne app se bhejo → UTR daalke Mark Paid. Auto-payout (Razorpay/PayPal Payouts) ke liye alag secure server chahiye — us provider ki secret key kabhi app mein mat daalna.</div>`;
+  <div class="mut" style="margin:12px 0 2px">🌐 PayPal / Binance / Bybit — Processing Fee, default 18%</div>
+  ${[["PayPal","paypal"],["Binance","binance"],["Bybit","bybit"]].map(([n,k])=>`${tg(n+" Method ON/OFF","config."+k+"Enabled","1")}${tg(n+" Processing Fee ON/OFF","config."+k+"_fee_enabled","1")}${inp(n+" Fee %","config."+k+"_fee_percent","n",{w:80})}`).join("")}
+  <div class="mut">Tax/Fee OFF = 0% katega, user ko poora amount milega. Naya % sirf naye withdrawals par lagta hai; purani requests ka % unke saath save rehta hai.</div>
+  ${tPayout()}`;
+}
+function stashPo(){ const m = $adm.querySelector("#poMerchant"), w = $adm.querySelector("#poWebhook"); if(m) A.payout.merchantId = m.value; if(w) A.payout.webhookUrl = w.value.trim(); }
+function tPayout(){
+  const p = A.payout;
+  return `<h3 style="margin-top:18px">💸 Auto-Payout (Payout API) Setup</h3>
+  <div class="ar"><span class="mut">Payout Mode</span><button class="b s sm" data-a="pomode">${p.auto?"⚡ Auto":"🖐 Manual"}</button></div>
+  <div class="mut" style="margin:8px 0 4px">Payout Provider(s) — jitne chaho utne select karo</div>
+  ${PAYOUT_LIST.map(([k,l])=>`<div class="ar"><span class="mut">${E(l)}</span><button class="b ${p.providers.includes(k)?"g":"s"} sm" data-a="poprov" data-k="${k}">${p.providers.includes(k)?"ON ✅":"OFF ❌"}</button></div>`).join("")}
+  <input id="poMerchant" placeholder="Merchant / Client ID" value="${E(p.merchantId)}" maxlength="80" autocomplete="off">
+  <input id="poWebhook" placeholder="Webhook URL (https://... backend endpoint)" value="${E(p.webhookUrl)}" autocomplete="off">
+  <button class="b g wf" data-a="posave">Payout Settings Save Karo</button>
+  <div class="mut" style="margin-top:8px;font-size:11px;line-height:1.5">🔒 Yeh settings sirf admin-only database document mein jaati hain — users ko kabhi nahi milti (public config mein nahi). ⚠️ API Secret Key yahan <b>kabhi mat daalo</b>: secret keys sirf secure backend server ke environment variables mein rehti hain. Webhook set hone par Pending request par "📤 Send to Backend" button aata hai jo request ka data (ID, method, payout ID, amount) aapke backend ko bhejta hai; backend hi provider ko call kare. Webhook na ho to manual: "Pay via UPI app" / apne app se bhejo → UTR daalke Mark Paid.</div>`;
 }
 function tBonus(){
   const c = A.doc.config;
@@ -2361,7 +3152,7 @@ function tAds(){
   const ad = A.doc.adConfig, un = ad.unityOn !== false;
   const net = (k,f,ph,max) => `<input data-p="adConfig.networks.${k}.${f}" data-t="t" placeholder="${ph}" ${max?`maxlength="${max}"`:""} value="${E(gp(A.doc,`adConfig.networks.${k}.${f}`)||"")}">`;
   return `<h3>5️⃣ Ad Control & Monetization</h3>
-  <div class="card2"><div class="ar"><span><b>🎮 Unity Ads Status</b><br><span class="mut">Seedha Google Sheet (Config tab → unity_ads) mein save hota hai</span></span>
+  <div class="card2"><div class="ar"><span><b>🎮 Unity Ads Status</b><br><span class="mut">Seedha app ke database (Firebase) mein save hota hai</span></span>
     <button class="b ${un?"g":"s"}" data-a="unity">${un?"ON ✅":"OFF ❌"}</button></div></div>
   ${tg("All Ads","adConfig.on","1")}
   ${sel("Ad Network Mode","adConfig.network",[["mediation","Auto Fallback (AdMob ➔ Unity ➔ AppLovin)"],["admob","AdMob Only"],["unity","Unity Ads Only"],["applovin","AppLovin MAX Only"]])}
@@ -2395,7 +3186,7 @@ function ctryList(){
 }
 function tCtry(){
   const c = A.doc.config;
-  return `<h3>🌍 Country Blocking (Login aur Withdrawal)</h3><div class="mut" style="margin-bottom:6px">Jis country ko block karna hai uske button dabao. Login aur withdrawal alag-alag block hote hain.</div>
+  return `<h3>🌍 Country Blacklist (Login aur Withdrawal)</h3><div class="mut" style="margin-bottom:6px">Jis country ko block karna hai uske button dabao, phir Save karo. "WD: Blocked" ka matlab: us country ko dropdown mein select karke ya us country ke IP se withdrawal nahi ho sakta (Firestore rules bhi ye check karte hain). Login block sirf IP country se check hota hai.</div>
   <input id="cq" data-a2="cq" placeholder="Country search karo..." value="${E(A.cq)}">
   <div id="ctryList" style="max-height:60vh;overflow-y:auto">${ctryList()}</div>
   <div class="mut" style="margin-top:6px">Login blocked: ${(c.blockedLoginCountries||[]).length} • Withdrawal blocked: ${(c.blockedWithdrawCountries||[]).length}</div>`;
@@ -2407,23 +3198,111 @@ function tPromo(){
   ${Object.keys(p).length ? Object.entries(p).map(([k,v])=>`<div class="ar lb2"><span><b>${E(k)}</b> • 💜 ${E(v)} RP</span><button class="b s sm" data-a="delpc" data-k="${E(k)}">✕</button></div>`).join("") : `<div class="mut" style="margin-top:8px">Koi code nahi.</div>`}`;
 }
 const sym = c => c==="USD" ? "$" : c==="USDT" ? "USDT " : "₹";
+function fraudFlag(w){
+  if(w.status!=="Pending") return "";
+  const same = A.wd.items.filter(x=>x.id!==w.id && x.to && x.to===w.to);
+  const other = same.filter(x=>x.mobile!==w.mobile).length;
+  if(other>0) return `⚠️ Yeh payout ID ${other} alag account ki request(s) mein bhi use hui hai — manually review karo`;
+  const pend = A.wd.items.filter(x=>x.id!==w.id && x.mobile===w.mobile && x.status==="Pending").length;
+  if(pend>0) return `⚠️ Is account ki ${pend} aur Pending request(s) hain — review karo`;
+  return same.length>0 ? `ℹ️ Yeh payout ID ${same.length} purani request(s) mein bhi use hui hai (same user)` : "";
+}
+function backendLine(w){
+  if(!A.payout.webhookUrl) return "";
+  const r = A.sent[w.id];
+  return r ? (r.ok ? `<div style="color:#22c55e;font-size:11px;margin-bottom:6px">📤 Backend: Sent (${E(r.status)})</div>` : `<div style="color:#ff5c5c;font-size:11px;margin-bottom:6px">📤 Backend: Failed${r.err?" — "+E(r.err):""}</div>`)
+           : `<div class="mut" style="font-size:11px;margin-bottom:6px">📤 Backend: Not sent</div>`;
+}
+async function sendToBackend(id){
+  const w = A.wd.items.find(x=>x.id===id), url = A.payout.webhookUrl; if(!w || !url) return;
+  const cur = w.currency, g = parseFloat(w.gross), n = parseFloat(w.net);
+  const payload = {requestId:w.id, userName:w.name||"", mobile:w.mobile, method:w.method, payoutAddress:w.to, coins:Number(w.coins),
+    requestedAmount: g>0 ? g : n, cutAmount: g>0 && g>=n ? +(g-n).toFixed(2) : 0, netAmount:n, currency:cur, status:w.status,
+    provider:(A.payout.providers||[])[0]||"", providersAll:A.payout.providers||[], merchantId:A.payout.merchantId||"", createdAt:w.time};
+  flash("Backend ko bhej raha hoon...");
+  try{
+    const res = await fetch(url, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload)});
+    A.sent[id] = {ok:res.ok, status:res.status, err:""};
+  }catch(e){ A.sent[id] = {ok:false, status:0, err:(e&&e.message)||"network error"}; }
+  try{ localStorage.setItem("adm_sent", JSON.stringify(A.sent)); }catch(e){}
+  flash(A.sent[id].ok ? "Backend ko bhej diya ✅" : "Backend send fail ❌"); draw();
+}
 function wdCard(w){
   const upi = w.method==="UPI" && w.currency==="INR";
   const link = upi ? `upi://pay?pa=${encodeURIComponent(w.to)}&pn=${encodeURIComponent(w.name||"User")}&am=${encodeURIComponent(w.net)}&cu=INR&tn=${encodeURIComponent(w.id)}` : "";
   const g = parseFloat(w.gross), n = parseFloat(w.net), cut = (g>0 && g>=n) ? (g-n) : 0;
   return `<div class="card2"><div class="ar"><b>${E(w.id)} · ${E(w.method)}</b><span class="badge b-${E(w.status)}">${E(w.status)}</span></div>
   <div class="g2">
-    <div><div class="k">Name</div><div class="v">${E(w.name||"-")}</div></div><div><div class="k">Mobile</div><div class="v">${E(w.mobile)}</div></div>
+    <div><div class="k">Name</div><div class="v">${E(w.name||"-")}</div></div><div><div class="k">Gmail</div><div class="v">${E(w.email||"-")}</div></div><div><div class="k">Country (selected / IP)</div><div class="v">${E(w.country||"-")} / ${E(w.ipCountry||"-")}</div></div>
     <div><div class="k">${upi?"UPI ID":"Payout ID"}</div><div class="v">${E(w.to)}</div></div><div><div class="k">Coins</div><div class="v">${E(w.coins)}</div></div>
     <div><div class="k">Pay amount</div><div class="v">${sym(w.currency)}${E(w.net)}</div></div><div><div class="k">Time</div><div class="v" style="font-size:12px">${E(w.time)}</div></div>
-    ${cut>0?`<div><div class="k">Requested</div><div class="v">${sym(w.currency)}${E(w.gross)}</div></div><div><div class="k">${["PayPal","Binance","Bybit"].includes(w.method)?"Fee":"TDS"}</div><div class="v">${sym(w.currency)}${cut.toFixed(2)}</div></div>`:""}
+    ${cut>0?`<div><div class="k">Requested</div><div class="v">${sym(w.currency)}${E(w.gross)}</div></div><div><div class="k">${["PayPal","Binance","Bybit"].includes(w.method)?"Fee":"TDS"} (${E(w.pct!=null?w.pct:"?")}%)</div><div class="v">${sym(w.currency)}${cut.toFixed(2)}</div></div>`:""}
   </div>
+  ${w.risk?`<div style="background:#ff3b3022;border:1px solid #ff3b30;color:#ff6b61;font-weight:700;font-size:12px;padding:5px 8px;border-radius:8px;margin-bottom:6px">🚩 FLAGGED / HIGH RISK — ${E(w.risk)} (VPN/Proxy)</div>`:""}
+  ${w.flag?`<div style="color:#ff7a45;font-size:12px;margin-bottom:6px">🚩 ${E(w.flag)}</div>`:""}
+  ${fraudFlag(w)?`<div style="color:#ffb020;font-size:12px;margin-bottom:6px">${E(fraudFlag(w))}</div>`:""}
+  ${w.status==="Pending"||w.status==="Paid"?backendLine(w):""}
   ${w.txn?`<div class="k">Transaction ID</div><div class="v" style="margin-bottom:8px">${E(w.txn)}</div>`:""}
   <div class="ar" style="justify-content:flex-start;flex-wrap:wrap">
     <button class="b s" data-a="copy" data-t="${E(w.to)}">Copy ID</button>
     ${link && w.status==="Pending" ? `<a class="b" href="${E(link)}">Pay via UPI app</a>` : ""}
+    ${w.status==="Pending" && A.payout.webhookUrl ? `<button class="b s" data-a="tobk" data-id="${E(w.id)}">📤 ${A.sent[w.id]?"Resend":"Send"} to Backend</button>` : ""}
     ${w.status==="Pending" ? `<button class="b g" data-a="paid" data-id="${E(w.id)}" data-m="${E(w.mobile)}">Mark Paid</button><button class="b bad" data-a="rej" data-id="${E(w.id)}" data-m="${E(w.mobile)}">Reject</button>` : ""}
   </div></div>`;
+}
+function sumCards(){
+  const x = A.sum, c = (t,v,col) => `<div style="flex:1 1 46%;background:var(--card);border-radius:12px;padding:8px 10px;min-width:120px"><div class="k" style="font-size:11px">${t}</div><div style="font-size:17px;font-weight:800;${col?`color:${col}`:""}">${v}</div></div>`;
+  if(!x) return `<div class="mut" style="padding:4px 2px">Summary load ho rahi hai...</div>`;
+  const amt = Object.keys(x.amt).length ? Object.keys(x.amt).map(k=>`${sym(k)}${Number(x.amt[k]).toLocaleString("en-IN",{maximumFractionDigits:2})}`).join(" + ") : "0";
+  return `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">${c("⏳ Pending Withdrawals",x.pendCount,x.pendCount?"#ffb020":"")}${c("💰 Pending Amount",amt,"#ffb020")}${c("🟢 Active Users (24h)",x.active)}${c("👥 Total Users",x.total)}${x.openTickets?c("🆘 Open Tickets",x.openTickets,"#ff6b61"):""}<button class="b s sm" data-a="sumload" style="flex:0 0 auto">↻</button></div>`;
+}
+async function loadSummary(){
+  try{ const d = await call("adminSummary", {}); if(d.ok){ A.sum = d; draw(); } }catch(e){}
+}
+function tCtl(){
+  return `<h3>🛠 App Control</h3>
+  ${tg("🚧 Maintenance Mode (app band)","config.maintenanceOn","0")}
+  ${wide("Maintenance message (users ko dikhega)","config.maintenanceMsg","App abhi maintenance par hai...")}
+  <div style="height:8px"></div>
+  ${tg("⬆️ Force Update (purane versions band)","config.forceUpdateOn","0")}
+  ${inp("Minimum allowed version","config.minVersion","i",{w:80})}
+  <div class="mut">Is app ka version: <b>${APP_VER}</b>. Isse chhote version wale users ko Update screen dikhegi (naya APK banane par APP_VER badhana padta hai).</div>
+  ${wide("Update link (Play Store URL)","config.updateUrl","https://play.google.com/store/apps/details?id=com.mobile.esports")}
+  ${wide("Update message","config.updateMsg","Naya version aa gaya hai...")}
+  <div class="mut" style="margin:8px 0">Upar ke switches ke baad neeche <b>💾 Save</b> dabao. Users par ye app khulte hi ya 15 min mein lagta hai. Admin panel (10 tap) maintenance mein bhi khulta hai.</div>
+  <h3 style="margin-top:18px">🌍 Geo Restrictions (country IP se)</h3>
+  ${tg("🔑 Login Restriction (blocked countries se login band)","config.loginRestrictOn","1")}
+  ${inp("Login blocked countries (jaise US,PK,CN)","config.blockedLoginCountries","cc",{w:150,ph:"US,PK,CN"})}
+  ${tg("💸 Withdrawal Restriction (blocked countries + VPN)","config.wdRestrictOn","1")}
+  ${inp("Withdrawal blocked countries (jaise US,PK,CN)","config.blockedWithdrawCountries","cc",{w:150,ph:"US,PK,CN"})}
+  <div class="mut">Country codes 2 letter (IN, US, PK...) comma se alag karo. Switch OFF karne par us ki list lagu nahi hoti. Poori list country-wise buttons ke saath 🌍 Countries tab mein bhi hai. Save dabana mat bhulna.</div>
+  <h3 style="margin-top:18px">🛡 Withdrawal Security</h3>
+  ${tg("🔒 VPN / Proxy mile to withdrawal reject","config.vpnBlock","1")}
+  ${tg("📍 GPS Location mandatory (withdrawal se pehle)","config.gpsRequired","1")}
+  <div class="mut">GPS check browser location permission se hota hai. Agar aapke APK wrapper mein location permission nahi milti, to users withdraw nahi kar payenge — tab ise OFF kar do.</div>
+  <h3 style="margin-top:18px">🎮 External App Button (Home)</h3>
+  ${tg("Home par button dikhao","config.extAppOn","0")}
+  ${wide("Button ka naam","config.extAppName","Free Fire")}
+  ${wide("Android package name","config.extAppPkg","com.dts.freefireth")}
+  ${wide("Fallback link (https, Play Store)","config.extAppUrl","https://play.google.com/store/apps/details?id=com.dts.freefireth")}
+  <h3 style="margin-top:18px">📣 Broadcast Message (in-app)</h3>
+  <input id="bcT" placeholder="Title" maxlength="80"><textarea id="bcB" placeholder="Message sabhi users ko dikhega..." maxlength="500" style="width:100%;min-height:70px;margin-bottom:8px"></textarea><input id="bcU" placeholder="Optional link (https://...)">
+  <button class="b g wf" data-a="bcsend">📣 Sabko Bhejo</button>
+  <div class="mut" style="margin-top:6px">Ye popup user ko app khulne par ek baar dikhta hai. Asli phone-notification (FCM push) is HTML app mein possible nahi — uske liye native Android + server chahiye.</div>`;
+}
+function tSup(){
+  const t = A.tk;
+  return `<h3>🆘 Support Tickets</h3><div class="chips2">${["Open","Resolved","all"].map(f=>`<button class="ch ${t.filter===f?"on":""}" data-a="tkf" data-v="${f}">${f==="all"?"All":f}</button>`).join("")}<button class="b s sm" data-a="tkload">↻</button></div>
+  ${t.loaded ? (t.items.length ? t.items.map(x=>`<div class="card2"><div class="ar"><b>${E(x.subject)}</b><span class="badge b-${x.status==="Resolved"?"Paid":"Pending"}">${E(x.status)}</span></div>
+    <div class="mut">${E(x.name)} • ${E(x.email)} • ${E(x.time)} • ${E(x.id)}</div><div style="margin:6px 0;white-space:pre-wrap">${E(x.message)}</div>
+    ${x.reply?`<div style="color:#4ade80;font-size:13px;margin-bottom:6px">💬 ${E(x.reply)}</div>`:""}
+    <textarea class="tkR" placeholder="Reply likho..." style="width:100%;min-height:50px">${E(x.reply)}</textarea>
+    <div class="ar" style="justify-content:flex-start;gap:6px"><button class="b s sm" data-a="tkrep" data-id="${E(x.id)}" data-r="0">Reply (open rakho)</button><button class="b g sm" data-a="tkrep" data-id="${E(x.id)}" data-r="1">Reply + Resolve ✅</button></div></div>`).join("") : `<div class="mut" style="margin:14px 0">Koi ticket nahi.</div>`) : `<div class="mut">Loading...</div>`}`;
+}
+function tAud(){
+  const a = A.au;
+  return `<h3>🧾 Audit Log</h3><div class="ar"><span class="mut">Admin ke har action ka record (badla nahi ja sakta)</span><button class="b s sm" data-a="audload">↻</button></div>
+  ${a.loaded ? (a.items.length ? a.items.map(x=>`<div class="card2" style="padding:8px 10px"><div class="ar"><b>${E(x.action)}</b><span class="mut" style="font-size:11px">${E(x.time)}</span></div><div class="mut" style="font-size:12px">${E(x.admin)} → ${E(x.target)}</div>${x.detail?`<div style="font-size:12px">${E(x.detail)}</div>`:""}</div>`).join("") : `<div class="mut" style="margin:14px 0">Abhi koi record nahi.</div>`) : `<div class="mut">Loading...</div>`}`;
 }
 function tWd(){
   const f = A.wd.filter, m = A.wd.method, c = A.wd.counts;
@@ -2433,32 +3312,45 @@ function tWd(){
   <div class="chips2">${["all"].concat(METHODS).map(t=>`<button class="ch ${m===t?"on":""}" data-a="wdm" data-v="${t}">${t==="all"?"All methods":t}</button>`).join("")}</div>
   ${A.wd.loaded ? (items.length ? items.slice(0,150).map(wdCard).join("") : `<div class="mut" style="margin:14px 0">Koi request nahi hai</div>`) : `<div class="mut">Loading...</div>`}`;
 }
+A.rp = A.rp || (()=>{ const d = new Date(), pad = n=>String(n).padStart(2,"0"); const iso = x=>x.getFullYear()+"-"+pad(x.getMonth()+1)+"-"+pad(x.getDate()); return {from:iso(new Date(d.getFullYear(), d.getMonth(), 1)), to:iso(d), status:"", method:"", country:""}; })();
 function tRep(){
-  const ym = A.repMonth || new Date().toISOString().slice(0,7);
-  const tds = ["UPI","Paytm","PhonePe"];
-  return `<h3>📊 Monthly Reports (CSV)</h3><div class="ar"><span class="mut">Month</span><input type="month" id="repMonth" value="${ym}" data-a2="repMonth" style="margin:0;width:auto"></div>
-  <div class="mut" style="margin:6px 0">Sirf us mahine ke <b>Paid</b> payouts. UPI/Paytm/PhonePe → TDS report (Challan 281). PayPal/Binance/Bybit → processing-fee report (TDS nahi). Amounts Sheet se aate hain (₹ / $ / USDT).</div>
-  ${METHODS.map(m=>`<button class="b s wf" style="margin-bottom:8px" data-a="rep" data-m="${m}">${tds.includes(m)?"📊":"💳"} Export ${m} ${tds.includes(m)?"TDS":"Fee"} Report</button>`).join("")}`;
+  const r = A.rp, selS = (v,l)=>`<option value="${v}" ${r.status===v?"selected":""}>${l}</option>`;
+  const btns = k => `<div class="ar" style="gap:6px"><button class="b g sm" data-a="rpt" data-k="${k}" data-f="csv" style="flex:1">⬇ CSV</button><button class="b g sm" data-a="rpt" data-k="${k}" data-f="xlsx" style="flex:1">⬇ Excel</button><button class="b g sm" data-a="rpt" data-k="${k}" data-f="pdf" style="flex:1">⬇ PDF</button></div>`;
+  return `<h3>📊 Withdrawal & Tax Reports</h3>
+  <div class="ar"><span class="mut">Start date</span><input type="date" value="${E(r.from)}" data-a2="rp" data-k="from" style="margin:0;width:auto"></div>
+  <div class="ar"><span class="mut">End date</span><input type="date" value="${E(r.to)}" data-a2="rp" data-k="to" style="margin:0;width:auto"></div>
+  <div class="ar"><span class="mut">Status</span><select data-a2="rp" data-k="status">${selS("","All")}${selS("Paid","Successful only")}${selS("Pending","Pending only")}${selS("Rejected","Rejected only")}</select></div>
+  <div class="ar" style="gap:6px;flex-wrap:wrap">${[["tm","Is mahina"],["lm","Pichla mahina"],["tq","Is quarter"],["lq","Pichla quarter"],["fy","Is FY (Apr-Mar)"]].map(([k,l])=>`<button class="b s sm" data-a="rpre" data-p="${k}">${l}</button>`).join("")}</div>
+  <div class="mut" style="margin:4px 0 10px">Dates IST mein hain (Start se End tak, dono din shaamil). Monthly / quarterly filing ke liye range chuno.</div>
+  <div class="card2"><b>🇮🇳 India TDS Tax Report</b><div class="mut" style="margin:4px 0 8px">Country = India • UPI, Paytm, PhonePe • amounts ₹</div>${btns("in")}</div>
+  <div class="card2"><b>🌐 Global Processing Fee Report</b><div class="mut" style="margin:4px 0 8px">India ke alawa sab countries • PayPal, Binance, Bybit • amounts $ / USDT</div>${btns("gl")}</div>
+  <div class="card2"><b>📋 All Transactions — Master Export</b><div class="mut" style="margin:4px 0 8px">Poora database, extra filters:</div>
+    <div class="ar"><span class="mut">Method</span><select data-a2="rp" data-k="method"><option value="">All methods</option>${METHODS.map(m=>`<option value="${m}" ${r.method===m?"selected":""}>${m}</option>`).join("")}</select></div>
+    <div class="ar"><span class="mut">Country</span><select data-a2="rp" data-k="country"><option value="">All countries</option>${COUNTRIES.map(c=>`<option value="${c.id}" ${r.country===c.id?"selected":""}>${E(c.flag+" "+c.name)}</option>`).join("")}</select></div>
+    ${btns("all")}</div>
+  <div class="mut" style="margin-top:8px">Har file ke sabse niche Total Gross, Total Tax/Fee aur Total Net ki summary rows hoti hain (sabhi listed rows + sirf Success wali alag).</div>`;
 }
 function tUsers(){
   const u = A.us;
-  return `<h3>👥 Users (Sheet → Users tab)</h3>
+  return `<h3>👥 Users (Database)</h3>
   <div class="ar"><input id="uq" data-a2="uq" placeholder="Naam ya number search" value="${E(u.q)}" style="margin:0"><button class="b sm" data-a="usearch">Search</button></div>
-  <div class="mut" style="margin:6px 0">Total synced users: ${u.total}. Coins/RP user ke app se aaye hain (sirf dekhne ke liye — payout hamesha Sheet ki request se hota hai).</div>
+  <div class="mut" style="margin:6px 0">Total synced users: ${u.total}. Coins/RP user ke app se aaye hain (sirf dekhne ke liye — payout hamesha withdrawal request se hota hai).</div>
   ${u.loaded ? (u.items.length ? u.items.map(x=>`<div class="card2"><div class="ar"><b>${E(x.name||"-")}</b><span class="mut">${E(x.country)}</span></div>
-    <div class="g2"><div><div class="k">Mobile</div><div class="v">${E(x.mobile)}</div></div><div><div class="k">Referral</div><div class="v">${E(x.code)}</div></div>
+    <div class="g2"><div><div class="k">Gmail</div><div class="v">${E(x.email||"-")}</div></div><div><div class="k">Referral</div><div class="v">${E(x.code)}</div></div>
     <div><div class="k">Coins</div><div class="v">${E(x.coins)}</div></div><div><div class="k">RP</div><div class="v">${E(x.rp)}</div></div>
-    <div><div class="k">First seen</div><div class="v" style="font-size:12px">${E(x.first)}</div></div><div><div class="k">Last seen</div><div class="v" style="font-size:12px">${E(x.seen)}</div></div></div>
-    <button class="b ${x.banned?"g":"bad"} sm" data-a="ban" data-m="${E(x.mobile)}" data-b="${x.banned?0:1}">${x.banned?"Unban karo":"🚫 Ban karo"}</button></div>`).join("") : `<div class="mut">Koi user nahi mila.</div>`) : `<div class="mut">Loading...</div>`}
+    <div><div class="k">Device</div><div class="v" style="font-size:12px">${E(x.device||"-")}</div></div>${x.flag?`<div style="grid-column:1/-1;color:#ffb020;font-size:12px">🚩 ${E(x.flag)}</div>`:""}<div><div class="k">First seen</div><div class="v" style="font-size:12px">${E(x.first)}</div></div><div><div class="k">Last seen</div><div class="v" style="font-size:12px">${E(x.seen)}</div></div></div>
+    <div class="ar" style="gap:4px;margin-top:6px"><input class="adjA" placeholder="coins" inputmode="numeric" style="margin:0;width:80px"><input class="adjR" placeholder="Reason (zaroori)" style="margin:0;flex:1"></div>
+    <div class="ar" style="justify-content:flex-start;gap:6px"><button class="b g sm" data-a="adj" data-m="${E(x.mobile)}" data-s="1">＋ Credit</button><button class="b s sm" data-a="adj" data-m="${E(x.mobile)}" data-s="-1">－ Debit</button>
+    <button class="b ${x.banned?"g":"bad"} sm" data-a="ban" data-m="${E(x.mobile)}" data-b="${x.banned?0:1}">${x.banned?"Unban karo":"🚫 Ban karo"}</button></div></div>`).join("") : `<div class="mut">Koi user nahi mila.</div>`) : `<div class="mut">Loading...</div>`}
   <div class="mut" style="margin:14px 0 4px">Number se seedha ban:</div>
-  <div class="ar"><input id="banNum" placeholder="+91 9876543210" style="margin:0"><button class="b bad sm" data-a="banNum">Ban</button></div>`;
+  <div class="ar"><input id="banNum" placeholder="Gmail ya user ID" style="margin:0"><button class="b bad sm" data-a="banNum">Ban</button></div>`;
 }
 
 /* ---------- shell ---------- */
 function body(){
   switch(A.tab){
     case "wd": return tWd(); case "rep": return tRep(); case "users": return tUsers(); case "games": return tGames(); case "lb": return tLb();
-    case "wal": return tWal(); case "bonus": return tBonus(); case "ads": return tAds(); case "info": return tInfo(); case "ctry": return tCtry(); case "promo": return tPromo();
+    case "wal": return tWal(); case "bonus": return tBonus(); case "ads": return tAds(); case "info": return tInfo(); case "ctry": return tCtry(); case "promo": return tPromo(); case "ctl": return tCtl(); case "sup": return tSup(); case "aud": return tAud();
   }
   return "";
 }
@@ -2467,7 +3359,7 @@ function draw(){
   const prev = $adm.querySelector("#admBody"), st = prev ? prev.scrollTop : 0;
   if(!A.doc){
     $adm.innerHTML = `<div class="aw"><div class="atop"><b>🛡 Admin</b><button class="b s sm" data-a="close">Close</button></div>
-    <div class="card2"><div class="mut">Fingerprint ✅ verify ho gaya. Ab admin PIN daalo (server Script property ADMIN_SECRET se check hota hai).</div>
+    <div class="card2"><div class="mut">Admin PIN daalo (Firebase server par check hota hai).</div>
     <input id="admPin" type="password" placeholder="Admin PIN" autocomplete="off" ${A.loading?"disabled":""}>
     <div class="msg err" style="min-height:18px">${E(A.msg)}</div>
     <button class="b wf" data-a="login" ${A.loading?"disabled":""}>${A.loading?"Checking...":"Unlock"}</button>
@@ -2477,6 +3369,7 @@ function draw(){
   }
   const un = A.doc.adConfig.unityOn !== false, cfgTab = CFG_TABS.includes(A.tab);
   $adm.innerHTML = `<div class="aw"><div class="atop"><b>🛡 Admin</b><span style="display:flex;gap:6px"><button class="b ${un?"g":"s"} sm" data-a="unity">Unity ${un?"ON":"OFF"}</button><button class="b s sm" data-a="close">Lock</button></span></div>
+  ${sumCards()}
   <div class="atabs">${TABS.map(([k,l])=>`<button class="ch ${A.tab===k?"on":""}" data-a="tab" data-v="${k}">${l}</button>`).join("")}</div>
   <div id="admBody" class="abody">${body()}</div>
   ${cfgTab ? `<div class="asave"><span class="mut">${A.dirty?"● Unsaved changes":"✓ Saved"}</span><button class="b g" data-a="save" ${(!A.dirty||A.saving)?"disabled":""}>${A.saving?"Saving...":"💾 Save to Sheet"}</button></div>` : ""}</div>`;
@@ -2491,6 +3384,7 @@ function markDirty(){
 function parseVal(t, v){
   if(t==="n"){ const n = parseFloat(v); return isNaN(n) ? 0 : n; }
   if(t==="i"){ const n = parseInt(v,10); return isNaN(n) ? 0 : n; }
+  if(t==="cc") return Array.from(new Set(String(v).split(/[\s,;]+/).map(x=>x.trim().toUpperCase()).filter(x=>/^[A-Z]{2}$/.test(x))));
   if(t==="csv") return String(v).split(",").map(x=>parseFloat(x.trim())).filter(x=>!isNaN(x) && x>=0);
   if(t==="a"){ v = String(v).trim(); return /^\d+(\.\d+)?$/.test(v) ? Number(v) : v; }
   return String(v);
@@ -2513,11 +3407,12 @@ $adm.addEventListener("change", e=>{
   const d = e.target.dataset || {};
   if(d.a2 === "pos"){ const o = A.doc.config.gamesOrder, g = d.g, i = o.indexOf(g); o.splice(i,1); o.splice(parseInt(e.target.value,10),0,g); markDirty(); draw(); return; }
   if(d.a2 === "repMonth"){ A.repMonth = e.target.value; return; }
+  if(d.a2 === "rp"){ A.rp[d.k] = e.target.value; return; }
   onField(e, true);
 });
 const actions = {
   close(){ closeAdmin(); },
-  tab(el){ A.tab = el.dataset.v; draw(); if(A.tab==="users" && !A.us.loaded) loadUsers(); if(A.tab==="wd" && !A.wd.loaded) loadWd(); },
+  tab(el){ A.tab = el.dataset.v; draw(); if(A.tab==="users" && !A.us.loaded) loadUsers(); if(A.tab==="wd" && !A.wd.loaded) loadWd(); if(A.tab==="sup" && !A.tk.loaded) loadTk(); if(A.tab==="aud" && !A.au.loaded) loadAud(); loadSummary(); },
   login(){ const pin = ($adm.querySelector("#admPin")||{}).value || ""; if(!pin) { A.msg = "PIN daalo"; draw(); return; } login(pin); },
   save(){ saveCfg(); },
   unity(){ setUnity(); },
@@ -2556,7 +3451,42 @@ const actions = {
     const ok = await ask({title:"Reject?", msg:`${el.dataset.id} reject karna hai? User ke coins wapas ho jayenge.`, ok:"Reject", bad:true});
     if(ok) await setStatus(el.dataset.id, el.dataset.m, "Rejected", "");
   },
+  pomode(){ stashPo(); A.payout.auto = !A.payout.auto; draw(); },
+  poprov(el){ stashPo(); const k = el.dataset.k, a = A.payout.providers; A.payout.providers = a.includes(k) ? a.filter(x=>x!==k) : a.concat(k); draw(); },
+  async posave(){
+    const mid = ($adm.querySelector("#poMerchant")||{}).value||"", url = (($adm.querySelector("#poWebhook")||{}).value||"").trim();
+    if(url && !/^https:\/\/\S{4,300}$/i.test(url)) return flash("Webhook URL https:// se shuru hona chahiye");
+    A.payout.merchantId = mid.trim(); A.payout.webhookUrl = url;
+    try{
+      const d = await call("adminPayoutSet", {payout:A.payout});
+      if(d.ok){ A.payout = d.payout; flash("Payout settings database mein save ho gayi ✅"); } else flash(d.error||"Save fail");
+    }catch(e){ if(e.message!=="auth") flash("Network error"); }
+    draw();
+  },
+  tobk(el){ sendToBackend(el.dataset.id); },
   usearch(){ loadUsers(); },
+  sumload(){ loadSummary(); },
+  tkload(){ loadTk(); },
+  tkf(el){ A.tk.filter = el.dataset.v; loadTk(); },
+  audload(){ loadAud(); },
+  async tkrep(el){
+    const card = el.closest(".card2"), r = card ? card.querySelector(".tkR").value : "";
+    try{ const d = await call("adminTicketReply", {id:el.dataset.id, reply:r, resolve:el.dataset.r==="1"}); flash(d.ok?"Saved ✅":(d.error||"Error")); }catch(e){ if(e.message!=="auth") flash("Network error"); }
+    loadTk(); loadSummary();
+  },
+  async adj(el){
+    const card = el.closest(".card2"), amt = Math.abs(Math.trunc(Number(card.querySelector(".adjA").value)||0)), reason = card.querySelector(".adjR").value, sg = Number(el.dataset.s);
+    if(!amt) return flash("Coins likho");
+    if(String(reason).trim().length<3) return flash("Reason zaroori hai");
+    const ok = await ask({title:(sg>0?"Credit":"Debit")+" karo?", msg:`${el.dataset.m}: ${sg>0?"+":"-"}${amt} coins\nReason: ${reason}`, ok:"Confirm", bad:sg<0});
+    if(!ok) return;
+    try{ const d = await call("adminAdjust", {mobile:el.dataset.m, delta:sg*amt, reason}); flash(d.ok?"Queue ho gaya ✅ (user ke agle app-open par lagega)":(d.error||"Error")); }catch(e){ if(e.message!=="auth") flash("Network error"); }
+  },
+  async bcsend(){
+    const t=$("#bcT").value, b=$("#bcB").value, u=$("#bcU").value;
+    const ok = await ask({title:"Sabko bhejna hai?", msg:t+"\n"+b, ok:"Send"}); if(!ok) return;
+    try{ const d = await call("adminBroadcast", {title:t, body:b, url:u}); flash(d.ok?"Broadcast ho gaya 📣":(d.error||"Error")); }catch(e){ if(e.message!=="auth") flash("Network error"); }
+  },
   async ban(el){
     const ban = el.dataset.b === "1";
     const ok = await ask({title: ban?"Ban karo?":"Unban karo?", msg:`${el.dataset.m} ${ban?"login/withdraw nahi kar payega":"dobara use kar payega"}.`, ok: ban?"Ban":"Unban", bad:ban});
@@ -2565,9 +3495,33 @@ const actions = {
     loadUsers();
   },
   async banNum(){
-    const n = ($adm.querySelector("#banNum").value||"").replace(/\D/g,""); if(n.length<7) return flash("Valid number daalo");
+    const n = ($adm.querySelector("#banNum").value||"").trim(); if(n.length<5) return flash("Gmail ya user ID daalo");
     try{ const d = await call("adminBan", {mobile:n, banned:true}); flash(d.ok ? "Banned 🚫" : (d.error||"Error")); }catch(e){ if(e.message!=="auth") flash("Network error"); }
     loadUsers();
+  },
+  rpre(el){   // quick ranges for monthly / quarterly (calendar quarters) / financial-year (Apr-Mar) TDS filing; all in IST calendar dates
+    const k = el.dataset.p, n = new Date(Date.now()+19800000), y = n.getUTCFullYear(), m = n.getUTCMonth();
+    const ds = (yy,mm,dd) => new Date(Date.UTC(yy,mm,dd)).toISOString().slice(0,10);
+    let a, b;
+    if(k==="tm"){ a = ds(y,m,1); b = ds(y,m+1,0); }
+    else if(k==="lm"){ a = ds(y,m-1,1); b = ds(y,m,0); }
+    else if(k==="tq"){ const q = Math.floor(m/3)*3; a = ds(y,q,1); b = ds(y,q+3,0); }
+    else if(k==="lq"){ const q = Math.floor(m/3)*3-3; a = ds(y,q,1); b = ds(y,q+3,0); }
+    else { const fy = m>=3 ? y : y-1; a = ds(fy,3,1); b = ds(fy+1,3,0); }
+    A.rp.from = a; A.rp.to = b; draw();
+  },
+  async rpt(el){
+    const kind = el.dataset.k, fmt = el.dataset.f, r = A.rp;
+    flash("Report ban rahi hai...");
+    let d; try{ d = await call("adminReport", {kind, from:r.from, to:r.to, status:r.status, method:kind==="all"?r.method:"", country:kind==="all"?r.country:""}); }catch(e){ if(e.message!=="auth" && e.message!=="rules") flash("Network error"); return; }
+    if(!d.ok) return flash(d.error||"Error");
+    if(!d.rows.length) return flash("Is range / filter mein koi transaction nahi mila");
+    const T = buildReport(kind, d.rows, r);
+    const label = ({in:"India_TDS_Report", gl:"Global_Fee_Report", all:"All_Transactions"})[kind] + `_${r.from}_to_${r.to}` + (r.status?`_${({Paid:"Success",Pending:"Pending",Rejected:"Rejected"})[r.status]}`:"");
+    if(fmt==="csv") saveCsvFile(label+".csv", tableCsv(T));
+    else if(fmt==="xlsx") saveBlobFile(label+".xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", tableXlsx(T));
+    else saveBlobFile(label+".pdf", "application/pdf", tablePdf(T));
+    flash(`${d.rows.length} rows • ${fmt.toUpperCase()} save ho rahi hai${d.truncated?" (⚠ 5000 se zyada — date range chhoti karo)":""}`);
   },
   async rep(el){
     const m = el.dataset.m, ym = (A.repMonth || new Date().toISOString().slice(0,7));
@@ -2577,7 +3531,7 @@ const actions = {
     const rows = items.filter(w=>w.method===m && w.status==="Paid" && String(w.time).slice(0,7)===ym);
     if(!rows.length) return flash(`${ym} mein koi ${m} Paid payout nahi`);
     const isTds = ["UPI","Paytm","PhonePe"].includes(m), cur = rows[0].currency, c = A.doc.config;
-    const pct = isTds ? ({UPI:c.upiTdsPct,Paytm:c.paytmTdsPct,PhonePe:c.phonepeTdsPct})[m] : ({PayPal:c.paypalFeePct,Binance:c.binanceFeePct,Bybit:c.bybitFeePct})[m];
+    const pct = appliedPct(m, c);
     let tr = 0, tc = 0, tn = 0;
     let csv = `ID,Name,Mobile,Payout ID,Requested(${cur}),${isTds?"TDS":"Fee"}(${cur}),Net Payout(${cur}),UTR,Date\n`;
     rows.forEach(w=>{ const net = parseFloat(w.net)||0, g = parseFloat(w.gross)||net, cut = Math.max(0, g-net); tr+=g; tc+=cut; tn+=net;
@@ -2587,6 +3541,34 @@ const actions = {
     saveCsvFile(`${m}_${isTds?"TDS":"Fee"}_Report_${ym}.csv`, csv); flash("CSV save ho rahi hai");
   }
 };
+const STATUS_LABEL = {Paid:"Success", Pending:"Pending", Rejected:"Rejected"};
+function buildReport(kind, rows, f){
+  const r2 = v => Math.round((Number(v)||0)*100)/100, pc = v => v==null ? "" : v+"%";
+  const sy = c => c==="INR" ? "Rs" : c;
+  let head, map, title;
+  if(kind==="in"){
+    title = "India TDS Tax Report (UPI / Paytm / PhonePe)";
+    head = ["Transaction ID","Date (IST)","User ID","Email","Method","Gross Amount (Rs)","TDS %","TDS Tax Deducted (Rs)","Net Payable Amount (Rs)","Payment Details (UPI ID / Account)","Status"];
+    map = x=>[x.id,x.date,x.uid,x.email,x.method,r2(x.gross),pc(x.pct),r2(x.tax),r2(x.net),x.to,STATUS_LABEL[x.status]||x.status];
+  } else if(kind==="gl"){
+    title = "Global Processing Fee Report (PayPal / Binance / Bybit)";
+    head = ["Transaction ID","Date (IST)","User ID","Email","Country","Method","Currency","Gross Amount ($)","Fee %","Processing Fee Deducted ($)","Net Payable Amount ($)","Payout Wallet Address / Email","Status"];
+    map = x=>[x.id,x.date,x.uid,x.email,x.country,x.method,x.currency,r2(x.gross),pc(x.pct),r2(x.tax),r2(x.net),x.to,STATUS_LABEL[x.status]||x.status];
+  } else {
+    title = "All Transactions - Master Export";
+    head = ["Transaction ID","Date (IST)","User ID","Email","Country","Method","Currency","Gross Amount","Tax/Fee %","Tax/Fee Deducted","Net Payable Amount","Payment Details","Status","Risk Flag"];
+    map = x=>[x.id,x.date,x.uid,x.email,x.country,x.method,x.currency,r2(x.gross),pc(x.pct),r2(x.tax),r2(x.net),x.to,STATUS_LABEL[x.status]||x.status,x.risk];
+  }
+  const gi = head.findIndex(h=>/^Gross/.test(h)), ti = head.findIndex(h=>/Deducted/.test(h)), ni = head.findIndex(h=>/^Net/.test(h)), ci = head.indexOf("Currency");
+  const out = rows.map(map), sum = [], cur = [...new Set(rows.map(x=>x.currency||""))];
+  const tot = (list, label) => cur.forEach(c=>{ const L = list.filter(x=>(x.currency||"")===c); if(!L.length && label.indexOf("SUCCESS")<0) return;
+    const row = head.map(()=>""); row[0] = `${label}${cur.length>1||ci<0?` (${sy(c)||"-"})`:""}`; if(ci>=0) row[ci] = c;
+    row[gi] = r2(L.reduce((a,x)=>a+x.gross,0)); row[ti] = r2(L.reduce((a,x)=>a+x.tax,0)); row[ni] = r2(L.reduce((a,x)=>a+x.net,0)); sum.push(row); });
+  tot(rows, "TOTAL - all listed rows ("+rows.length+")");
+  const paid = rows.filter(x=>x.status==="Paid"); tot(paid, "TOTAL - SUCCESS only ("+paid.length+")");
+  const sub = `Period: ${f.from} to ${f.to}  |  Status: ${f.status?STATUS_LABEL[f.status]:"All"}  |  Generated: ${istTime(Date.now())}  |  Total Gross / Total Tax-Fee / Total Net in summary rows below`;
+  return {title, sub, head, rows:out, sum};
+}
 async function setStatus(id, mobile, status, txn){
   try{
     const d = await call("adminSet", {id, mobile, status, txn});
@@ -2601,7 +3583,6 @@ $adm.addEventListener("click", e=>{
 });
 $adm.addEventListener("keydown", e=>{ if(e.key==="Enter" && e.target.id==="admPin") actions.login(); });
 })();
-
 </script>
 </body>
 </html>
