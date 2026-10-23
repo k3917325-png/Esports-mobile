@@ -19,6 +19,8 @@ import android.webkit.JavascriptInterface;
 import android.webkit.JsResult;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebViewClient;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
@@ -35,6 +37,8 @@ import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.ads.AdError;
 import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdSize;
+import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.FullScreenContentCallback;
 import com.google.android.gms.ads.LoadAdError;
 import com.google.android.gms.ads.MobileAds;
@@ -69,6 +73,11 @@ public class MainActivity extends AppCompatActivity {
     private boolean loadingAd = false;
     private final AtomicBoolean adsInitialized = new AtomicBoolean(false);
 
+    // ---- AdMob banner (bottom of screen, native) ----
+    private FrameLayout bannerHolder;
+    private AdView bannerView;
+    private boolean bannerWanted = true;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -85,7 +94,13 @@ public class MainActivity extends AppCompatActivity {
         }
 
         webView = new WebView(this);
-        setContentView(webView);
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.addView(webView, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
+        bannerHolder = new FrameLayout(this);
+        bannerHolder.setVisibility(android.view.View.GONE);
+        root.addView(bannerHolder, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        setContentView(root);
 
         WebSettings ws = webView.getSettings();
         ws.setJavaScriptEnabled(true);
@@ -172,6 +187,16 @@ public class MainActivity extends AppCompatActivity {
         public void showRewarded(final String id) {
             final String safeId = id == null ? "0" : id.replaceAll("[^0-9]", "");
             runOnUiThread(() -> showRewardedInternal(safeId));
+        }
+
+        /** HTML asks: is there a native banner? (then it hides its own placeholder box) */
+        @JavascriptInterface
+        public boolean hasBanner() { return true; }
+
+        /** HTML tells native whether the banner should be visible on the current screen (admin ad switches). */
+        @JavascriptInterface
+        public void setBanner(final boolean on) {
+            runOnUiThread(() -> { bannerWanted = on; updateBanner(); });
         }
     }
 
@@ -308,8 +333,30 @@ public class MainActivity extends AppCompatActivity {
 
     private void initAds() {
         if (!adsInitialized.compareAndSet(false, true)) return;
-        MobileAds.initialize(this, status -> runOnUiThread(this::loadRewarded));
+        MobileAds.initialize(this, status -> runOnUiThread(() -> { loadRewarded(); loadBanner(); }));
     }
+
+    private void loadBanner() {
+        if (bannerView != null || bannerHolder == null) return;
+        try {
+            android.util.DisplayMetrics dm = getResources().getDisplayMetrics();
+            int w = (int) (dm.widthPixels / dm.density);
+            bannerView = new AdView(this);
+            bannerView.setAdUnitId(getString(R.string.admob_banner_id));
+            bannerView.setAdSize(AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(this, w));
+            bannerHolder.addView(bannerView);
+            bannerView.loadAd(new AdRequest.Builder().build());
+            updateBanner();
+        } catch (Exception ignored) {}
+    }
+
+    private void updateBanner() {
+        if (bannerHolder != null) bannerHolder.setVisibility(bannerWanted && bannerView != null ? android.view.View.VISIBLE : android.view.View.GONE);
+    }
+
+    @Override protected void onPause() { if (bannerView != null) bannerView.pause(); super.onPause(); }
+    @Override protected void onResume() { super.onResume(); if (bannerView != null) bannerView.resume(); }
+    @Override protected void onDestroy() { if (bannerView != null) bannerView.destroy(); super.onDestroy(); }
 
     private void loadRewarded() {
         if (loadingAd || rewardedAd != null) return;
