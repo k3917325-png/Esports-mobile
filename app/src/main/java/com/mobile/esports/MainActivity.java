@@ -39,6 +39,13 @@ import com.google.android.gms.ads.AdError;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdSize;
 import com.google.android.gms.ads.AdView;
+import com.unity3d.ads.IUnityAdsInitializationListener;
+import com.unity3d.ads.IUnityAdsLoadListener;
+import com.unity3d.ads.IUnityAdsShowListener;
+import com.unity3d.ads.UnityAds;
+import com.unity3d.ads.UnityAdsShowOptions;
+import com.unity3d.services.banners.BannerView;
+import com.unity3d.services.banners.UnityBannerSize;
 import com.google.android.gms.ads.FullScreenContentCallback;
 import com.google.android.gms.ads.LoadAdError;
 import com.google.android.gms.ads.MobileAds;
@@ -76,7 +83,15 @@ public class MainActivity extends AppCompatActivity {
     // ---- AdMob banner (bottom of screen, native) ----
     private FrameLayout bannerHolder;
     private AdView bannerView;
-    private boolean bannerWanted = true;
+    private boolean bannerWanted = false;   // HTML turns it on per screen (admin ad switches); hidden on login/admin/game
+
+    // ---- ad network chosen by admin panel (HTML pushes config via AndroidAds.configure) ----
+    private String adNetwork = null;        // "unity" | "admob"/"mediation" ; null until HTML reports
+    private boolean adsOn = true, unityOn = true, consentOk = false;
+    private String unityGameId = "", unityBannerId = "", unityRewardedId = "";
+    private boolean unityInitStarted = false, unityReady = false, unityRewardedLoaded = false, unityLoading = false;
+    private String unityInitKey = "";
+    private BannerView unityBanner;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -192,6 +207,12 @@ public class MainActivity extends AppCompatActivity {
         /** HTML asks: is there a native banner? (then it hides its own placeholder box) */
         @JavascriptInterface
         public boolean hasBanner() { return true; }
+
+        /** HTML pushes the admin ad config: {network,on,unityOn,gameId,bannerId,rewardedId} */
+        @JavascriptInterface
+        public void configure(final String json) {
+            runOnUiThread(() -> applyAdConfig(json));
+        }
 
         /** HTML tells native whether the banner should be visible on the current screen (admin ad switches). */
         @JavascriptInterface
@@ -331,9 +352,80 @@ public class MainActivity extends AppCompatActivity {
         if (ci.canRequestAds()) initAds(); // consent already gathered in an earlier session
     }
 
-    private void initAds() {
-        if (!adsInitialized.compareAndSet(false, true)) return;
-        MobileAds.initialize(this, status -> runOnUiThread(() -> { loadRewarded(); loadBanner(); }));
+    private void initAds() { consentOk = true; applyAdNetwork(); }
+
+    private boolean useUnity() { return "unity".equals(adNetwork); }
+
+    private void applyAdConfig(String json) {
+        try {
+            org.json.JSONObject o = new org.json.JSONObject(json);
+            adNetwork = o.optString("network", "mediation");
+            adsOn = o.optBoolean("on", true);
+            unityOn = o.optBoolean("unityOn", true);
+            unityGameId = o.optString("gameId", "").replaceAll("[^0-9]", "");
+            unityBannerId = o.optString("bannerId", "").replaceAll("[^A-Za-z0-9_\\-]", "");
+            unityRewardedId = o.optString("rewardedId", "").replaceAll("[^A-Za-z0-9_\\-]", "");
+        } catch (Exception e) { return; }
+        applyAdNetwork();
+    }
+
+    private void applyAdNetwork() {
+        if (adNetwork == null) return;
+        if (useUnity()) {
+            if (unityOn && adsOn) initUnity();
+            updateBanner();
+        } else if (consentOk && adsInitialized.compareAndSet(false, true)) {
+            MobileAds.initialize(this, status -> runOnUiThread(() -> { loadRewarded(); loadBanner(); }));
+        }
+    }
+
+    // ---------- Unity Ads ----------
+    private String unityGame() { return unityGameId.isEmpty() ? getString(R.string.unity_game_id) : unityGameId; }
+    private String unityRewardedPlacement() { return unityRewardedId.isEmpty() ? "Rewarded_Android" : unityRewardedId; }
+    private String unityBannerPlacement() { return unityBannerId.isEmpty() ? "Banner_Android" : unityBannerId; }
+
+    private void initUnity() {
+        final String gid = unityGame();
+        if (unityInitStarted && gid.equals(unityInitKey)) { if (unityReady) { loadUnityRewarded(); loadUnityBanner(); } return; }
+        if (unityInitStarted) return;   // SDK can only be initialised once per process
+        unityInitStarted = true; unityInitKey = gid;
+        UnityAds.initialize(getApplicationContext(), gid, getResources().getBoolean(R.bool.unity_test_mode), new IUnityAdsInitializationListener() {
+            @Override public void onInitializationComplete() { runOnUiThread(() -> { unityReady = true; loadUnityRewarded(); loadUnityBanner(); }); }
+            @Override public void onInitializationFailed(UnityAds.UnityAdsInitializationError error, String message) { unityInitStarted = false; }
+        });
+    }
+
+    private void loadUnityRewarded() {
+        if (!unityReady || unityLoading || unityRewardedLoaded) return;
+        unityLoading = true;
+        UnityAds.load(unityRewardedPlacement(), new IUnityAdsLoadListener() {
+            @Override public void onUnityAdsAdLoaded(String placementId) { unityLoading = false; unityRewardedLoaded = true; }
+            @Override public void onUnityAdsFailedToLoad(String placementId, UnityAds.UnityAdsLoadError error, String message) { unityLoading = false; unityRewardedLoaded = false; }
+        });
+    }
+
+    private void loadUnityBanner() {
+        if (!unityReady || unityBanner != null || bannerHolder == null) return;
+        try {
+            unityBanner = new BannerView(this, unityBannerPlacement(), new UnityBannerSize(320, 50));
+            bannerHolder.removeAllViews();
+            bannerHolder.addView(unityBanner, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT, android.view.Gravity.CENTER_HORIZONTAL));
+            unityBanner.load();
+            updateBanner();
+        } catch (Exception ignored) {}
+    }
+
+    private void showUnityRewarded(final String id) {
+        if (!unityOn || !adsOn || !unityReady || !unityRewardedLoaded) { loadUnityRewarded(); jsAdResult(id, false); return; }
+        unityRewardedLoaded = false;
+        UnityAds.show(this, unityRewardedPlacement(), new UnityAdsShowOptions(), new IUnityAdsShowListener() {
+            @Override public void onUnityAdsShowFailure(String placementId, UnityAds.UnityAdsShowError error, String message) { jsAdResult(id, false); loadUnityRewarded(); }
+            @Override public void onUnityAdsShowStart(String placementId) {}
+            @Override public void onUnityAdsShowClick(String placementId) {}
+            @Override public void onUnityAdsShowComplete(String placementId, UnityAds.UnityAdsShowCompletionState state) {
+                jsAdResult(id, state == UnityAds.UnityAdsShowCompletionState.COMPLETED); loadUnityRewarded();
+            }
+        });
     }
 
     private void loadBanner() {
@@ -351,12 +443,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void updateBanner() {
-        if (bannerHolder != null) bannerHolder.setVisibility(bannerWanted && bannerView != null ? android.view.View.VISIBLE : android.view.View.GONE);
+        boolean have = useUnity() ? (unityBanner != null && unityOn && adsOn) : (bannerView != null);
+        if (bannerHolder != null) bannerHolder.setVisibility(bannerWanted && have ? android.view.View.VISIBLE : android.view.View.GONE);
     }
 
     @Override protected void onPause() { if (bannerView != null) bannerView.pause(); super.onPause(); }
     @Override protected void onResume() { super.onResume(); if (bannerView != null) bannerView.resume(); }
-    @Override protected void onDestroy() { if (bannerView != null) bannerView.destroy(); super.onDestroy(); }
+    @Override protected void onDestroy() { if (bannerView != null) bannerView.destroy(); if (unityBanner != null) unityBanner.destroy(); super.onDestroy(); }
 
     private void loadRewarded() {
         if (loadingAd || rewardedAd != null) return;
@@ -369,6 +462,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showRewardedInternal(final String id) {
+        if (useUnity()) { showUnityRewarded(id); return; }
+        if (adNetwork == null) { jsAdResult(id, false); return; }
         if (rewardedAd == null) { loadRewarded(); jsAdResult(id, false); return; }
         final RewardedAd ad = rewardedAd;
         rewardedAd = null;

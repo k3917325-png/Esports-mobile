@@ -545,7 +545,7 @@ let _unused_ = 0, tab = "home", sub = "matches", cap = "", lbShown = 100;
    These three values are PUBLIC identifiers (not secrets). Real protection = Firestore Security Rules (firestore.rules).
    Admin PIN = password of the admin Firebase account; it is never stored in the app. */
 const APP_VER = 13;   // integer app version used by Force Update (admin sets "minimum allowed version")
-const APP_BUILD = "v14.1-native-banner-2026-10-23";
+const APP_BUILD = "v14.2-unity-native-2026-10-23";
 console.log("build", APP_BUILD);
 const FB = {apiKey:"AIzaSyBHEpJcFl_0ROchiOCZni8JmG9qYUgNR1Q", projectId:"esports-reward", adminEmail:"praveen4477766@gmail.com", googleClientId:"__GOOGLE_WEB_CLIENT_ID__"};
 const FB_READY = !!FB.apiKey && !!FB.projectId && FB.apiKey.indexOf("__")!==0 && FB.projectId.indexOf("__")!==0;
@@ -1436,7 +1436,13 @@ if(S && S.wd && S.wd.length && S.wd.some(w=>!w.id)){
   });
   S.wdSeq = seq; save();
 }
+function pushAdCfg(){
+  if(!(window.AndroidAds && window.AndroidAds.configure && S && S.adConfig)) return;
+  const a = S.adConfig, u = (a.networks && a.networks.unity) || {};
+  try{ window.AndroidAds.configure(JSON.stringify({network:a.network||"mediation", on:a.on!==false, unityOn:a.unityOn!==false, gameId:u.gameId||"", bannerId:u.bannerId||"", rewardedId:u.rewardedId||""})); }catch(e){}
+}
 function adBox(screen){
+  pushAdCfg();
   const wantB = !!(S.adConfig && S.adConfig.on) && !(screen && S.adConfig.screens && S.adConfig.screens[screen]===false);
   if(window.AndroidAds && window.AndroidAds.setBanner){ try{ window.AndroidAds.setBanner(wantB); }catch(e){} }
   if(!S.adConfig || !S.adConfig.on) return "";
@@ -1861,6 +1867,7 @@ function adFailToast(){
 function watchAd(subtext, onDone, opts){
   opts = opts || {};
   if(window.AndroidAds){
+    pushAdCfg();
     const id = ++adSeq;
     adCbs[id] = ok => {
       if(ok || opts.optional) return onDone();
@@ -1884,6 +1891,7 @@ function watchAd(subtext, onDone, opts){
   },100);
 }
 function openGame(t){
+  try{ if(window.AndroidAds && window.AndroidAds.setBanner) window.AndroidAds.setBanner(false); }catch(e){}
   const o = document.createElement("div"); o.id = "gm";
   o.style.cssText = "position:fixed;inset:0;z-index:99;background:#140a2e;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:env(safe-area-inset-top,0px) 10px env(safe-area-inset-bottom,0px);overflow-y:auto";
   const gameAdOn = S.adConfig && S.adConfig.on && (!S.adConfig.screens || S.adConfig.screens.game!==false);
@@ -2990,8 +2998,8 @@ document.addEventListener("visibilitychange", ()=>{
   else if(A.open && A.hiddenAt && Date.now() - A.hiddenAt > 60000){ closeAdmin(); flash("Admin auto-lock ho gaya"); }
 });
 
-function openAdmin(){ A.open = true; A.tok = ""; A.doc = null; A.dirty = false; A.tab = "wd"; A.wd.loaded = false; A.us.loaded = false; $adm.style.display = "block"; draw(); }
-function closeAdmin(){ A.open = false; A.tok = ""; A.doc = null; A.payout = {auto:false, providers:[], merchantId:"", webhookUrl:""}; A.dirty = false; $adm.style.display = "none"; $adm.innerHTML = ""; }
+function openAdmin(){ try{ if(window.AndroidAds && window.AndroidAds.setBanner) window.AndroidAds.setBanner(false); }catch(e){} A.open = true; A.tok = ""; A.doc = null; A.dirty = false; A.tab = "wd"; A.wd.loaded = false; A.us.loaded = false; $adm.style.display = "block"; draw(); }
+function closeAdmin(){ try{ if(typeof render==="function") setTimeout(render,50); }catch(e){} A.open = false; A.tok = ""; A.doc = null; A.payout = {auto:false, providers:[], merchantId:"", webhookUrl:""}; A.dirty = false; $adm.style.display = "none"; $adm.innerHTML = ""; }
 
 /* ---------- server calls ---------- */
 async function call(action, extra){
