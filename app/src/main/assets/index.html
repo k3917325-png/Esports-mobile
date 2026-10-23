@@ -545,7 +545,7 @@ let _unused_ = 0, tab = "home", sub = "matches", cap = "", lbShown = 100;
    These three values are PUBLIC identifiers (not secrets). Real protection = Firestore Security Rules (firestore.rules).
    Admin PIN = password of the admin Firebase account; it is never stored in the app. */
 const APP_VER = 13;   // integer app version used by Force Update (admin sets "minimum allowed version")
-const APP_BUILD = "v14.3-waterfall-2026-10-23";
+const APP_BUILD = "v14.4-admin-nobanner-2026-10-23";
 console.log("build", APP_BUILD);
 const FB = {apiKey:"AIzaSyBHEpJcFl_0ROchiOCZni8JmG9qYUgNR1Q", projectId:"esports-reward", adminEmail:"praveen4477766@gmail.com", googleClientId:"__GOOGLE_WEB_CLIENT_ID__"};
 const FB_READY = !!FB.apiKey && !!FB.projectId && FB.apiKey.indexOf("__")!==0 && FB.projectId.indexOf("__")!==0;
@@ -1445,7 +1445,8 @@ function pushAdCfg(){
 }
 function adBox(screen){
   pushAdCfg();
-  const wantB = !!(S.adConfig && S.adConfig.on) && !(screen && S.adConfig.screens && S.adConfig.screens[screen]===false);
+  const overlayOpen = (typeof A!=="undefined" && A && A.open) || (typeof G!=="undefined" && G);   // admin panel / game overlay: no banner
+  const wantB = !overlayOpen && !!(S.adConfig && S.adConfig.on) && !(screen && S.adConfig.screens && S.adConfig.screens[screen]===false);
   if(window.AndroidAds && window.AndroidAds.setBanner){ try{ window.AndroidAds.setBanner(wantB); }catch(e){} }
   if(!S.adConfig || !S.adConfig.on) return "";
   if(screen && S.adConfig.screens && S.adConfig.screens[screen]===false) return "";
