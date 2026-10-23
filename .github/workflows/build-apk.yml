@@ -33,7 +33,14 @@ jobs:
           UNITY_TEST_MODE: ${{ vars.UNITY_TEST_MODE }}
         run: |
           chmod +x gradlew
-          ./gradlew :app:assembleDebug --no-daemon --stacktrace
+          set +e
+          ./gradlew :app:assembleDebug --no-daemon 2>&1 | tee build.log
+          rc=${PIPESTATUS[0]}
+          if [ $rc -ne 0 ]; then
+            MSG=$(grep -E "error:|What went wrong|Could not|symbol:|location:|Execution failed|> " build.log | head -40 | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
+            echo "::error title=Build errors::$MSG"
+          fi
+          exit $rc
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
