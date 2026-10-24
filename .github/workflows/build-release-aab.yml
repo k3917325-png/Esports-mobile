@@ -18,6 +18,8 @@ on:
 jobs:
   aab:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # release APK ko GitHub Release me daalne ke liye (direct download link)
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -73,7 +75,7 @@ jobs:
         run: |
           chmod +x gradlew
           set +e
-          ./gradlew clean :app:bundleRelease --no-daemon 2>&1 | tee build.log
+          ./gradlew clean :app:bundleRelease :app:assembleRelease --no-daemon 2>&1 | tee build.log
           rc=${PIPESTATUS[0]}
           if [ $rc -ne 0 ]; then
             MSG=$(grep -E "error:|What went wrong|Could not|symbol:|location:|Execution failed|Missing class|R8" build.log | head -30 | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
@@ -102,6 +104,21 @@ jobs:
           name: play-store-aab
           path: app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
+      - name: Verify release APK signature
+        run: keytool -printcert -jarfile app/build/outputs/apk/release/app-release.apk | grep -E "Owner|SHA1|SHA256" | head -3
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-apk
+          path: app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+      - name: Publish APK as GitHub Release (direct download link, no zip)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp app/build/outputs/apk/release/app-release.apk EsportsReward.apk
+          TAG="apk-${{ github.run_number }}"
+          gh release create "$TAG" EsportsReward.apk --title "Esports Reward APK ($TAG)" --notes "Signed release APK (com.sportsreward.app). Install: download -> allow unknown sources -> install." --prerelease
+          echo "::notice title=APK link::https://github.com/${{ github.repository }}/releases/download/$TAG/EsportsReward.apk"
       - uses: actions/upload-artifact@v4
         with:
           name: mapping
