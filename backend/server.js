@@ -108,6 +108,15 @@ async function handle(req, res) {
 
   if (url.pathname === "/api/health") return send(res, 200, { ok: true, time: Date.now() });
 
+  // Public legal page (Google Play "Privacy policy URL"): no login needed
+  if (req.method === "GET" && ["/", "/privacy", "/privacy-policy", "/privacy-terms-page.html"].includes(url.pathname)) {
+    let html;
+    try { html = fs.readFileSync(path.join(__dirname, "privacy-terms-page.html")); }
+    catch (e) { return send(res, 404, { error: "not found" }); }
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=300" });
+    return res.end(html);
+  }
+
   // First registration of a phone: creates the account and returns the device token.
   if (url.pathname === "/api/register" && req.method === "POST") {
     if (rateLimited(ip + "|reg", 20, 3600e3)) return send(res, 429, { error: "too many signups" });

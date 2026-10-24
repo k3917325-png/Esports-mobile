@@ -1,6 +1,6 @@
 FROM node:22-alpine
 WORKDIR /app
-COPY package.json server.js ./
+COPY package.json server.js privacy-terms-page.html ./
 ENV PORT=8080 DATA_FILE=/data/db.json
 VOLUME /data
 EXPOSE 8080
