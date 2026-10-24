@@ -54,6 +54,8 @@ class AdHub {
     private String unityGame = "", unityBanner = "", unityRewarded = "";
     private String alKey = "", alBanner = "", alRewarded = "";
     private boolean bannerWanted = false;
+    private boolean unityFailed = false, admobFailed = false, alFailed = false;
+    private long lastRetry = 0;
 
     // ---- per network state ----
     private boolean admobInit = false, admobLoading = false; private RewardedAd admobAd;
@@ -123,14 +125,31 @@ class AdHub {
         return out;
     }
 
+    private boolean failed(String n) { return "unity".equals(n) ? unityFailed : "admob".equals(n) ? admobFailed : alFailed; }
+
+    /**
+     * Only the first network in the waterfall is initialised/loaded up front. The next one (e.g. AdMob) is
+     * started lazily, only after the one before it failed (no fill / init error) - keeps AdMob ad requests low.
+     */
     private void apply() {
         List<String> list = active();
         for (String n : list) {
-            if ("unity".equals(n)) initUnity();
-            else if ("admob".equals(n)) initAdmob();
-            else initApplovin();
+            if (!failed(n)) {
+                if ("unity".equals(n)) initUnity();
+                else if ("admob".equals(n)) initAdmob();
+                else initApplovin();
+            }
+            if (!failed(n)) break;      // this network is alive (loading or loaded): do not touch the next one yet
         }
         refreshBanner();
+    }
+
+    private void retryAll() {
+        long now = System.currentTimeMillis();
+        if (now - lastRetry < 20000) return;
+        lastRetry = now;
+        unityFailed = false; admobFailed = false; alFailed = false;
+        apply();
     }
 
     // ================= rewarded =================
@@ -140,7 +159,7 @@ class AdHub {
             if ("admob".equals(n) && admobAd != null) { showAdmob(id); return; }
             if ("applovin".equals(n) && alAd != null && alAd.isReady()) { showApplovin(id); return; }
         }
-        apply();            // nothing ready: kick loads, tell the app
+        retryAll();         // nothing ready: retry loads (max once per 20s), tell the app
         cb.done(id, false);
     }
 
@@ -150,7 +169,7 @@ class AdHub {
         unityInitStarted = true;
         UnityAds.initialize(act.getApplicationContext(), unityGameId(), act.getResources().getBoolean(R.bool.unity_test_mode), new IUnityAdsInitializationListener() {
             @Override public void onInitializationComplete() { act.runOnUiThread(() -> { unityReady = true; loadUnity(); refreshBanner(); }); }
-            @Override public void onInitializationFailed(UnityAds.UnityAdsInitializationError error, String message) { unityInitStarted = false; }
+            @Override public void onInitializationFailed(UnityAds.UnityAdsInitializationError error, String message) { unityInitStarted = false; act.runOnUiThread(() -> { unityFailed = true; apply(); }); }
         });
     }
 
@@ -158,8 +177,8 @@ class AdHub {
         if (!unityReady || unityLoading || unityLoaded) return;
         unityLoading = true;
         UnityAds.load(unityRewardedPlc(), new IUnityAdsLoadListener() {
-            @Override public void onUnityAdsAdLoaded(String placementId) { unityLoading = false; unityLoaded = true; }
-            @Override public void onUnityAdsFailedToLoad(String placementId, UnityAds.UnityAdsLoadError error, String message) { unityLoading = false; unityLoaded = false; }
+            @Override public void onUnityAdsAdLoaded(String placementId) { unityLoading = false; unityLoaded = true; unityFailed = false; }
+            @Override public void onUnityAdsFailedToLoad(String placementId, UnityAds.UnityAdsLoadError error, String message) { unityLoading = false; unityLoaded = false; act.runOnUiThread(() -> { unityFailed = true; apply(); }); }
         });
     }
 
@@ -187,8 +206,8 @@ class AdHub {
         if (admobLoading || admobAd != null) return;
         admobLoading = true;
         RewardedAd.load(act, admobRewardedId(), new AdRequest.Builder().build(), new RewardedAdLoadCallback() {
-            @Override public void onAdLoaded(RewardedAd ad) { admobAd = ad; admobLoading = false; }
-            @Override public void onAdFailedToLoad(LoadAdError error) { admobAd = null; admobLoading = false; }
+            @Override public void onAdLoaded(RewardedAd ad) { admobAd = ad; admobLoading = false; admobFailed = false; }
+            @Override public void onAdFailedToLoad(LoadAdError error) { admobAd = null; admobLoading = false; act.runOnUiThread(() -> { admobFailed = true; apply(); }); }
         });
     }
 
@@ -222,11 +241,11 @@ class AdHub {
         alAd.setListener(new MaxRewardedAdListener() {
             private String pending; private boolean earned;
             @Override public void onUserRewarded(MaxAd ad, MaxReward reward) { earned = true; }
-            @Override public void onAdLoaded(MaxAd ad) {}
+            @Override public void onAdLoaded(MaxAd ad) { alFailed = false; }
             @Override public void onAdDisplayed(MaxAd ad) {}
             @Override public void onAdClicked(MaxAd ad) {}
             @Override public void onAdHidden(MaxAd ad) { alResult(earned); earned = false; alAd.loadAd(); }
-            @Override public void onAdLoadFailed(String adUnitId, MaxError error) {}
+            @Override public void onAdLoadFailed(String adUnitId, MaxError error) { act.runOnUiThread(() -> { alFailed = true; apply(); }); }
             @Override public void onAdDisplayFailed(MaxAd ad, MaxError error) { alResult(false); alAd.loadAd(); }
         });
         alAd.loadAd();

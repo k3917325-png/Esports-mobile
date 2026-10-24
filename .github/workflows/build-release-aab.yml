@@ -13,7 +13,7 @@ on:
       allow_test_ads:
         description: "Google TEST ad IDs ke saath bana do (sirf Play Internal testing ke liye; production se pehle real IDs lagao)"
         type: boolean
-        default: true
+        default: false
 
 jobs:
   aab:
@@ -30,10 +30,10 @@ jobs:
           KSP: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
           KA: ${{ secrets.RELEASE_KEY_ALIAS }}
           KP: ${{ secrets.RELEASE_KEY_PASSWORD }}
-          ADMOB_APP_ID: ${{ vars.ADMOB_APP_ID }}
-          ADMOB_REWARDED_ID: ${{ vars.ADMOB_REWARDED_ID }}
-          ADMOB_BANNER_ID: ${{ vars.ADMOB_BANNER_ID }}
-          ALLOW_TEST: ${{ github.event.inputs.allow_test_ads || 'true' }}
+          ADMOB_APP_ID: ${{ vars.ADMOB_APP_ID || 'ca-app-pub-4043259069573209~9491756832' }}
+          ADMOB_REWARDED_ID: ${{ vars.ADMOB_REWARDED_ID || 'ca-app-pub-4043259069573209/9654875531' }}
+          ADMOB_BANNER_ID: ${{ vars.ADMOB_BANNER_ID || 'ca-app-pub-4043259069573209/3132865061' }}
+          ALLOW_TEST: ${{ github.event.inputs.allow_test_ads || 'false' }}
         run: |
           miss=""
           [ -z "$KSP" ] && miss="$miss RELEASE_KEYSTORE_PASSWORD"
@@ -65,11 +65,11 @@ jobs:
           RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
           RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
-          ADMOB_APP_ID: ${{ vars.ADMOB_APP_ID }}
-          ADMOB_REWARDED_ID: ${{ vars.ADMOB_REWARDED_ID }}
-          ADMOB_BANNER_ID: ${{ vars.ADMOB_BANNER_ID }}
-          UNITY_GAME_ID: ${{ vars.UNITY_GAME_ID }}
-          UNITY_TEST_MODE: ${{ vars.UNITY_TEST_MODE }}
+          ADMOB_APP_ID: ${{ vars.ADMOB_APP_ID || 'ca-app-pub-4043259069573209~9491756832' }}
+          ADMOB_REWARDED_ID: ${{ vars.ADMOB_REWARDED_ID || 'ca-app-pub-4043259069573209/9654875531' }}
+          ADMOB_BANNER_ID: ${{ vars.ADMOB_BANNER_ID || 'ca-app-pub-4043259069573209/3132865061' }}
+          UNITY_GAME_ID: ${{ vars.UNITY_GAME_ID || '800406653' }}
+          UNITY_TEST_MODE: ${{ vars.UNITY_TEST_MODE || 'false' }}
         run: |
           chmod +x gradlew
           set +e

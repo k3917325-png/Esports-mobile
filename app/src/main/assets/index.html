@@ -545,9 +545,9 @@ let _unused_ = 0, tab = "home", sub = "matches", cap = "", lbShown = 100;
    These three values are PUBLIC identifiers (not secrets). Real protection = Firestore Security Rules (firestore.rules).
    Admin PIN = password of the admin Firebase account; it is never stored in the app. */
 const APP_VER = 15;   // integer app version used by Force Update (admin sets "minimum allowed version")
-const APP_BUILD = "v15-play-delete-account-2026-10-24";
+const APP_BUILD = "v15.1-prod-google-ads-2026-10-24";
 console.log("build", APP_BUILD);
-const FB = {apiKey:"AIzaSyBHEpJcFl_0ROchiOCZni8JmG9qYUgNR1Q", projectId:"esports-reward", adminEmail:"praveen4477766@gmail.com", googleClientId:"__GOOGLE_WEB_CLIENT_ID__"};
+const FB = {apiKey:"AIzaSyBHEpJcFl_0ROchiOCZni8JmG9qYUgNR1Q", projectId:"esports-reward", adminEmail:"praveen4477766@gmail.com", googleClientId:"608540999916-jtekk5bgtm9btapgnme9j49stka1agqc.apps.googleusercontent.com"};
 const FB_READY = !!FB.apiKey && !!FB.projectId && FB.apiKey.indexOf("__")!==0 && FB.projectId.indexOf("__")!==0;
 const SHEETS_URL = FB_READY ? "firebase" : "";   // legacy name: truthy => backend enabled
 const FB_HOST = (typeof window!=="undefined" && window.__FB_TEST_HOST) || "";   // test hook only (empty in production)
