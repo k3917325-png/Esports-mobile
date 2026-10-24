@@ -15,7 +15,7 @@ android {
     compileSdk 36
 
     defaultConfig {
-        applicationId "com.mobile.esports"
+        applicationId "com.sportsreward.app"   // Play Store package name (code package/namespace stays com.mobile.esports)
         minSdk 24
         targetSdk 36
         versionCode runNumber

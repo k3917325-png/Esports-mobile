@@ -73,13 +73,27 @@ jobs:
         run: |
           chmod +x gradlew
           set +e
-          ./gradlew :app:bundleRelease --no-daemon 2>&1 | tee build.log
+          ./gradlew clean :app:bundleRelease --no-daemon 2>&1 | tee build.log
           rc=${PIPESTATUS[0]}
           if [ $rc -ne 0 ]; then
             MSG=$(grep -E "error:|What went wrong|Could not|symbol:|location:|Execution failed|Missing class|R8" build.log | head -30 | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
             echo "::error title=Build errors::$MSG"
           fi
           exit $rc
+      - name: Verify package name + provider authorities (merged manifest)
+        run: |
+          M=$(find app/build/intermediates -path "*merged_manifests/release*" -name AndroidManifest.xml | head -1)
+          echo "manifest: $M"
+          PKG=$(grep -o 'package="[^"]*"' "$M" | head -1)
+          echo "$PKG"
+          AUTH=$(grep -o 'android:authorities="[^"]*"' "$M" | sort -u)
+          echo "$AUTH"
+          echo "$PKG" | grep -q 'package="com.sportsreward.app"' || { echo "::error title=Package galat::$PKG"; exit 1; }
+          BAD=$(echo "$AUTH" | grep -v 'authorities="com.sportsreward.app\.' || true)
+          [ -z "$BAD" ] || { echo "::error title=Authority prefix galat::$BAD"; exit 1; }
+          echo "::notice title=Package/authorities OK::$(echo $PKG) | $(echo $AUTH | tr '\n' ' ')"
+          CNT=$(grep -c 'com.applovin.sdk.AppLovinInitProvider\|com.google.android.gms.ads.MobileAdsInitProvider\|androidx.startup.InitializationProvider' "$M")
+          echo "provider entries: $CNT"
       - name: Verify AAB is signed with the upload key
         run: |
           keytool -printcert -jarfile app/build/outputs/bundle/release/app-release.aab | grep -E "Owner|SHA1|SHA256" | head -4

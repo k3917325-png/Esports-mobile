@@ -17,7 +17,7 @@ KARNA KYA HAI  (Firebase Console)
  B. Wahi Google provider kholo -> "Web SDK configuration" -> "Web client ID" copy karo.
     Ye dikhta hai: 1234567890-abcdefg.apps.googleusercontent.com   -> mujhe bhej do (ya HTML mein
     `googleClientId:"__GOOGLE_WEB_CLIENT_ID__"` ki jagah paste karo).
- C. Project settings -> Your apps -> Android app add karo: package = com.mobile.esports,
+ C. Project settings -> Your apps -> Android app add karo: package = com.sportsreward.app,
     aur SHA-1 daalo (Android Studio: Gradle -> signingReport; Play Console release ke liye
     "App signing" wala SHA-1 bhi add karna). Bina SHA-1 ke Google login "code 10" error dega.
  D. Firestore -> Rules: NAYA firestore.rules paste karo (admin UID wali line pehle jaisi), Publish.
