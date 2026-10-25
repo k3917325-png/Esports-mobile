@@ -66,6 +66,8 @@ jobs:
           RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
           ADMOB_APP_ID: ${{ vars.ADMOB_APP_ID || 'ca-app-pub-4043259069573209~9491756832' }}
+          ADMOB_REWARDED_ID: ${{ vars.ADMOB_REWARDED_ID || 'ca-app-pub-4043259069573209/9654875531' }}
+          ADMOB_BANNER_ID: ${{ vars.ADMOB_BANNER_ID || 'ca-app-pub-4043259069573209/3132865061' }}
           UNITY_GAME_ID: ${{ vars.UNITY_GAME_ID || '800406653' }}
           STARTIO_APP_ID: ${{ vars.STARTIO_APP_ID || '209272738' }}
           UNITY_TEST_MODE: ${{ vars.UNITY_TEST_MODE || 'false' }}
