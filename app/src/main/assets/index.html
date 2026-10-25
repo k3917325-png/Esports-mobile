@@ -436,11 +436,22 @@ function feeMap(c){ const o = {}; Object.keys(FEE_KEY).forEach(m=>{ o[m] = appli
 const METHODS_ALL = ["UPI","PayPal","Paytm","PhonePe","Binance","Bybit"];
 const FEE_KEY = {UPI:"upi", Paytm:"paytm", PhonePe:"phonepe", PayPal:"paypal", Binance:"binance", Bybit:"bybit"};
 const FEE_DEFAULT = {UPI:30, Paytm:30, PhonePe:30, PayPal:18, Binance:18, Bybit:18};
-function appliedPct(method, c){
+const IN_METHODS = ["UPI","Paytm","PhonePe"];
+// India extra "Processing Fee" (admin toggle in_proc_enabled + in_proc_percent, default OFF) is charged on top of the Tax (TDS) for UPI/Paytm/PhonePe.
+function taxPct(method, c){
   c = c || cfg(); const k = FEE_KEY[method]; if(!k) return 0;
   if(c[k+"_fee_enabled"] === false) return 0;
   const v = Number(c[k+"_fee_percent"]);
   return (isFinite(v) && v>=0 && v<=100) ? v : FEE_DEFAULT[method];
+}
+function procPct(method, c){
+  c = c || cfg(); if(IN_METHODS.indexOf(method)<0 || c.in_proc_enabled !== true) return 0;
+  const v = Number(c.in_proc_percent);
+  return (isFinite(v) && v>=0 && v<=100) ? v : 2;
+}
+function appliedPct(method, c){
+  const t = taxPct(method, c), p = procPct(method, c);
+  return Math.min(100, Math.round((t+p)*100)/100);
 }
 function tdsPctFor(opt){ return appliedPct(WD_METHOD[opt]); }
 function tdsPctForMethod(method){ return appliedPct(method); }
@@ -471,7 +482,7 @@ function defaultConfig(){ return {
   binanceEnabled: true,
   bybitEnabled: true,
   upi_fee_enabled: true, upi_fee_percent: 30, paytm_fee_enabled: true, paytm_fee_percent: 30, phonepe_fee_enabled: true, phonepe_fee_percent: 30,
-  paypal_fee_enabled: true, paypal_fee_percent: 18, binance_fee_enabled: true, binance_fee_percent: 18, bybit_fee_enabled: true, bybit_fee_percent: 18,
+  in_proc_enabled: false, in_proc_percent: 2, paypal_fee_enabled: true, paypal_fee_percent: 18, binance_fee_enabled: true, binance_fee_percent: 18, bybit_fee_enabled: true, bybit_fee_percent: 18,
   manualTours: [], // admin-created extra tournaments [{id,g,pool,min}]
   paytmEnabled: true, phonepeEnabled: true,
   tourDurationMin: 30,
@@ -2571,9 +2582,12 @@ function wdBreakup(coins, opt){
   const inr = !fee, mul = inr ? cfg().usdToInr : 1, sy = inr ? "₹" : (isUsdtOpt(opt) ? "USDT " : "$");
   const f = v => inr ? Math.round(v).toLocaleString("en-IN") : v.toFixed(2);
   const g = gross*mul, cut = g*pct/100, net = g-cut;
+  const tp = fee ? 0 : taxPct(m), pp = fee ? 0 : procPct(m);
+  const line = (n, pc) => `<div style="display:flex;justify-content:space-between;color:#ff9b5c"><span>${n} (${pc}%)</span><b>-${sy}${f(g*pc/100)}</b></div>`;
+  const cutLines = fee ? line("Processing Fee", pct) : (tp>0||pp===0 ? line("Tax (TDS)", tp) : "") + (pp>0 ? line("Processing Fee", pp) : "");
   return {m, pct, sy, g, cut, net, label: fee ? "Processing Fee" : "Tax (TDS)", html:
     `<div style="display:flex;justify-content:space-between"><span>Requested Amount</span><b>${sy}${f(g)}</b></div>
-     <div style="display:flex;justify-content:space-between;color:#ff9b5c"><span>${fee?"Processing Fee":"Tax (TDS)"} (${pct}%)</span><b>-${sy}${f(cut)}</b></div>
+     ${cutLines}
      <div style="display:flex;justify-content:space-between;border-top:1px solid #ffffff22;margin-top:4px;padding-top:4px"><span>Net Payable Amount</span><b style="color:var(--ok)">${sy}${f(net)}</b></div>`};
 }
 function updateWcUsd(){
@@ -3185,10 +3199,12 @@ function tWal(){
   <input data-p="config.presetAmounts" data-t="csv" value="${E((A.doc.config.presetAmounts||[]).join(","))}">
   <div class="mut" style="margin:12px 0 2px">🇮🇳 UPI / Paytm / PhonePe — Tax (TDS), default 30%</div>
   ${[["UPI","upi"],["Paytm","paytm"],["PhonePe","phonepe"]].map(([n,k])=>`${tg(n+" Method ON/OFF","config."+k+"Enabled","1")}${tg(n+" Tax (TDS) ON/OFF","config."+k+"_fee_enabled","1")}${inp(n+" Tax %","config."+k+"_fee_percent","n",{w:80})}`).join("")}
+  <div class="mut" style="margin:8px 0 2px">🇮🇳 India Processing Fee (Tax ke upar alag se, UPI / Paytm / PhonePe) — default OFF</div>
+  ${tg("India Processing Fee ON/OFF","config.in_proc_enabled","")}${inp("India Processing Fee %","config.in_proc_percent","n",{w:80})}
   ${inp("USD → INR Rate","config.usdToInr","n",{w:80})}
   <div class="mut" style="margin:12px 0 2px">🌐 PayPal / Binance / Bybit — Processing Fee, default 18%</div>
   ${[["PayPal","paypal"],["Binance","binance"],["Bybit","bybit"]].map(([n,k])=>`${tg(n+" Method ON/OFF","config."+k+"Enabled","1")}${tg(n+" Processing Fee ON/OFF","config."+k+"_fee_enabled","1")}${inp(n+" Fee %","config."+k+"_fee_percent","n",{w:80})}`).join("")}
-  <div class="mut">Tax/Fee OFF = 0% katega, user ko poora amount milega. Naya % sirf naye withdrawals par lagta hai; purani requests ka % unke saath save rehta hai.</div>
+  <div class="mut">Tax/Fee OFF = 0% katega (India: Tax aur Processing Fee dono alag ON/OFF; dono ON ho to dono jud kar katte hain), user ko poora amount milega. Naya % sirf naye withdrawals par lagta hai; purani requests ka % unke saath save rehta hai.</div>
   ${tPayout()}`;
 }
 function stashPo(){ const m = $adm.querySelector("#poMerchant"), w = $adm.querySelector("#poWebhook"); if(m) A.payout.merchantId = m.value; if(w) A.payout.webhookUrl = w.value.trim(); }
