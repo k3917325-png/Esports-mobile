@@ -2,10 +2,10 @@ plugins {
     id 'com.android.application'
 }
 
-// Ad networks: Unity Ads (primary) + Start.io (fallback). IDs are public identifiers, not secrets.
+// Ad networks, priority: Unity Ads -> Start.io -> AppLovin MAX. IDs are public identifiers, not secrets.
 // admobAppId is kept ONLY for Google's consent form (UMP); no AdMob ads are shown.
 def admobAppId = System.getenv("ADMOB_APP_ID") ?: "ca-app-pub-4043259069573209~9491756832"
-def startioAppId = System.getenv("STARTIO_APP_ID") ?: ""
+def startioAppId = System.getenv("STARTIO_APP_ID") ?: "209272738"
 def runNumber = Integer.parseInt(System.getenv("GITHUB_RUN_NUMBER") ?: "1")   // auto-increments every CI build (Play rejects duplicates)
 def unityGameId = System.getenv("UNITY_GAME_ID") ?: "800406653"
 
@@ -64,6 +64,7 @@ dependencies {
     implementation 'androidx.biometric:biometric:1.1.0'
     implementation 'com.google.android.ump:user-messaging-platform:2.2.0'
     implementation 'com.unity3d.ads:unity-ads:4.12.5'
+    implementation 'com.applovin:applovin-sdk:13.0.1'   // AppLovin MAX (final backup)
     implementation 'com.startapp:inapp-sdk:5.+'   // Start.io (fallback network)
     implementation 'com.google.android.gms:play-services-auth:21.2.0'   // Google Sign-In
 }

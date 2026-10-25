@@ -5,6 +5,14 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
 
+import com.applovin.mediation.MaxAd;
+import com.applovin.mediation.MaxError;
+import com.applovin.mediation.MaxReward;
+import com.applovin.mediation.MaxRewardedAdListener;
+import com.applovin.mediation.ads.MaxAdView;
+import com.applovin.mediation.ads.MaxRewardedAd;
+import com.applovin.sdk.AppLovinSdk;
+import com.applovin.sdk.AppLovinSdkInitializationConfiguration;
 import com.startapp.sdk.ads.banner.Banner;
 import com.startapp.sdk.ads.banner.BannerListener;
 import com.startapp.sdk.adsbase.Ad;
@@ -23,9 +31,10 @@ import com.unity3d.services.banners.BannerView;
 import com.unity3d.services.banners.UnityBannerSize;
 
 /**
- * Two ad networks only:
- *   1. Unity Ads  - PRIMARY  (rewarded + banner)
- *   2. Start.io   - FALLBACK (rewarded + banner), used the moment Unity has no ad / fails.
+ * Three ad networks, strict priority:
+ *   1. Unity Ads   - PRIMARY        (rewarded + banner)
+ *   2. Start.io    - FIRST BACKUP   (used the moment Unity has no ad / fails)
+ *   3. AppLovin MAX- FINAL BACKUP   (used only if Unity AND Start.io both have nothing)
  * Admin panel can switch each network ON/OFF. All calls must happen on the UI thread.
  */
 class AdHub {
@@ -36,8 +45,8 @@ class AdHub {
     private final Result cb;
 
     // ---- admin config (pushed from HTML) ----
-    private boolean configured = false, on = true, unityOn = true, startOn = true, consent = false;
-    private String unityGame = "", unityBanner = "", unityRewarded = "", startId = "";
+    private boolean configured = false, on = true, unityOn = true, startOn = true, alOn = true, consent = false;
+    private String unityGame = "", unityBanner = "", unityRewarded = "", startId = "", alKey = "", alBanner = "", alRewarded = "";
     private boolean bannerWanted = false;
     private long lastRetry = 0;
 
@@ -50,7 +59,9 @@ class AdHub {
 
     // ---- banner ----
     private View bannerView; private String bannerNet = "";
-    private boolean unityBannerFailed = false;
+    private boolean unityBannerFailed = false, startBannerFailed = false;
+    // ---- AppLovin MAX state ----
+    private boolean alInitStarted = false, alReady = false; private MaxRewardedAd alAd; private String alAdId = "", alPendingId; private boolean alLoaded = false;
 
     AdHub(Activity act, FrameLayout holder, Result cb) { this.act = act; this.holder = holder; this.cb = cb; }
 
@@ -67,6 +78,10 @@ class AdHub {
             unityBanner = plc(o.optString("unityBanner", ""));
             unityRewarded = plc(o.optString("unityRewarded", ""));
             startId = plc(o.optString("startId", ""));
+            alOn = o.optBoolean("alOn", true);
+            alKey = plc(o.optString("alKey", ""));
+            alBanner = plc(o.optString("alBanner", ""));
+            alRewarded = plc(o.optString("alRewarded", ""));
             configured = true;
         } catch (Exception e) { return; }
         apply();
@@ -82,12 +97,14 @@ class AdHub {
     private String startAppId() { return startId.isEmpty() ? act.getString(R.string.startio_app_id) : startId; }
 
     private boolean unityUsable() { return configured && on && unityOn; }
+    private boolean alUsable() { return configured && on && alOn && !alKey.isEmpty() && !alRewarded.isEmpty(); }
     private boolean startUsable() { return configured && on && startOn && consent && !startAppId().isEmpty(); }
 
     /** Loads both networks up front so the fallback is ready the moment Unity has no ad. */
     private void apply() {
         if (unityUsable()) initUnity();
         if (startUsable()) initStart();
+        if (alUsable()) initApplovin();
         refreshBanner();
     }
 
@@ -95,7 +112,8 @@ class AdHub {
         long now = System.currentTimeMillis();
         if (now - lastRetry < 15000) return;
         lastRetry = now;
-        unityBannerFailed = false;
+        unityBannerFailed = false; startBannerFailed = false;
+        if (alUsable()) { if (alReady) loadApplovin(); else initApplovin(); }
         if (unityUsable()) { if (unityReady) loadUnity(); else initUnity(); }
         if (startUsable()) { if (startInit) loadStart(); else initStart(); }
     }
@@ -104,6 +122,7 @@ class AdHub {
     void showRewarded(final String id) {
         if (unityUsable() && unityReady && unityLoaded) { showUnity(id); return; }   // 1) Unity
         if (startUsable() && startLoaded && startAd != null) { showStart(id); return; } // 2) Start.io
+        if (alUsable() && alReady && alAd != null && alAd.isReady()) { showApplovin(id); return; } // 3) AppLovin
         retryAll();
         cb.done(id, false);
     }
@@ -134,7 +153,9 @@ class AdHub {
                 act.runOnUiThread(() -> {
                     loadUnity();
                     // Unity could not show -> straight to Start.io
-                    if (startUsable() && startLoaded && startAd != null) showStart(id); else cb.done(id, false);
+                    if (startUsable() && startLoaded && startAd != null) showStart(id);
+                    else if (alUsable() && alReady && alAd != null && alAd.isReady()) showApplovin(id);
+                    else cb.done(id, false);
                 });
             }
             @Override public void onUnityAdsShowStart(String placementId) {}
@@ -186,11 +207,45 @@ class AdHub {
         } catch (Throwable t) { cb.done(id, false); loadStart(); }
     }
 
+    // ---------- AppLovin MAX (final backup) ----------
+    private void initApplovin() {
+        if (alInitStarted) { if (alReady) loadApplovin(); return; }
+        alInitStarted = true;
+        try {
+            AppLovinSdkInitializationConfiguration cfg = AppLovinSdkInitializationConfiguration.builder(alKey, act).setMediationProvider("max").build();
+            AppLovinSdk.getInstance(act).initialize(cfg, c -> act.runOnUiThread(() -> { alReady = true; loadApplovin(); refreshBanner(); }));
+        } catch (Throwable e) { alInitStarted = false; }
+    }
+
+    private void loadApplovin() {
+        if (!alReady || alRewarded.isEmpty()) return;
+        if (alAd == null || !alRewarded.equals(alAdId)) {
+            alAdId = alRewarded;
+            alAd = MaxRewardedAd.getInstance(alRewarded, act);
+            alAd.setListener(new MaxRewardedAdListener() {
+                private boolean earned;
+                @Override public void onUserRewarded(MaxAd ad, MaxReward reward) { earned = true; }
+                @Override public void onAdLoaded(MaxAd ad) {}
+                @Override public void onAdDisplayed(MaxAd ad) {}
+                @Override public void onAdClicked(MaxAd ad) {}
+                @Override public void onAdHidden(MaxAd ad) { act.runOnUiThread(() -> { alResult(earned); earned = false; alAd.loadAd(); }); }
+                @Override public void onAdLoadFailed(String adUnitId, MaxError error) {}
+                @Override public void onAdDisplayFailed(MaxAd ad, MaxError error) { act.runOnUiThread(() -> { alResult(false); alAd.loadAd(); }); }
+            });
+        }
+        if (!alAd.isReady()) alAd.loadAd();
+    }
+
+    private void alResult(boolean ok) { String id = alPendingId; alPendingId = null; if (id != null) cb.done(id, ok); }
+
+    private void showApplovin(final String id) { alPendingId = id; alAd.showAd(); }
+
     // ================= banner =================
     /** Unity banner first; if it fails (or Unity is OFF) the Start.io banner is used. */
     private String bannerNetwork() {
         if (unityUsable() && unityReady && !unityBannerFailed) return "unity";
-        if (startUsable() && startInit) return "startio";
+        if (startUsable() && startInit && !startBannerFailed) return "startio";
+        if (alUsable() && alReady && !alBanner.isEmpty()) return "applovin";
         return "";
     }
 
@@ -212,22 +267,27 @@ class AdHub {
                 });
                 holder.addView(b, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL));
                 b.load(); bannerView = b;
+            } else if ("applovin".equals(want)) {
+                MaxAdView b = new MaxAdView(alBanner, act);
+                int h = (int) (50 * act.getResources().getDisplayMetrics().density);
+                holder.addView(b, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, h));
+                b.loadAd(); bannerView = b;
             } else {
                 Banner b = new Banner(act, new BannerListener() {
                     @Override public void onReceiveAd(View v) {}
-                    @Override public void onFailedToReceiveAd(View v) {}
+                    @Override public void onFailedToReceiveAd(View v) { act.runOnUiThread(() -> { startBannerFailed = true; refreshBanner(); }); }
                     @Override public void onImpression(View v) {}
                     @Override public void onClick(View v) {}
                 });
                 holder.addView(b, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL));
                 bannerView = b;
             }
-        } catch (Throwable e) { bannerView = null; if ("unity".equals(want)) { unityBannerFailed = true; } }
+        } catch (Throwable e) { bannerView = null; if ("unity".equals(want)) unityBannerFailed = true; else if ("startio".equals(want)) startBannerFailed = true; }
         updateBannerVisibility();
     }
 
     private void removeBanner() {
-        try { if (bannerView instanceof BannerView) ((BannerView) bannerView).destroy(); } catch (Exception ignored) {}
+        try { if (bannerView instanceof BannerView) ((BannerView) bannerView).destroy(); else if (bannerView instanceof MaxAdView) ((MaxAdView) bannerView).destroy(); } catch (Exception ignored) {}
         holder.removeAllViews(); bannerView = null; bannerNet = "";
     }
 

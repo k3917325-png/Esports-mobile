@@ -67,7 +67,7 @@ jobs:
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
           ADMOB_APP_ID: ${{ vars.ADMOB_APP_ID || 'ca-app-pub-4043259069573209~9491756832' }}
           UNITY_GAME_ID: ${{ vars.UNITY_GAME_ID || '800406653' }}
-          STARTIO_APP_ID: ${{ vars.STARTIO_APP_ID }}
+          STARTIO_APP_ID: ${{ vars.STARTIO_APP_ID || '209272738' }}
           UNITY_TEST_MODE: ${{ vars.UNITY_TEST_MODE || 'false' }}
         run: |
           chmod +x gradlew
