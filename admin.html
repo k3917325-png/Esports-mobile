@@ -388,7 +388,7 @@ const TERMS_HTML = `
 <h3>4. Taxation & Compliance (India)</h3>
 <p>Applicable Government regulations (jaise Section 194BA / Income Tax rules) ke mutabik, user ke net earnings/rewards par applicable TDS ya taxes deduct kiye ja sakte hain. Apni individual tax liability ke liye user khud responsible hoga — app/company kisi bhi personal tax filing ke liye responsible nahi hai.</p>
 <h3>5. Ad Serving & Third-Party Services</h3>
-<p>Rewards claim karne ke liye user ko third-party rewarded ads (jaise Google AdMob, AppLovin MAX, Unity Ads) dekhne pad sakte hain. App in third-party ad networks ki kisi bhi downtime, failure ya malfunction ke liye responsible nahi hai.</p>
+<p>Rewards claim karne ke liye user ko third-party rewarded ads (jaise Unity Ads, Start.io) dekhne pad sakte hain. App in third-party ad networks ki kisi bhi downtime, failure ya malfunction ke liye responsible nahi hai.</p>
 <h3>6. Service Termination & Modifications</h3>
 <p>Management ke paas kisi bhi samay, bina prior notice ke, app ke features, RP allocation rates, reward structure, ya leaderboard rules ko update/modify/discontinue karne ka adhikar surakshit hai.</p>
 <h3>7. Agreement</h3>
@@ -399,7 +399,7 @@ const PRIVACY_HTML = `
 <h3>2. How We Use Your Information</h3>
 <p>Collected data ka use account verification, rewards/leaderboard calculate karne, withdrawal process karne, fraud prevention, aur app ki services improve karne ke liye hota hai. Aapka data kisi third party ko bina zaroorat ke becha ya share nahi kiya jaata.</p>
 <h3>3. Third-Party Services</h3>
-<p>App rewarded ads dikhane ke liye third-party ad networks (Google AdMob, AppLovin MAX, Unity Ads) use karta hai — in networks ki apni alag privacy policies hoti hain jo device/ad data collect kar sakti hain.</p>
+<p>App rewarded ads dikhane ke liye third-party ad networks (Unity Ads, Start.io) use karta hai — in networks ki apni alag privacy policies hoti hain jo device/ad data collect kar sakti hain.</p>
 <h3>4. Data Security</h3>
 <p>Hum aapke data ko surakshit rakhne ke liye reasonable security measures use karte hain, lekin koi bhi internet-based service 100% secure hone ki guarantee nahi de sakti.</p>
 <h3>5. Payout Information</h3>
@@ -1096,8 +1096,8 @@ function mergeDeep(b, o){
   }
   return o === undefined ? b : o;
 }
-function defaultAdConfig(){ return {on:true, id:"", bannerId:"", interstitialId:"", rewardedId:"", network:"mediation", order:"unity,admob,applovin", unityOn:true,
-  networks:{admob:{bannerId:"",interstitialId:"",rewardedId:""}, unity:{gameId:"",bannerId:"",interstitialId:"",rewardedId:""}, applovin:{bannerId:"",interstitialId:"",rewardedId:""}},
+function defaultAdConfig(){ return {on:true, id:"", bannerId:"", interstitialId:"", rewardedId:"", network:"mediation", order:"unity,startio", unityOn:true, startOn:true,
+  networks:{unity:{gameId:"",bannerId:"",interstitialId:"",rewardedId:""}, startio:{appId:""}},
   screens:{home:true,matches:true,promo:true,wallet:true,profile:true,game:true}}; }
 let RCFG = null, RADS = null, RPROMOS = null, lastRemoteJson = "";
 function setRemote(doc){
@@ -1418,9 +1418,8 @@ if(S && !S.adConfig.screens){ S.adConfig.bannerId = S.adConfig.bannerId||S.adCon
 if(S && S.adConfig && !S.adConfig.networks){
   S.adConfig.network = S.adConfig.network || "mediation";
   S.adConfig.networks = {
-    admob: {bannerId:S.adConfig.bannerId||"", interstitialId:S.adConfig.interstitialId||"", rewardedId:S.adConfig.rewardedId||""},
     unity: {gameId:"", bannerId:"", interstitialId:"", rewardedId:""},
-    applovin: {bannerId:"", interstitialId:"", rewardedId:""}
+    startio: {appId:""}
   };
   save();
 }
@@ -1452,10 +1451,9 @@ if(S && S.wd && S.wd.length && S.wd.some(w=>!w.id)){
 }
 function pushAdCfg(){
   if(!(window.AndroidAds && window.AndroidAds.configure && S && S.adConfig)) return;
-  const a = S.adConfig, n = a.networks || {}, ad = n.admob || {}, u = n.unity || {}, al = n.applovin || {};
-  try{ window.AndroidAds.configure(JSON.stringify({network:a.network||"mediation", order:a.order||"unity,admob,applovin", on:a.on!==false, unityOn:a.unityOn!==false,
-    admobBanner:ad.bannerId||"", admobRewarded:ad.rewardedId||"", unityGame:u.gameId||"", unityBanner:u.bannerId||"", unityRewarded:u.rewardedId||"",
-    alKey:al.sdkKey||"", alBanner:al.bannerId||"", alRewarded:al.rewardedId||""})); }catch(e){}
+  const a = S.adConfig, n = a.networks || {}, u = n.unity || {}, st = n.startio || {};
+  try{ window.AndroidAds.configure(JSON.stringify({on:a.on!==false, unityOn:a.unityOn!==false, startOn:a.startOn!==false,
+    unityGame:u.gameId||"", unityBanner:u.bannerId||"", unityRewarded:u.rewardedId||"", startId:st.appId||""})); }catch(e){}
 }
 function adBox(screen){
   pushAdCfg();
@@ -1544,7 +1542,7 @@ async function loginDone(g, ref, ip){
   const acc = loadAccounts()[g.uid];
   S = {name:g.name || g.email.split("@")[0] || "Player", phone:g.uid, email:g.email, cc:"", countryId:ip||"", coins:(acc?acc.coins||0:100 + (ref?50:0)), code:(acc&&acc.code)||("ESP"+Math.floor(1000+Math.random()*9000)), lastBonus:"", joined:{}, tours:seedT(), rp:0, best:{}, wd:[], streak:0,
     config: defaultConfig(), adConfig:{on:true, id:"", bannerId:"", interstitialId:"", rewardedId:"", network:"mediation",
-      networks:{admob:{bannerId:"",interstitialId:"",rewardedId:""}, unity:{gameId:"",bannerId:"",interstitialId:"",rewardedId:""}, applovin:{bannerId:"",interstitialId:"",rewardedId:""}},
+      networks:{unity:{gameId:"",bannerId:"",interstitialId:"",rewardedId:""}, startio:{appId:""}},
       screens:{home:true,matches:true,promo:true,wallet:true,profile:true,game:true}}};
   applyRemoteToS(); reconcileTours();
   save(); tab="home"; render();
@@ -1599,7 +1597,7 @@ async function fbSignOutUser(){ FBS.user = null; try{ localStorage.removeItem("f
 function loginAsGuest(){
   S = {name:"Guest", phone:"", cc:"", isGuest:true, coins:100, code:"GUEST"+Math.floor(1000+Math.random()*9000), lastBonus:"", joined:{}, tours:seedT(), rp:0, best:{}, wd:[], streak:0,
     config: defaultConfig(), adConfig:{on:true, id:"", bannerId:"", interstitialId:"", rewardedId:"", network:"mediation",
-      networks:{admob:{bannerId:"",interstitialId:"",rewardedId:""}, unity:{gameId:"",bannerId:"",interstitialId:"",rewardedId:""}, applovin:{bannerId:"",interstitialId:"",rewardedId:""}},
+      networks:{unity:{gameId:"",bannerId:"",interstitialId:"",rewardedId:""}, startio:{appId:""}},
       screens:{home:true,matches:true,promo:true,wallet:true,profile:true,game:true}}};
   // Guest coins/progress sirf is device/session tak hi rehte hain — koi phone number nahi, isliye accounts registry mein save nahi hota
   applyRemoteToS(); reconcileTours();
@@ -3242,12 +3240,10 @@ function tAds(){
   <div class="card2"><div class="ar"><span><b>🎮 Unity Ads Status</b><br><span class="mut">Seedha app ke database (Firebase) mein save hota hai</span></span>
     <button class="b ${un?"g":"s"}" data-a="unity">${un?"ON ✅":"OFF ❌"}</button></div></div>
   ${tg("All Ads","adConfig.on","1")}
-  ${sel("Ad Network Mode","adConfig.network",[["mediation","Auto Fallback (neeche wale order me)"],["admob","AdMob Only"],["unity","Unity Ads Only"],["applovin","AppLovin MAX Only"]])}
-  ${sel("Fallback Order (Auto mode me)","adConfig.order",[["unity,admob,applovin","Unity ➔ AdMob ➔ AppLovin"],["unity,applovin,admob","Unity ➔ AppLovin ➔ AdMob"],["admob,unity,applovin","AdMob ➔ Unity ➔ AppLovin"],["admob,applovin,unity","AdMob ➔ AppLovin ➔ Unity"],["applovin,unity,admob","AppLovin ➔ Unity ➔ AdMob"],["applovin,admob,unity","AppLovin ➔ AdMob ➔ Unity"]])}
-  <div class="mut" style="font-size:11px;margin:2px 0 6px">Auto mode: pehle network me ad ready na ho to agle se try hota hai. Banner sirf pehle chalne wale network ka dikhta hai. AdMob ka App ID app ke andar build me fixed hai (yahan se badalta nahi).</div>
-  <div class="mut" style="margin:8px 0 4px">📱 AdMob — Ad Unit IDs</div>${net("admob","bannerId","AdMob Banner ID")}${net("admob","interstitialId","AdMob Interstitial ID")}${net("admob","rewardedId","AdMob Rewarded ID")}
-  <div class="mut" style="margin:8px 0 4px">🎮 Unity Ads — Game ID & Ad Unit IDs</div>${net("unity","gameId","Unity Game ID (6-7 digit)")}${net("unity","bannerId","Unity Banner ID")}${net("unity","interstitialId","Unity Interstitial ID")}${net("unity","rewardedId","Unity Rewarded ID")}
-  <div class="mut" style="margin:8px 0 4px">🦁 AppLovin — Ad Unit IDs (16-char)</div>${net("applovin","sdkKey","AppLovin SDK Key (lamba key, 80+ char)",120)}${net("applovin","bannerId","AppLovin Banner ID",16)}${net("applovin","interstitialId","AppLovin Interstitial ID",16)}${net("applovin","rewardedId","AppLovin Rewarded ID",16)}
+  ${tg("Start.io Fallback ON/OFF","adConfig.startOn","1")}
+  <div class="mut" style="font-size:11px;margin:2px 0 6px">Sirf 2 networks: pehle <b>Unity Ads</b> (Rewarded + Banner). Unity ka ad na aaye ya fail ho to turant <b>Start.io</b> ka ad chalta hai. Ye ON/OFF seedha app mein lagu hota hai, naya build nahi chahiye.</div>
+  <div class="mut" style="margin:8px 0 4px">🎮 Unity Ads — Game ID & Ad Unit IDs (khali = build wala default)</div>${net("unity","gameId","Unity Game ID (6-9 digit)")}${net("unity","bannerId","Unity Banner Placement (default Banner_Android)")}${net("unity","rewardedId","Unity Rewarded Placement (default Rewarded_Android)")}
+  <div class="mut" style="margin:8px 0 4px">🚀 Start.io — App ID</div>${net("startio","appId","Start.io App ID (numeric, Start.io dashboard se)",20)}
   <div class="mut" style="margin:12px 0 4px">Per-Screen Ad Toggle</div>
   ${["home","matches","promo","wallet","profile","game"].map(sc=>tg(sc[0].toUpperCase()+sc.slice(1),`adConfig.screens.${sc}`,"1")).join("")}`;
 }
