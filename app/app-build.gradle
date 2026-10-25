@@ -2,13 +2,12 @@ plugins {
     id 'com.android.application'
 }
 
-// Public AdMob identifiers (not secrets). Defaults are Google's official TEST ids; CI injects production ids
-// from repo variables ADMOB_APP_ID / ADMOB_REWARDED_ID.
-def admobAppId = System.getenv("ADMOB_APP_ID") ?: "ca-app-pub-3940256099942544~3347511713"
+// Ad networks: Unity Ads (primary) + Start.io (fallback). IDs are public identifiers, not secrets.
+// admobAppId is kept ONLY for Google's consent form (UMP); no AdMob ads are shown.
+def admobAppId = System.getenv("ADMOB_APP_ID") ?: "ca-app-pub-4043259069573209~9491756832"
+def startioAppId = System.getenv("STARTIO_APP_ID") ?: ""
 def runNumber = Integer.parseInt(System.getenv("GITHUB_RUN_NUMBER") ?: "1")   // auto-increments every CI build (Play rejects duplicates)
-def admobBannerId = System.getenv("ADMOB_BANNER_ID") ?: "ca-app-pub-3940256099942544/9214589741"
 def unityGameId = System.getenv("UNITY_GAME_ID") ?: "800406653"
-def admobRewardedId = System.getenv("ADMOB_REWARDED_ID") ?: "ca-app-pub-3940256099942544/5224354917"
 
 android {
     namespace "com.mobile.esports"
@@ -21,8 +20,7 @@ android {
         versionCode runNumber
         versionName "1.0.0"
         resValue "string", "admob_app_id", admobAppId
-        resValue "string", "admob_rewarded_id", admobRewardedId
-        resValue "string", "admob_banner_id", admobBannerId
+        resValue "string", "startio_app_id", startioAppId
         resValue "string", "unity_game_id", unityGameId
         resValue "bool", "unity_test_mode", (System.getenv("UNITY_TEST_MODE") ?: "true")
     }
@@ -64,9 +62,8 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.7.0'
     implementation 'androidx.webkit:webkit:1.11.0'
     implementation 'androidx.biometric:biometric:1.1.0'
-    implementation 'com.google.android.gms:play-services-ads:23.3.0'
     implementation 'com.google.android.ump:user-messaging-platform:2.2.0'
     implementation 'com.unity3d.ads:unity-ads:4.12.5'
-    implementation 'com.applovin:applovin-sdk:13.0.1'
+    implementation 'com.startapp:inapp-sdk:5.+'   // Start.io (fallback network)
     implementation 'com.google.android.gms:play-services-auth:21.2.0'   // Google Sign-In
 }

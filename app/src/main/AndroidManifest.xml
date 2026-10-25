@@ -41,17 +41,5 @@
             android:exported="false"
             tools:node="merge"
             tools:replace="android:authorities" />
-        <provider
-            android:name="com.applovin.sdk.AppLovinInitProvider"
-            android:authorities="${applicationId}.applovininitprovider"
-            android:exported="false"
-            tools:node="merge"
-            tools:replace="android:authorities" />
-        <provider
-            android:name="com.google.android.gms.ads.MobileAdsInitProvider"
-            android:authorities="${applicationId}.mobileadsinitprovider"
-            android:exported="false"
-            tools:node="merge"
-            tools:replace="android:authorities" />
     </application>
 </manifest>

@@ -4,7 +4,7 @@ name: Build Play Store AAB (signed)
 # Output: artifact "play-store-aab" (app-release.aab) + "mapping" (R8 mapping, Play Console me upload karo).
 # Secrets (Settings -> Secrets and variables -> Actions -> Secrets):
 #   RELEASE_KEYSTORE_BASE64, RELEASE_KEYSTORE_PASSWORD, RELEASE_KEY_ALIAS, RELEASE_KEY_PASSWORD
-# Variables (optional, real ad ids): ADMOB_APP_ID, ADMOB_REWARDED_ID, ADMOB_BANNER_ID, UNITY_GAME_ID
+# Variables (optional): UNITY_GAME_ID, STARTIO_APP_ID (Start.io App ID; admin panel se bhi set ho sakta hai)
 on:
   push:
     branches: [ aab-build ]   # is branch par push hote hi AAB banta hai (workflow_dispatch tab tak nahi dikhta jab tak file main branch me na ho)
@@ -33,8 +33,6 @@ jobs:
           KA: ${{ secrets.RELEASE_KEY_ALIAS }}
           KP: ${{ secrets.RELEASE_KEY_PASSWORD }}
           ADMOB_APP_ID: ${{ vars.ADMOB_APP_ID || 'ca-app-pub-4043259069573209~9491756832' }}
-          ADMOB_REWARDED_ID: ${{ vars.ADMOB_REWARDED_ID || 'ca-app-pub-4043259069573209/9654875531' }}
-          ADMOB_BANNER_ID: ${{ vars.ADMOB_BANNER_ID || 'ca-app-pub-4043259069573209/3132865061' }}
           ALLOW_TEST: ${{ github.event.inputs.allow_test_ads || 'false' }}
         run: |
           miss=""
@@ -42,7 +40,7 @@ jobs:
           [ -z "$KA" ] && miss="$miss RELEASE_KEY_ALIAS"
           [ -z "$KP" ] && miss="$miss RELEASE_KEY_PASSWORD"
           if [ -n "$miss" ]; then echo "::error title=Secrets missing::GitHub Secrets banao:$miss"; exit 1; fi
-          for v in ADMOB_APP_ID ADMOB_REWARDED_ID ADMOB_BANNER_ID; do
+          for v in ADMOB_APP_ID; do
             val="${!v}"
             if [ -z "$val" ] || [[ "$val" == ca-app-pub-3940256099942544* ]]; then
               if [ "$ALLOW_TEST" = "true" ]; then echo "::warning title=Test ads::$v real nahi hai - Google TEST ads chalenge (production se pehle badlo)"; else echo "::error title=Real AdMob id chahiye::$v missing/test id"; exit 1; fi
@@ -68,9 +66,8 @@ jobs:
           RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
           ADMOB_APP_ID: ${{ vars.ADMOB_APP_ID || 'ca-app-pub-4043259069573209~9491756832' }}
-          ADMOB_REWARDED_ID: ${{ vars.ADMOB_REWARDED_ID || 'ca-app-pub-4043259069573209/9654875531' }}
-          ADMOB_BANNER_ID: ${{ vars.ADMOB_BANNER_ID || 'ca-app-pub-4043259069573209/3132865061' }}
           UNITY_GAME_ID: ${{ vars.UNITY_GAME_ID || '800406653' }}
+          STARTIO_APP_ID: ${{ vars.STARTIO_APP_ID }}
           UNITY_TEST_MODE: ${{ vars.UNITY_TEST_MODE || 'false' }}
         run: |
           chmod +x gradlew
@@ -94,7 +91,7 @@ jobs:
           BAD=$(echo "$AUTH" | grep -v 'authorities="com.sportsreward.app\.' || true)
           [ -z "$BAD" ] || { echo "::error title=Authority prefix galat::$BAD"; exit 1; }
           echo "::notice title=Package/authorities OK::$(echo $PKG) | $(echo $AUTH | tr '\n' ' ')"
-          CNT=$(grep -c 'com.applovin.sdk.AppLovinInitProvider\|com.google.android.gms.ads.MobileAdsInitProvider\|androidx.startup.InitializationProvider' "$M")
+          CNT=$(grep -c 'androidx.startup.InitializationProvider' "$M")
           echo "provider entries: $CNT"
       - name: Verify AAB is signed with the upload key
         run: |

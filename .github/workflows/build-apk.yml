@@ -27,8 +27,7 @@ jobs:
       - name: Build debug APK
         env:
           ADMOB_APP_ID: ${{ vars.ADMOB_APP_ID }}
-          ADMOB_REWARDED_ID: ${{ vars.ADMOB_REWARDED_ID }}
-          ADMOB_BANNER_ID: ${{ vars.ADMOB_BANNER_ID }}
+          STARTIO_APP_ID: ${{ vars.STARTIO_APP_ID }}
           UNITY_GAME_ID: ${{ vars.UNITY_GAME_ID }}
           UNITY_TEST_MODE: ${{ vars.UNITY_TEST_MODE }}
         run: |
