@@ -205,6 +205,7 @@ class AdHub {
                 BannerView b = new BannerView(act, unityBannerPlc(), new UnityBannerSize(320, 50));
                 b.setListener(new BannerView.IListener() {
                     @Override public void onBannerLoaded(BannerView v) {}
+                    @Override public void onBannerShown(BannerView v) {}
                     @Override public void onBannerClick(BannerView v) {}
                     @Override public void onBannerFailedToLoad(BannerView v, BannerErrorInfo e) { act.runOnUiThread(() -> { unityBannerFailed = true; refreshBanner(); }); }
                     @Override public void onBannerLeftApplication(BannerView v) {}
