@@ -9,7 +9,7 @@ def admobBannerId = System.getenv("ADMOB_BANNER_ID") ?: "ca-app-pub-404325906957
 def admobRewardedId = System.getenv("ADMOB_REWARDED_ID") ?: "ca-app-pub-4043259069573209/9654875531"
 def startioAppId = System.getenv("STARTIO_APP_ID") ?: "209272738"
 def runNumber = Integer.parseInt(System.getenv("GITHUB_RUN_NUMBER") ?: "1")   // auto-increments every CI build (Play rejects duplicates)
-def unityGameId = System.getenv("UNITY_GAME_ID") ?: "800406653"
+def unityGameId = System.getenv("UNITY_GAME_ID") ?: "800411184"
 
 android {
     namespace "com.mobile.esports"
