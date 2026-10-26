@@ -55,7 +55,12 @@ class AdHub {
     // ---- debug (admin toggle "Ad Debug Messages"): shows which network served / why the others failed ----
     private String uSt = "-", sSt = "-", aSt = "-";
     private void dbg(String m) { if (debug) try { android.widget.Toast.makeText(act, m, android.widget.Toast.LENGTH_LONG).show(); } catch (Throwable ignored) {} }
-    private static String cut(String x) { x = x == null ? "" : x.replaceAll("\\s+", " "); return x.length() > 60 ? x.substring(0, 60) : x; }
+    private static String cut(String x) { x = x == null ? "" : x.replaceAll("\\s+", " "); return x.length() > 160 ? x.substring(0, 160) : x; }
+    /** Debug only: full-text dialog (a toast cuts long text). */
+    private void dbgDialog(String m) {
+        if (!debug) return;
+        try { new android.app.AlertDialog.Builder(act).setTitle("Ad debug").setMessage(m).setPositiveButton("OK", null).show(); } catch (Throwable ignored) {}
+    }
     private String stat() { return "Unity: " + uSt + "\nStart.io: " + sSt + "\nAdMob: " + aSt; }
     // ---- Unity state ----
     private boolean unityInitStarted = false, unityReady = false, unityLoading = false, unityLoaded = false;
@@ -134,7 +139,7 @@ class AdHub {
         if (unityUsable() && unityReady && unityLoaded) { dbg("Ad: UNITY"); showUnity(id); return; }   // 1) Unity
         if (startUsable() && startLoaded && startAd != null) { dbg("Ad: START.IO (Unity: " + uSt + ")"); showStart(id); return; } // 2) Start.io
         if (admobUsable() && admobAd != null) { dbg("Ad: ADMOB\n" + stat()); showAdmob(id); return; } // 3) AdMob
-        dbg("NO AD\n" + stat() + (consent ? "" : "\n(consent pending)"));
+        dbgDialog("NO AD\n\n" + stat() + "\n\nUnity game=" + unityGameId() + "\nrewarded placement=" + unityRewardedPlc() + "\nbanner placement=" + unityBannerPlc() + "\nStart.io id=" + startAppId() + (consent ? "" : "\n(consent pending)"));
         retryAll();
         cb.done(id, false);
     }
