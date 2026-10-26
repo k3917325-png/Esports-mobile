@@ -1452,7 +1452,7 @@ function pushAdCfg(){
   const a = S.adConfig, n = a.networks || {}, u = n.unity || {}, st = n.startio || {}, am = n.admob || {};
   try{ window.AndroidAds.configure(JSON.stringify({on:a.on!==false, unityOn:a.unityOn!==false, startOn:a.startOn!==false, admobOn:a.admobOn!==false,
     unityGame:u.gameId||"", unityBanner:u.bannerId||"", unityRewarded:u.rewardedId||"", startId:st.appId||"",
-    admobBanner:am.bannerId||"", admobRewarded:am.rewardedId||""})); }catch(e){}
+    admobBanner:(/^ca-app-pub-3940256099942544/.test(am.bannerId||"")?"":am.bannerId||""), admobRewarded:(/^ca-app-pub-3940256099942544/.test(am.rewardedId||"")?"":am.rewardedId||"")})); }catch(e){}
 }
 function adBox(screen){
   pushAdCfg();

@@ -90,7 +90,8 @@ class AdHub {
 
     void setBannerWanted(boolean w) { bannerWanted = w; updateBannerVisibility(); }
 
-    private static String adId(String s) { return s.matches("^ca-app-pub-[0-9]{16}/[0-9]{10}$") ? s : ""; }
+    // Google's sample/TEST ad units (ca-app-pub-3940256099942544) are ignored: the build's real IDs are used instead.
+    private static String adId(String s) { return s.matches("^ca-app-pub-[0-9]{16}/[0-9]{10}$") && !s.startsWith("ca-app-pub-3940256099942544") ? s : ""; }
     private String admobBannerId() { return admobBanner.isEmpty() ? act.getString(R.string.admob_banner_id) : admobBanner; }
     private String admobRewardedId() { return admobRewarded.isEmpty() ? act.getString(R.string.admob_rewarded_id) : admobRewarded; }
     private static String plc(String s) { return s.replaceAll("[^A-Za-z0-9_\\-]", ""); }
