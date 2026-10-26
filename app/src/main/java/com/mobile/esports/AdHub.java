@@ -103,8 +103,8 @@ class AdHub {
     private static String plc(String s) { return s.replaceAll("[^A-Za-z0-9_\\-]", ""); }
 
     private String unityGameId() { return unityGame.isEmpty() ? act.getString(R.string.unity_game_id) : unityGame; }
-    private String unityRewardedPlc() { return unityRewarded.isEmpty() ? "Rewarded_Android" : unityRewarded; }
-    private String unityBannerPlc() { return unityBanner.isEmpty() ? "Banner_Android" : unityBanner; }
+    private String unityRewardedPlc() { return unityRewarded.isEmpty() ? "BP_Rewarded_Android" : unityRewarded; }
+    private String unityBannerPlc() { return unityBanner.isEmpty() ? "BP_Banner_Android" : unityBanner; }
     private String startAppId() { return startId.isEmpty() ? act.getString(R.string.startio_app_id) : startId; }
 
     private boolean unityUsable() { return configured && on && unityOn; }
