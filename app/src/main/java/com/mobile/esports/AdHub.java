@@ -47,11 +47,16 @@ class AdHub {
     private final Result cb;
 
     // ---- admin config (pushed from HTML) ----
-    private boolean configured = false, on = true, unityOn = true, startOn = true, admobOn = true, consent = false;
+    private boolean configured = false, on = true, unityOn = true, startOn = true, admobOn = true, debug = false, consent = false;
     private String unityGame = "", unityBanner = "", unityRewarded = "", startId = "", admobBanner = "", admobRewarded = "";
     private boolean bannerWanted = false;
     private long lastRetry = 0;
 
+    // ---- debug (admin toggle "Ad Debug Messages"): shows which network served / why the others failed ----
+    private String uSt = "-", sSt = "-", aSt = "-";
+    private void dbg(String m) { if (debug) try { android.widget.Toast.makeText(act, m, android.widget.Toast.LENGTH_LONG).show(); } catch (Throwable ignored) {} }
+    private static String cut(String x) { x = x == null ? "" : x.replaceAll("\\s+", " "); return x.length() > 60 ? x.substring(0, 60) : x; }
+    private String stat() { return "Unity: " + uSt + "\nStart.io: " + sSt + "\nAdMob: " + aSt; }
     // ---- Unity state ----
     private boolean unityInitStarted = false, unityReady = false, unityLoading = false, unityLoaded = false;
     // ---- Start.io state ----
@@ -81,6 +86,7 @@ class AdHub {
             unityRewarded = plc(o.optString("unityRewarded", ""));
             startId = plc(o.optString("startId", ""));
             admobOn = o.optBoolean("admobOn", true);
+            debug = o.optBoolean("adDebug", false);
             admobBanner = adId(o.optString("admobBanner", ""));
             admobRewarded = adId(o.optString("admobRewarded", ""));
             configured = true;
@@ -125,9 +131,10 @@ class AdHub {
 
     // ================= rewarded =================
     void showRewarded(final String id) {
-        if (unityUsable() && unityReady && unityLoaded) { showUnity(id); return; }   // 1) Unity
-        if (startUsable() && startLoaded && startAd != null) { showStart(id); return; } // 2) Start.io
-        if (admobUsable() && admobAd != null) { showAdmob(id); return; } // 3) AdMob
+        if (unityUsable() && unityReady && unityLoaded) { dbg("Ad: UNITY"); showUnity(id); return; }   // 1) Unity
+        if (startUsable() && startLoaded && startAd != null) { dbg("Ad: START.IO (Unity: " + uSt + ")"); showStart(id); return; } // 2) Start.io
+        if (admobUsable() && admobAd != null) { dbg("Ad: ADMOB\n" + stat()); showAdmob(id); return; } // 3) AdMob
+        dbg("NO AD\n" + stat() + (consent ? "" : "\n(consent pending)"));
         retryAll();
         cb.done(id, false);
     }
@@ -137,8 +144,8 @@ class AdHub {
         if (unityInitStarted) { if (unityReady) loadUnity(); return; }
         unityInitStarted = true;
         UnityAds.initialize(act.getApplicationContext(), unityGameId(), act.getResources().getBoolean(R.bool.unity_test_mode), new IUnityAdsInitializationListener() {
-            @Override public void onInitializationComplete() { act.runOnUiThread(() -> { unityReady = true; loadUnity(); refreshBanner(); }); }
-            @Override public void onInitializationFailed(UnityAds.UnityAdsInitializationError error, String message) { act.runOnUiThread(() -> { unityInitStarted = false; unityBannerFailed = true; refreshBanner(); }); }
+            @Override public void onInitializationComplete() { act.runOnUiThread(() -> { uSt = "init ok"; unityReady = true; loadUnity(); refreshBanner(); }); }
+            @Override public void onInitializationFailed(UnityAds.UnityAdsInitializationError error, String message) { act.runOnUiThread(() -> { uSt = "init FAIL " + error + " " + cut(message); unityInitStarted = false; unityBannerFailed = true; refreshBanner(); }); }
         });
     }
 
@@ -146,8 +153,8 @@ class AdHub {
         if (!unityReady || unityLoading || unityLoaded) return;
         unityLoading = true;
         UnityAds.load(unityRewardedPlc(), new IUnityAdsLoadListener() {
-            @Override public void onUnityAdsAdLoaded(String placementId) { unityLoading = false; unityLoaded = true; }
-            @Override public void onUnityAdsFailedToLoad(String placementId, UnityAds.UnityAdsLoadError error, String message) { unityLoading = false; unityLoaded = false; }
+            @Override public void onUnityAdsAdLoaded(String placementId) { uSt = "ad ready"; unityLoading = false; unityLoaded = true; }
+            @Override public void onUnityAdsFailedToLoad(String placementId, UnityAds.UnityAdsLoadError error, String message) { uSt = "load FAIL " + error + " " + cut(message); unityLoading = false; unityLoaded = false; }
         });
     }
 
@@ -156,6 +163,7 @@ class AdHub {
         UnityAds.show(act, unityRewardedPlc(), new UnityAdsShowOptions(), new IUnityAdsShowListener() {
             @Override public void onUnityAdsShowFailure(String placementId, UnityAds.UnityAdsShowError error, String message) {
                 act.runOnUiThread(() -> {
+                    uSt = "show FAIL " + error + " " + cut(message);
                     loadUnity();
                     // Unity could not show -> straight to Start.io
                     if (startUsable() && startLoaded && startAd != null) showStart(id);
@@ -179,7 +187,8 @@ class AdHub {
                 StartAppSDK.init(act, startAppId(), false);      // false = no "return ads"
                 StartAppAd.disableSplash();
                 StartAppSDK.setTestAdsEnabled(false);
-            } catch (Throwable t) { startInit = false; return; }
+                sSt = "init ok";
+            } catch (Throwable t) { startInit = false; sSt = "init FAIL " + cut(String.valueOf(t)); return; }
         }
         loadStart();
     }
@@ -193,8 +202,8 @@ class AdHub {
                 @Override public void onVideoCompleted() { startEarned = true; }
             });
             ad.loadAd(StartAppAd.AdMode.REWARDED_VIDEO, new AdEventListener() {
-                @Override public void onReceiveAd(Ad a) { act.runOnUiThread(() -> { startAd = ad; startLoaded = true; startLoading = false; }); }
-                @Override public void onFailedToReceiveAd(Ad a) { act.runOnUiThread(() -> { startAd = null; startLoaded = false; startLoading = false; }); }
+                @Override public void onReceiveAd(Ad a) { act.runOnUiThread(() -> { sSt = "ad ready"; startAd = ad; startLoaded = true; startLoading = false; }); }
+                @Override public void onFailedToReceiveAd(Ad a) { act.runOnUiThread(() -> { sSt = "load FAIL " + cut(a == null ? "" : a.getErrorMessage()); startAd = null; startLoaded = false; startLoading = false; }); }
             });
         } catch (Throwable t) { startLoading = false; }
     }
@@ -226,8 +235,8 @@ class AdHub {
         admobLoading = true;
         try {
             RewardedAd.load(act, admobRewardedId(), new AdRequest.Builder().build(), new RewardedAdLoadCallback() {
-                @Override public void onAdLoaded(RewardedAd ad) { admobAd = ad; admobLoading = false; }
-                @Override public void onAdFailedToLoad(LoadAdError error) { admobAd = null; admobLoading = false; }
+                @Override public void onAdLoaded(RewardedAd ad) { aSt = "ad ready"; admobAd = ad; admobLoading = false; }
+                @Override public void onAdFailedToLoad(LoadAdError error) { aSt = "load FAIL " + error.getCode() + " " + cut(error.getMessage()); admobAd = null; admobLoading = false; }
             });
         } catch (Throwable t) { admobLoading = false; }
     }
@@ -256,6 +265,7 @@ class AdHub {
         if (want.equals(bannerNet) && (bannerView != null || want.isEmpty())) { updateBannerVisibility(); return; }
         removeBanner();
         bannerNet = want;
+        dbg("Banner: " + (want.isEmpty() ? "NONE" : want.toUpperCase()));
         if (want.isEmpty()) { updateBannerVisibility(); return; }
         try {
             if ("unity".equals(want)) {

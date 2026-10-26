@@ -1093,7 +1093,7 @@ function mergeDeep(b, o){
   }
   return o === undefined ? b : o;
 }
-function defaultAdConfig(){ return {on:true, id:"", bannerId:"", interstitialId:"", rewardedId:"", network:"mediation", order:"unity,startio,admob", unityOn:true, startOn:true, admobOn:true,
+function defaultAdConfig(){ return {on:true, id:"", bannerId:"", interstitialId:"", rewardedId:"", network:"mediation", order:"unity,startio,admob", unityOn:true, startOn:true, admobOn:true, adDebug:false,
   networks:{unity:{gameId:"",bannerId:"",interstitialId:"",rewardedId:""}, startio:{appId:""}, admob:{bannerId:"",interstitialId:"",rewardedId:""}},
   screens:{home:true,matches:true,promo:true,wallet:true,profile:true,game:true}}; }
 let RCFG = null, RADS = null, RPROMOS = null, lastRemoteJson = "";
@@ -1450,7 +1450,7 @@ if(S && S.wd && S.wd.length && S.wd.some(w=>!w.id)){
 function pushAdCfg(){
   if(!(window.AndroidAds && window.AndroidAds.configure && S && S.adConfig)) return;
   const a = S.adConfig, n = a.networks || {}, u = n.unity || {}, st = n.startio || {}, am = n.admob || {};
-  try{ window.AndroidAds.configure(JSON.stringify({on:a.on!==false, unityOn:a.unityOn!==false, startOn:a.startOn!==false, admobOn:a.admobOn!==false,
+  try{ window.AndroidAds.configure(JSON.stringify({on:a.on!==false, unityOn:a.unityOn!==false, startOn:a.startOn!==false, admobOn:a.admobOn!==false, adDebug:a.adDebug===true,
     unityGame:u.gameId||"", unityBanner:u.bannerId||"", unityRewarded:u.rewardedId||"", startId:st.appId||"",
     admobBanner:(/^ca-app-pub-3940256099942544/.test(am.bannerId||"")?"":am.bannerId||""), admobRewarded:(/^ca-app-pub-3940256099942544/.test(am.rewardedId||"")?"":am.rewardedId||"")})); }catch(e){}
 }
