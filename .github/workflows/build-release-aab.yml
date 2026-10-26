@@ -32,7 +32,6 @@ jobs:
           KSP: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
           KA: ${{ secrets.RELEASE_KEY_ALIAS }}
           KP: ${{ secrets.RELEASE_KEY_PASSWORD }}
-          ADMOB_APP_ID: ${{ vars.ADMOB_APP_ID || 'ca-app-pub-4043259069573209~9491756832' }}
           ALLOW_TEST: ${{ github.event.inputs.allow_test_ads || 'false' }}
         run: |
           miss=""
@@ -40,12 +39,6 @@ jobs:
           [ -z "$KA" ] && miss="$miss RELEASE_KEY_ALIAS"
           [ -z "$KP" ] && miss="$miss RELEASE_KEY_PASSWORD"
           if [ -n "$miss" ]; then echo "::error title=Secrets missing::GitHub Secrets banao:$miss"; exit 1; fi
-          for v in ADMOB_APP_ID; do
-            val="${!v}"
-            if [ -z "$val" ] || [[ "$val" == ca-app-pub-3940256099942544* ]]; then
-              if [ "$ALLOW_TEST" = "true" ]; then echo "::warning title=Test ads::$v real nahi hai - Google TEST ads chalenge (production se pehle badlo)"; else echo "::error title=Real AdMob id chahiye::$v missing/test id"; exit 1; fi
-            fi
-          done
       - name: Accept Android SDK licenses
         run: |
           mkdir -p "$ANDROID_HOME/licenses"
@@ -65,9 +58,6 @@ jobs:
           RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
           RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
-          ADMOB_APP_ID: ${{ vars.ADMOB_APP_ID || 'ca-app-pub-4043259069573209~9491756832' }}
-          ADMOB_REWARDED_ID: ${{ vars.ADMOB_REWARDED_ID || 'ca-app-pub-4043259069573209/9654875531' }}
-          ADMOB_BANNER_ID: ${{ vars.ADMOB_BANNER_ID || 'ca-app-pub-4043259069573209/3132865061' }}
           UNITY_GAME_ID: ${{ vars.UNITY_GAME_ID || '800411184' }}
           STARTIO_APP_ID: ${{ vars.STARTIO_APP_ID || '209272738' }}
           UNITY_TEST_MODE: ${{ vars.UNITY_TEST_MODE || 'false' }}

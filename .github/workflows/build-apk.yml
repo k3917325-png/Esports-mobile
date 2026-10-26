@@ -26,7 +26,6 @@ jobs:
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null 2>&1 || true
       - name: Build debug APK
         env:
-          ADMOB_APP_ID: ${{ vars.ADMOB_APP_ID }}
           STARTIO_APP_ID: ${{ vars.STARTIO_APP_ID }}
           UNITY_GAME_ID: ${{ vars.UNITY_GAME_ID }}
           UNITY_TEST_MODE: ${{ vars.UNITY_TEST_MODE }}

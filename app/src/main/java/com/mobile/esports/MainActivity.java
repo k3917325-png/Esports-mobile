@@ -35,9 +35,6 @@ import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.Task;
-import com.google.android.ump.ConsentInformation;
-import com.google.android.ump.ConsentRequestParameters;
-import com.google.android.ump.UserMessagingPlatform;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -304,17 +301,7 @@ public class MainActivity extends AppCompatActivity {
         webView.post(() -> webView.evaluateJavascript("window.__adminAuth(" + ok + ",'" + safe + "')", null));
     }
 
-    /** EU/UK users must see Google's consent form (UMP) before any ad request. */
-    private void initConsentThenAds() {
-        final ConsentInformation ci = UserMessagingPlatform.getConsentInformation(this);
-        ConsentRequestParameters params = new ConsentRequestParameters.Builder().build();
-        ci.requestConsentInfoUpdate(this, params,
-                () -> UserMessagingPlatform.loadAndShowConsentFormIfRequired(this, formError -> {
-                    if (ci.canRequestAds()) initAds();
-                }),
-                formError -> { if (ci.canRequestAds()) initAds(); });
-        if (ci.canRequestAds()) initAds(); // consent already gathered in an earlier session
-    }
+    private void initConsentThenAds() { initAds(); }
 
     private void initAds() { if (hub != null) hub.consentGranted(); }
 
