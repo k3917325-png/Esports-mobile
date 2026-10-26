@@ -1096,7 +1096,7 @@ function mergeDeep(b, o){
   }
   return o === undefined ? b : o;
 }
-function defaultAdConfig(){ return {on:true, id:"", bannerId:"", interstitialId:"", rewardedId:"", network:"mediation", order:"unity,startio,admob", unityOn:true, startOn:true, admobOn:true,
+function defaultAdConfig(){ return {on:true, id:"", bannerId:"", interstitialId:"", rewardedId:"", network:"mediation", order:"unity,startio,admob", unityOn:true, startOn:true, admobOn:true, adDebug:false,
   networks:{unity:{gameId:"",bannerId:"",interstitialId:"",rewardedId:""}, startio:{appId:""}, admob:{bannerId:"",interstitialId:"",rewardedId:""}},
   screens:{home:true,matches:true,promo:true,wallet:true,profile:true,game:true}}; }
 let RCFG = null, RADS = null, RPROMOS = null, lastRemoteJson = "";
@@ -1453,7 +1453,7 @@ if(S && S.wd && S.wd.length && S.wd.some(w=>!w.id)){
 function pushAdCfg(){
   if(!(window.AndroidAds && window.AndroidAds.configure && S && S.adConfig)) return;
   const a = S.adConfig, n = a.networks || {}, u = n.unity || {}, st = n.startio || {}, am = n.admob || {};
-  try{ window.AndroidAds.configure(JSON.stringify({on:a.on!==false, unityOn:a.unityOn!==false, startOn:a.startOn!==false, admobOn:a.admobOn!==false,
+  try{ window.AndroidAds.configure(JSON.stringify({on:a.on!==false, unityOn:a.unityOn!==false, startOn:a.startOn!==false, admobOn:a.admobOn!==false, adDebug:a.adDebug===true,
     unityGame:u.gameId||"", unityBanner:u.bannerId||"", unityRewarded:u.rewardedId||"", startId:st.appId||"",
     admobBanner:(/^ca-app-pub-3940256099942544/.test(am.bannerId||"")?"":am.bannerId||""), admobRewarded:(/^ca-app-pub-3940256099942544/.test(am.rewardedId||"")?"":am.rewardedId||"")})); }catch(e){}
 }
@@ -3242,6 +3242,7 @@ function tAds(){
   <div class="card2"><div class="ar"><span><b>🎮 Unity Ads Status</b><br><span class="mut">Seedha app ke database (Firebase) mein save hota hai</span></span>
     <button class="b ${un?"g":"s"}" data-a="unity">${un?"ON ✅":"OFF ❌"}</button></div></div>
   ${tg("All Ads","adConfig.on","1")}
+  ${tg("🐞 Ad Debug Messages (test ke liye — publish se pehle OFF)","adConfig.adDebug","")}
   ${tg("2️⃣ Start.io (1st Backup) ON/OFF","adConfig.startOn","1")}
   ${tg("3️⃣ Google AdMob (Final Backup) ON/OFF","adConfig.admobOn","1")}
   <div class="mut" style="font-size:11px;margin:2px 0 6px">Priority: <b>1) Unity Ads</b> (Rewarded + Banner) → Unity ka ad na aaye/fail ho to <b>2) Start.io</b> → dono fail hon to <b>3) Google AdMob</b>. Har network ka ON/OFF seedha app mein lagu hota hai, naya build nahi chahiye. Khali ID = build wala default.</div>
