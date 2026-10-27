@@ -213,8 +213,8 @@ class AdHub {
         if (want.isEmpty()) { updateBannerVisibility(); return; }
         try {
             if ("levelplay".equals(want)) {
-                LevelPlayBannerAdView b = new LevelPlayBannerAdView(act, bannerUnit());
-                b.setAdSize(LevelPlayAdSize.BANNER);
+                LevelPlayBannerAdView.Config cfg = new LevelPlayBannerAdView.Config.Builder().setAdSize(LevelPlayAdSize.BANNER).build();
+                LevelPlayBannerAdView b = new LevelPlayBannerAdView(act, bannerUnit(), cfg);
                 b.setBannerListener(new LevelPlayBannerAdViewListener() {
                     @Override public void onAdLoaded(LevelPlayAdInfo info) {}
                     @Override public void onAdLoadFailed(LevelPlayAdError error) { act.runOnUiThread(() -> { lSt = "banner FAIL " + cut(String.valueOf(error)); lpBannerFailed = true; refreshBanner(); }); }
