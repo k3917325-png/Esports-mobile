@@ -27,9 +27,9 @@ jobs:
       - name: Build debug APK
         env:
           STARTIO_APP_ID: ${{ vars.STARTIO_APP_ID }}
-          LEVELPLAY_APP_KEY: ${{ vars.LEVELPLAY_APP_KEY }}
-          LEVELPLAY_REWARDED_ID: ${{ vars.LEVELPLAY_REWARDED_ID }}
-          LEVELPLAY_BANNER_ID: ${{ vars.LEVELPLAY_BANNER_ID }}
+          LEVELPLAY_APP_KEY: ${{ vars.LEVELPLAY_APP_KEY || '2907ef07d' }}
+          LEVELPLAY_REWARDED_ID: ${{ vars.LEVELPLAY_REWARDED_ID || 'irnjcdz0cypidlpf' }}
+          LEVELPLAY_BANNER_ID: ${{ vars.LEVELPLAY_BANNER_ID || '887gaulpsxvaj5e9' }}
         run: |
           chmod +x gradlew
           set +e
