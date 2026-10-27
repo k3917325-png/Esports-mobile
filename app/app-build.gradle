@@ -2,10 +2,12 @@ plugins {
     id 'com.android.application'
 }
 
-// Ad networks, priority: Unity Ads -> Start.io. IDs are public identifiers, not secrets.
+// Ad networks, priority: Unity LevelPlay -> Start.io. IDs are public identifiers, not secrets.
 def startioAppId = System.getenv("STARTIO_APP_ID") ?: "209272738"
 def runNumber = Integer.parseInt(System.getenv("GITHUB_RUN_NUMBER") ?: "1")   // auto-increments every CI build (Play rejects duplicates)
-def unityGameId = System.getenv("UNITY_GAME_ID") ?: "800411184"
+def lpAppKey = System.getenv("LEVELPLAY_APP_KEY") ?: ""
+def lpRewarded = System.getenv("LEVELPLAY_REWARDED_ID") ?: ""
+def lpBanner = System.getenv("LEVELPLAY_BANNER_ID") ?: ""
 
 android {
     namespace "com.mobile.esports"
@@ -18,8 +20,9 @@ android {
         versionCode runNumber
         versionName "1.0.0"
         resValue "string", "startio_app_id", startioAppId
-        resValue "string", "unity_game_id", unityGameId
-        resValue "bool", "unity_test_mode", (System.getenv("UNITY_TEST_MODE") ?: "true")
+        resValue "string", "levelplay_app_key", lpAppKey
+        resValue "string", "levelplay_rewarded_id", lpRewarded
+        resValue "string", "levelplay_banner_id", lpBanner
     }
 
     signingConfigs {
@@ -59,7 +62,11 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.7.0'
     implementation 'androidx.webkit:webkit:1.11.0'
     implementation 'androidx.biometric:biometric:1.1.0'
-    implementation 'com.unity3d.ads:unity-ads:4.12.5'
+    implementation 'com.unity3d.ads-mediation:mediation-sdk:9.5.0'      // Unity LevelPlay
+    implementation 'com.unity3d.ads-mediation:unityads-adapter:5.15.0'  // Unity Ads network inside LevelPlay (bundles Unity Ads SDK)
+    implementation 'com.google.android.gms:play-services-appset:16.0.0'
+    implementation 'com.google.android.gms:play-services-ads-identifier:18.1.0'
+    implementation 'com.google.android.gms:play-services-basement:18.1.0'
     implementation 'com.startapp:inapp-sdk:5.+'   // Start.io (fallback network)
     implementation 'com.google.android.gms:play-services-auth:21.2.0'   // Google Sign-In
 }

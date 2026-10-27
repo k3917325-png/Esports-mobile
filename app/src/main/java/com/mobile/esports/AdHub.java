@@ -13,20 +13,15 @@ import com.startapp.sdk.adsbase.StartAppSDK;
 import com.startapp.sdk.adsbase.VideoListener;
 import com.startapp.sdk.adsbase.adlisteners.AdDisplayListener;
 import com.startapp.sdk.adsbase.adlisteners.AdEventListener;
-import com.unity3d.ads.IUnityAdsInitializationListener;
-import com.unity3d.ads.IUnityAdsLoadListener;
-import com.unity3d.ads.IUnityAdsShowListener;
-import com.unity3d.ads.UnityAds;
-import com.unity3d.ads.UnityAdsShowOptions;
-import com.unity3d.services.banners.BannerErrorInfo;
-import com.unity3d.services.banners.BannerView;
-import com.unity3d.services.banners.UnityBannerSize;
+import com.unity3d.mediation.*;
+import com.unity3d.mediation.banner.*;
+import com.unity3d.mediation.rewarded.*;
 
 /**
- * Two ad networks, strict priority:
- *   1. Unity Ads   - PRIMARY        (rewarded + banner)
- *   2. Start.io    - FIRST BACKUP   (used the moment Unity has no ad / fails)
- * Admin panel can switch each network ON/OFF. All calls must happen on the UI thread.
+ * Two ad sources, strict priority:
+ *   1. Unity LevelPlay (mediation; Unity Ads bidding placements are set up INSIDE the LevelPlay dashboard) - rewarded + banner
+ *   2. Start.io - fallback, used the moment LevelPlay has no ad / fails.
+ * Admin panel can switch each ON/OFF. All calls must happen on the UI thread.
  */
 class AdHub {
     interface Result { void done(String id, boolean ok); }
@@ -36,23 +31,24 @@ class AdHub {
     private final Result cb;
 
     // ---- admin config (pushed from HTML) ----
-    private boolean configured = false, on = true, unityOn = true, startOn = true, debug = false, consent = false;
-    private String unityGame = "", unityBanner = "", unityRewarded = "", startId = "";
+    private boolean configured = false, on = true, lpOn = true, startOn = true, debug = false, consent = false;
+    private String lpKey = "", lpRewardedId = "", lpBannerId = "", startId = "";
     private boolean bannerWanted = false;
     private long lastRetry = 0;
 
-    // ---- debug (admin toggle "Ad Debug Messages"): shows which network served / why the others failed ----
-    private String uSt = "-", sSt = "-";
+    // ---- debug (admin toggle "Ad Debug Messages") ----
+    private String lSt = "-", sSt = "-";
     private void dbg(String m) { if (debug) try { android.widget.Toast.makeText(act, m, android.widget.Toast.LENGTH_LONG).show(); } catch (Throwable ignored) {} }
     private static String cut(String x) { x = x == null ? "" : x.replaceAll("\\s+", " "); return x.length() > 160 ? x.substring(0, 160) : x; }
-    /** Debug only: full-text dialog (a toast cuts long text). */
     private void dbgDialog(String m) {
         if (!debug) return;
         try { new android.app.AlertDialog.Builder(act).setTitle("Ad debug").setMessage(m).setPositiveButton("OK", null).show(); } catch (Throwable ignored) {}
     }
-    private String stat() { return "Unity: " + uSt + "\nStart.io: " + sSt; }
-    // ---- Unity state ----
-    private boolean unityInitStarted = false, unityReady = false, unityLoading = false, unityLoaded = false;
+    private String stat() { return "LevelPlay: " + lSt + "\nStart.io: " + sSt; }
+
+    // ---- LevelPlay state ----
+    private boolean lpInitStarted = false, lpReady = false, lpBannerFailed = false, lpEarned = false;
+    private LevelPlayRewardedAd lpAd; private String lpAdUnit = ""; private String lpPendingId;
     // ---- Start.io state ----
     private boolean startInit = false, startLoading = false, startLoaded = false;
     private StartAppAd startAd;
@@ -60,7 +56,7 @@ class AdHub {
 
     // ---- banner ----
     private View bannerView; private String bannerNet = "";
-    private boolean unityBannerFailed = false, startBannerFailed = false;
+    private boolean startBannerFailed = false;
 
     AdHub(Activity act, FrameLayout holder, Result cb) { this.act = act; this.holder = holder; this.cb = cb; }
 
@@ -71,11 +67,11 @@ class AdHub {
         try {
             org.json.JSONObject o = new org.json.JSONObject(json);
             on = o.optBoolean("on", true);
-            unityOn = o.optBoolean("unityOn", true);
+            lpOn = o.optBoolean("unityOn", true);
             startOn = o.optBoolean("startOn", true);
-            unityGame = o.optString("unityGame", "").replaceAll("[^0-9]", "");
-            unityBanner = plc(o.optString("unityBanner", ""));
-            unityRewarded = plc(o.optString("unityRewarded", ""));
+            lpKey = plc(o.optString("lpKey", ""));
+            lpRewardedId = plc(o.optString("lpRewarded", ""));
+            lpBannerId = plc(o.optString("lpBanner", ""));
             startId = plc(o.optString("startId", ""));
             debug = o.optBoolean("adDebug", false);
             configured = true;
@@ -87,17 +83,17 @@ class AdHub {
 
     private static String plc(String s) { return s.replaceAll("[^A-Za-z0-9_\\-]", ""); }
 
-    private String unityGameId() { return unityGame.isEmpty() ? act.getString(R.string.unity_game_id) : unityGame; }
-    private String unityRewardedPlc() { return unityRewarded.isEmpty() ? "Rewarded_Android" : unityRewarded; }
-    private String unityBannerPlc() { return unityBanner.isEmpty() ? "Banner_Android" : unityBanner; }
+    private String appKey() { return lpKey.isEmpty() ? act.getString(R.string.levelplay_app_key) : lpKey; }
+    private String rewardedUnit() { return lpRewardedId.isEmpty() ? act.getString(R.string.levelplay_rewarded_id) : lpRewardedId; }
+    private String bannerUnit() { return lpBannerId.isEmpty() ? act.getString(R.string.levelplay_banner_id) : lpBannerId; }
     private String startAppId() { return startId.isEmpty() ? act.getString(R.string.startio_app_id) : startId; }
 
-    private boolean unityUsable() { return configured && on && unityOn; }
+    private boolean lpUsable() { return configured && on && lpOn && !appKey().isEmpty() && !rewardedUnit().isEmpty(); }
     private boolean startUsable() { return configured && on && startOn && consent && !startAppId().isEmpty(); }
 
-    /** Loads both networks up front so the fallback is ready the moment Unity has no ad. */
+    /** Loads both up front so the fallback is ready the moment LevelPlay has no ad. */
     private void apply() {
-        if (unityUsable()) initUnity();
+        if (lpUsable()) initLevelPlay();
         if (startUsable()) initStart();
         refreshBanner();
     }
@@ -106,58 +102,57 @@ class AdHub {
         long now = System.currentTimeMillis();
         if (now - lastRetry < 15000) return;
         lastRetry = now;
-        unityBannerFailed = false; startBannerFailed = false;
-        if (unityUsable()) { if (unityReady) loadUnity(); else initUnity(); }
+        lpBannerFailed = false; startBannerFailed = false;
+        if (lpUsable()) { if (lpReady) loadLp(); else initLevelPlay(); }
         if (startUsable()) { if (startInit) loadStart(); else initStart(); }
     }
 
     // ================= rewarded =================
     void showRewarded(final String id) {
-        if (unityUsable() && unityReady && unityLoaded) { dbg("Ad: UNITY"); showUnity(id); return; }   // 1) Unity
-        if (startUsable() && startLoaded && startAd != null) { dbg("Ad: START.IO (Unity: " + uSt + ")"); showStart(id); return; } // 2) Start.io
-        dbgDialog("NO AD\n\n" + stat() + "\n\nUnity game=" + unityGameId() + "\nrewarded placement=" + unityRewardedPlc() + "\nbanner placement=" + unityBannerPlc() + "\nStart.io id=" + startAppId() + (consent ? "" : "\n(consent pending)"));
+        if (lpUsable() && lpReady && lpAd != null && lpAd.isAdReady()) { dbg("Ad: LEVELPLAY"); showLp(id); return; }                       // 1) LevelPlay
+        if (startUsable() && startLoaded && startAd != null) { dbg("Ad: START.IO (LevelPlay: " + lSt + ")"); showStart(id); return; }      // 2) Start.io
+        dbgDialog("NO AD\n\n" + stat() + "\n\nLevelPlay key set=" + (!appKey().isEmpty()) + "\nrewarded unit=" + rewardedUnit() + "\nbanner unit=" + bannerUnit() + "\nStart.io id=" + startAppId() + (consent ? "" : "\n(consent pending)"));
         retryAll();
         cb.done(id, false);
     }
 
-    // ---------- Unity ----------
-    private void initUnity() {
-        if (unityInitStarted) { if (unityReady) loadUnity(); return; }
-        unityInitStarted = true;
-        UnityAds.initialize(act.getApplicationContext(), unityGameId(), act.getResources().getBoolean(R.bool.unity_test_mode), new IUnityAdsInitializationListener() {
-            @Override public void onInitializationComplete() { act.runOnUiThread(() -> { uSt = "init ok"; unityReady = true; loadUnity(); refreshBanner(); }); }
-            @Override public void onInitializationFailed(UnityAds.UnityAdsInitializationError error, String message) { act.runOnUiThread(() -> { uSt = "init FAIL " + error + " " + cut(message); unityInitStarted = false; unityBannerFailed = true; refreshBanner(); }); }
-        });
+    // ---------- LevelPlay ----------
+    private void initLevelPlay() {
+        if (lpInitStarted) { if (lpReady) loadLp(); return; }
+        lpInitStarted = true;
+        try {
+            LevelPlayInitRequest req = new LevelPlayInitRequest.Builder(appKey()).build();
+            LevelPlay.init(act.getApplicationContext(), req, new LevelPlayInitListener() {
+                @Override public void onInitFailed(LevelPlayInitError error) { act.runOnUiThread(() -> { lSt = "init FAIL " + cut(String.valueOf(error)); lpInitStarted = false; lpBannerFailed = true; refreshBanner(); }); }
+                @Override public void onInitSuccess(LevelPlayConfiguration configuration) { act.runOnUiThread(() -> { lSt = "init ok"; lpReady = true; loadLp(); refreshBanner(); }); }
+            });
+        } catch (Throwable t) { lpInitStarted = false; lSt = "init EXC " + cut(String.valueOf(t)); }
     }
 
-    private void loadUnity() {
-        if (!unityReady || unityLoading || unityLoaded) return;
-        unityLoading = true;
-        UnityAds.load(unityRewardedPlc(), new IUnityAdsLoadListener() {
-            @Override public void onUnityAdsAdLoaded(String placementId) { uSt = "ad ready"; unityLoading = false; unityLoaded = true; }
-            @Override public void onUnityAdsFailedToLoad(String placementId, UnityAds.UnityAdsLoadError error, String message) { uSt = "load FAIL " + error + " " + cut(message); unityLoading = false; unityLoaded = false; }
-        });
-    }
-
-    private void showUnity(final String id) {
-        unityLoaded = false;
-        UnityAds.show(act, unityRewardedPlc(), new UnityAdsShowOptions(), new IUnityAdsShowListener() {
-            @Override public void onUnityAdsShowFailure(String placementId, UnityAds.UnityAdsShowError error, String message) {
-                act.runOnUiThread(() -> {
-                    uSt = "show FAIL " + error + " " + cut(message);
-                    loadUnity();
-                    // Unity could not show -> straight to Start.io
-                    if (startUsable() && startLoaded && startAd != null) showStart(id);
-                    else cb.done(id, false);
+    private void loadLp() {
+        if (!lpReady) return;
+        try {
+            if (lpAd == null || !rewardedUnit().equals(lpAdUnit)) {
+                lpAdUnit = rewardedUnit();
+                lpAd = new LevelPlayRewardedAd(lpAdUnit);
+                lpAd.setListener(new LevelPlayRewardedAdListener() {
+                    @Override public void onAdLoaded(LevelPlayAdInfo info) { lSt = "ad ready"; }
+                    @Override public void onAdLoadFailed(LevelPlayAdError error) { lSt = "load FAIL " + cut(String.valueOf(error)); }
+                    @Override public void onAdDisplayed(LevelPlayAdInfo info) {}
+                    @Override public void onAdRewarded(LevelPlayReward reward, LevelPlayAdInfo info) { lpEarned = true; }
+                    @Override public void onAdDisplayFailed(LevelPlayAdError error, LevelPlayAdInfo info) { act.runOnUiThread(() -> { lSt = "show FAIL " + cut(String.valueOf(error)); lpResult(false); loadLp(); }); }
+                    @Override public void onAdClicked(LevelPlayAdInfo info) {}
+                    @Override public void onAdClosed(LevelPlayAdInfo info) { act.runOnUiThread(() -> { lpResult(lpEarned); lpEarned = false; loadLp(); }); }
+                    @Override public void onAdInfoChanged(LevelPlayAdInfo info) {}
                 });
             }
-            @Override public void onUnityAdsShowStart(String placementId) {}
-            @Override public void onUnityAdsShowClick(String placementId) {}
-            @Override public void onUnityAdsShowComplete(String placementId, UnityAds.UnityAdsShowCompletionState state) {
-                act.runOnUiThread(() -> { cb.done(id, state == UnityAds.UnityAdsShowCompletionState.COMPLETED); loadUnity(); });
-            }
-        });
+            if (!lpAd.isAdReady()) lpAd.loadAd();
+        } catch (Throwable t) { lSt = "load EXC " + cut(String.valueOf(t)); }
     }
+
+    private void lpResult(boolean ok) { String id = lpPendingId; lpPendingId = null; if (id != null) cb.done(id, ok); }
+
+    private void showLp(final String id) { lpPendingId = id; lpEarned = false; try { lpAd.showAd(act); } catch (Throwable t) { lpResult(false); } }
 
     // ---------- Start.io ----------
     private void initStart() {
@@ -202,9 +197,9 @@ class AdHub {
     }
 
     // ================= banner =================
-    /** Unity banner first; if it fails (or Unity is OFF) the Start.io banner is used. */
+    /** LevelPlay banner first; if it fails (or LevelPlay is OFF / not configured) the Start.io banner is used. */
     private String bannerNetwork() {
-        if (unityUsable() && unityReady && !unityBannerFailed) return "unity";
+        if (lpUsable() && lpReady && !bannerUnit().isEmpty() && !lpBannerFailed) return "levelplay";
         if (startUsable() && startInit && !startBannerFailed) return "startio";
         return "";
     }
@@ -217,17 +212,21 @@ class AdHub {
         dbg("Banner: " + (want.isEmpty() ? "NONE" : want.toUpperCase()));
         if (want.isEmpty()) { updateBannerVisibility(); return; }
         try {
-            if ("unity".equals(want)) {
-                BannerView b = new BannerView(act, unityBannerPlc(), new UnityBannerSize(320, 50));
-                b.setListener(new BannerView.IListener() {
-                    @Override public void onBannerLoaded(BannerView v) {}
-                    @Override public void onBannerShown(BannerView v) {}
-                    @Override public void onBannerClick(BannerView v) {}
-                    @Override public void onBannerFailedToLoad(BannerView v, BannerErrorInfo e) { act.runOnUiThread(() -> { unityBannerFailed = true; refreshBanner(); }); }
-                    @Override public void onBannerLeftApplication(BannerView v) {}
+            if ("levelplay".equals(want)) {
+                LevelPlayBannerAdView b = new LevelPlayBannerAdView(act, bannerUnit());
+                b.setAdSize(LevelPlayAdSize.BANNER);
+                b.setBannerListener(new LevelPlayBannerAdViewListener() {
+                    @Override public void onAdLoaded(LevelPlayAdInfo info) {}
+                    @Override public void onAdLoadFailed(LevelPlayAdError error) { act.runOnUiThread(() -> { lSt = "banner FAIL " + cut(String.valueOf(error)); lpBannerFailed = true; refreshBanner(); }); }
+                    @Override public void onAdDisplayed(LevelPlayAdInfo info) {}
+                    @Override public void onAdDisplayFailed(LevelPlayAdInfo info, LevelPlayAdError error) {}
+                    @Override public void onAdClicked(LevelPlayAdInfo info) {}
+                    @Override public void onAdExpanded(LevelPlayAdInfo info) {}
+                    @Override public void onAdCollapsed(LevelPlayAdInfo info) {}
+                    @Override public void onAdLeftApplication(LevelPlayAdInfo info) {}
                 });
                 holder.addView(b, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL));
-                b.load(); bannerView = b;
+                b.loadAd(); bannerView = b;
             } else {
                 Banner b = new Banner(act, new BannerListener() {
                     @Override public void onReceiveAd(View v) {}
@@ -238,12 +237,12 @@ class AdHub {
                 holder.addView(b, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL));
                 bannerView = b;
             }
-        } catch (Throwable e) { bannerView = null; if ("unity".equals(want)) unityBannerFailed = true; else if ("startio".equals(want)) startBannerFailed = true; }
+        } catch (Throwable e) { bannerView = null; if ("levelplay".equals(want)) lpBannerFailed = true; else if ("startio".equals(want)) startBannerFailed = true; }
         updateBannerVisibility();
     }
 
     private void removeBanner() {
-        try { if (bannerView instanceof BannerView) ((BannerView) bannerView).destroy(); } catch (Exception ignored) {}
+        try { if (bannerView instanceof LevelPlayBannerAdView) ((LevelPlayBannerAdView) bannerView).destroy(); } catch (Throwable ignored) {}
         holder.removeAllViews(); bannerView = null; bannerNet = "";
     }
 

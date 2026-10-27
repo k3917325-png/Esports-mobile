@@ -58,9 +58,10 @@ jobs:
           RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
           RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
-          UNITY_GAME_ID: ${{ vars.UNITY_GAME_ID || '800411184' }}
+          LEVELPLAY_APP_KEY: ${{ vars.LEVELPLAY_APP_KEY }}
+          LEVELPLAY_REWARDED_ID: ${{ vars.LEVELPLAY_REWARDED_ID }}
+          LEVELPLAY_BANNER_ID: ${{ vars.LEVELPLAY_BANNER_ID }}
           STARTIO_APP_ID: ${{ vars.STARTIO_APP_ID || '209272738' }}
-          UNITY_TEST_MODE: ${{ vars.UNITY_TEST_MODE || 'false' }}
         run: |
           chmod +x gradlew
           set +e

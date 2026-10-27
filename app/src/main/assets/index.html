@@ -1094,7 +1094,7 @@ function mergeDeep(b, o){
   return o === undefined ? b : o;
 }
 function defaultAdConfig(){ return {on:true, id:"", bannerId:"", interstitialId:"", rewardedId:"", network:"mediation", order:"unity,startio", unityOn:true, startOn:true, adDebug:false,
-  networks:{unity:{gameId:"",bannerId:"",interstitialId:"",rewardedId:""}, startio:{appId:""}},
+  networks:{unity:{gameId:"",bannerId:"",interstitialId:"",rewardedId:""}, startio:{appId:""}, levelplay:{appKey:"",bannerId:"",rewardedId:""}},
   screens:{home:true,matches:true,promo:true,wallet:true,profile:true,game:true}}; }
 let RCFG = null, RADS = null, RPROMOS = null, lastRemoteJson = "";
 function setRemote(doc){
@@ -1416,7 +1416,8 @@ if(S && S.adConfig && !S.adConfig.networks){
   S.adConfig.network = S.adConfig.network || "mediation";
   S.adConfig.networks = {
     unity: {gameId:"", bannerId:"", interstitialId:"", rewardedId:""},
-    startio: {appId:""}
+    startio: {appId:""},
+    levelplay: {appKey:"", bannerId:"", rewardedId:""}
   };
   save();
 }
@@ -1448,9 +1449,9 @@ if(S && S.wd && S.wd.length && S.wd.some(w=>!w.id)){
 }
 function pushAdCfg(){
   if(!(window.AndroidAds && window.AndroidAds.configure && S && S.adConfig)) return;
-  const a = S.adConfig, n = a.networks || {}, u = n.unity || {}, st = n.startio || {};
+  const a = S.adConfig, n = a.networks || {}, u = n.unity || {}, st = n.startio || {}, lp = n.levelplay || {};
   try{ window.AndroidAds.configure(JSON.stringify({on:a.on!==false, unityOn:a.unityOn!==false, startOn:a.startOn!==false, adDebug:a.adDebug===true,
-    unityGame:u.gameId||"", unityBanner:u.bannerId||"", unityRewarded:u.rewardedId||"", startId:st.appId||""})); }catch(e){}
+    unityGame:u.gameId||"", unityBanner:u.bannerId||"", unityRewarded:u.rewardedId||"", startId:st.appId||"", lpKey:lp.appKey||"", lpRewarded:lp.rewardedId||"", lpBanner:lp.bannerId||""})); }catch(e){}
 }
 function adBox(screen){
   pushAdCfg();
@@ -1539,7 +1540,7 @@ async function loginDone(g, ref, ip){
   const acc = loadAccounts()[g.uid];
   S = {name:g.name || g.email.split("@")[0] || "Player", phone:g.uid, email:g.email, cc:"", countryId:ip||"", coins:(acc?acc.coins||0:100 + (ref?50:0)), code:(acc&&acc.code)||("ESP"+Math.floor(1000+Math.random()*9000)), lastBonus:"", joined:{}, tours:seedT(), rp:0, best:{}, wd:[], streak:0,
     config: defaultConfig(), adConfig:{on:true, id:"", bannerId:"", interstitialId:"", rewardedId:"", network:"mediation",
-      networks:{unity:{gameId:"",bannerId:"",interstitialId:"",rewardedId:""}, startio:{appId:""}},
+      networks:{unity:{gameId:"",bannerId:"",interstitialId:"",rewardedId:""}, startio:{appId:""}, levelplay:{appKey:"",bannerId:"",rewardedId:""}},
       screens:{home:true,matches:true,promo:true,wallet:true,profile:true,game:true}}};
   applyRemoteToS(); reconcileTours();
   save(); tab="home"; render();
@@ -1594,7 +1595,7 @@ async function fbSignOutUser(){ FBS.user = null; try{ localStorage.removeItem("f
 function loginAsGuest(){
   S = {name:"Guest", phone:"", cc:"", isGuest:true, coins:100, code:"GUEST"+Math.floor(1000+Math.random()*9000), lastBonus:"", joined:{}, tours:seedT(), rp:0, best:{}, wd:[], streak:0,
     config: defaultConfig(), adConfig:{on:true, id:"", bannerId:"", interstitialId:"", rewardedId:"", network:"mediation",
-      networks:{unity:{gameId:"",bannerId:"",interstitialId:"",rewardedId:""}, startio:{appId:""}},
+      networks:{unity:{gameId:"",bannerId:"",interstitialId:"",rewardedId:""}, startio:{appId:""}, levelplay:{appKey:"",bannerId:"",rewardedId:""}},
       screens:{home:true,matches:true,promo:true,wallet:true,profile:true,game:true}}};
   // Guest coins/progress sirf is device/session tak hi rehte hain — koi phone number nahi, isliye accounts registry mein save nahi hota
   applyRemoteToS(); reconcileTours();
