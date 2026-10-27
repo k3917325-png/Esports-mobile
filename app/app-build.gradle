@@ -5,9 +5,9 @@ plugins {
 // Ad networks, priority: Unity LevelPlay -> Start.io. IDs are public identifiers, not secrets.
 def startioAppId = System.getenv("STARTIO_APP_ID") ?: "209272738"
 def runNumber = Integer.parseInt(System.getenv("GITHUB_RUN_NUMBER") ?: "1")   // auto-increments every CI build (Play rejects duplicates)
-def lpAppKey = System.getenv("LEVELPLAY_APP_KEY") ?: ""
-def lpRewarded = System.getenv("LEVELPLAY_REWARDED_ID") ?: ""
-def lpBanner = System.getenv("LEVELPLAY_BANNER_ID") ?: ""
+def lpAppKey = System.getenv("LEVELPLAY_APP_KEY") ?: "2907ef07d"
+def lpRewarded = System.getenv("LEVELPLAY_REWARDED_ID") ?: "irnjcdz0cypidlpf"
+def lpBanner = System.getenv("LEVELPLAY_BANNER_ID") ?: "887gaulpsxvaj5e9"
 
 android {
     namespace "com.mobile.esports"
