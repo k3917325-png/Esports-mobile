@@ -488,8 +488,8 @@ function defaultConfig(){ return {
   manualTours: [], // admin-created extra tournaments [{id,g,pool,min}]
   paytmEnabled: true, phonepeEnabled: true, googleplayEnabled: true, amazonEnabled: true, phonepegiftEnabled: true,
   tourDurationMin: 30,
-  gamesEnabled: {arctic:true,hoop:true,loop:true,colorbounce:true,bubble:true,drive:true,shooter:true,knife:true,blockmatch:true,dollar:true,candle:true,dollarbox:true},
-  gamesOrder: ["arctic","hoop","loop","colorbounce","bubble","drive","shooter","knife","blockmatch","dollar","candle","dollarbox"],
+  gamesEnabled: {arctic:true,hoop:true,loop:true,colorbounce:true,bubble:true,drive:true,blockmatch:true,dollar:true,dollarbox:true},
+  gamesOrder: ["arctic","hoop","loop","colorbounce","bubble","drive","blockmatch","dollar","dollarbox"],
   lbResetHour: 5,
   lbResetMode: "daily", lbResetDays: [0,1,2,3,4,5,6], lbResetIntervalDays: 1, // mode: "daily" (har din), "days" (sirf selected weekdays par; 0=Sun...6=Sat), ya "interval" (har N din mein ek baar)
   lbPrizeTable: (()=>{ const t = {1:7500,2:4500,3:3750,4:1500,5:1500,6:750,7:750,8:750,9:150,10:150};
@@ -509,7 +509,7 @@ function defaultConfig(){ return {
   dailyBonusTimeEnabled: false, dailyBonusTimeStart: "18:00", dailyBonusTimeEnd: "22:00", // sirf is window mein claim available
   streakRewards: [2000,4000,4500,5000,6000,7500,8500,9000,10000,20000,50000,"$0.10"],
   topN: 50,
-  gamePools: {arctic:20000,hoop:20000,loop:20000,colorbounce:20000,bubble:20000,drive:20000,shooter:20000,knife:20000,blockmatch:20000,dollar:20000,candle:20000,dollarbox:20000},
+  gamePools: {arctic:20000,hoop:20000,loop:20000,colorbounce:20000,bubble:20000,drive:20000,blockmatch:20000,dollar:20000,dollarbox:20000},
   customGames: [],
   noticeText: "",
   noticeColor: "red",   // v14: "red" | "green" banner
@@ -1330,11 +1330,8 @@ const GAME_CANON = {
   colorbounce:{id:6,g:"colorbounce",name:"Hue Hop",split:"Top 50",pool:20000},
   bubble:{id:7,g:"bubble",name:"Orb Defender",split:"Top 50",pool:20000},
   drive:{id:8,g:"drive",name:"City Drive Trial",split:"Top 50",pool:20000},
-  shooter:{id:9,g:"shooter",name:"Galaxy Defender",split:"Top 50",pool:20000},
-  knife:{id:10,g:"knife",name:"Blade Toss",split:"Top 50",pool:20000},
   blockmatch:{id:11,g:"blockmatch",name:"Tile Fusion",split:"Top 50",pool:20000},
   dollar:{id:12,g:"dollar",name:"Cash Grab",split:"Top 50",pool:20000},
-  candle:{id:13,g:"candle",name:"Chart Climber",split:"Top 50",pool:20000},
   dollarbox:{id:14,g:"dollarbox",name:"Cash Catcher",split:"Top 50",pool:20000}
 };
 function seedT(){
@@ -1483,7 +1480,7 @@ function reconcileTours(){
     if(enabled[c.g]!==false && !S.tours.some(t=>t.id===c.id)){ S.tours.push({...c, pool:(cfg().gamePools&&cfg().gamePools[c.g])||c.pool, end:now()+(cfg().tourDurationMin||30)*MIN}); fixed = true; }
   });
   // remove games the admin turned off
-  const before = S.tours.length; S.tours = S.tours.filter(t=>enabled[t.g]!==false); if(S.tours.length!==before) fixed = true;
+  const before = S.tours.length; S.tours = S.tours.filter(t=>enabled[t.g]!==false && GAME_CANON[t.g]); if(S.tours.length!==before) fixed = true;
   // admin changed the tournament duration -> apply it to all active tournaments' timers
   if(S.tourDurApplied !== cfg().tourDurationMin){ S.tours.forEach(t=>{ t.end = now()+(cfg().tourDurationMin||30)*MIN; }); S.tourDurApplied = cfg().tourDurationMin; fixed = true; }
   // admin changed a game's prize pool -> sync it onto the live tournament
@@ -1795,7 +1792,7 @@ function play(){
       <div class="mut" style="margin-top:4px">${cfg().lbResetMode==="days" ? ((cfg().lbResetDays||[]).map(i=>["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][i]).join(", ")||"Koi din select nahi") : cfg().lbResetMode==="interval" ? `Every ${cfg().lbResetIntervalDays||1} Day(s)` : "Daily"} ${String(cfg().lbResetHour).padStart(2,"0")}:00 • Top rank ka prize account mein add hota hai</div>
     </div>`;
     v.innerHTML = adBox('matches') + noticeBanner('matches') + chips + payoutCard + `<div class="mut" style="margin:10px 0 8px">Total ${lbFmt(LB_TOTAL)} Players • Your Rank: <b>#${(rank+1).toLocaleString()}</b></div>` + rows + youRow + loadMore; return; }
-  const ord = (cfg().gamesOrder&&cfg().gamesOrder.length)?cfg().gamesOrder:Object.keys(GAME_CANON);
+  const ord = ((cfg().gamesOrder&&cfg().gamesOrder.length)?cfg().gamesOrder:Object.keys(GAME_CANON)).filter(g=>GAME_CANON[g]);
   const toursSorted = S.tours.slice().sort((a,b)=>ord.indexOf(a.g)-ord.indexOf(b.g));
   const customLinks = (cfg().customGames||[]).map(cg=>`<div class="tc">
     <div class="tb" style="background:linear-gradient(135deg,#475569,#1e293b)">🔗 ${esc(cg.name.toUpperCase())}</div>
