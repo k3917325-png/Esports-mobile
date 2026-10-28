@@ -385,8 +385,8 @@ const TERMS_HTML = `
 <p>RP (Reward Points) is app ke andar ki ek virtual in-app currency hai. Jab tak isse kisi reward (coins/cash/gift) ke roop mein claim na kiya jaye, RP ki koi real-world cash value nahi hai. Rewards, Leaderboard Ranks, aur RP points ko kisi bhi waqt change, adjust ya void karne ka right Admin/Management ke paas reserved hai.</p>
 <h3>3. Anti-Fraud & Cheating Policy</h3>
 <p>Auto-clickers, VPN, Proxy, Emulators, ya kisi bhi tarah ke app modification/hacking/cheating tools ka use strictly forbidden hai. Agar fraud ya cheating detect hoti hai to Admin bina kisi prior warning ke account suspend ya permanently ban kar sakta hai, aur saare earned RP/rewards void kiye ja sakte hain.</p>
-<h3>4. Taxation & Compliance (India)</h3>
-<p>Applicable Government regulations (jaise Section 194BA / Income Tax rules) ke mutabik, user ke net earnings/rewards par applicable TDS ya taxes deduct kiye ja sakte hain. Apni individual tax liability ke liye user khud responsible hoga — app/company kisi bhi personal tax filing ke liye responsible nahi hai.</p>
+<h3>4. Taxes</h3>
+<p>Users apni individual tax liability ke liye khud responsible hain. App kisi bhi personal tax filing ke liye responsible nahi hai.</p>
 <h3>5. Ad Serving & Third-Party Services</h3>
 <p>Rewards claim karne ke liye user ko third-party rewarded ads (jaise Unity Ads, Start.io) dekhne pad sakte hain. App in third-party ad networks ki kisi bhi downtime, failure ya malfunction ke liye responsible nahi hai.</p>
 <h3>6. Service Termination & Modifications</h3>
@@ -438,11 +438,12 @@ const auditW = (action, target, detail) => wUpdate("audit", "A"+Date.now().toStr
 function feeMap(c){ const o = {}; Object.keys(FEE_KEY).forEach(m=>{ o[m] = appliedPct(m, c); }); return o; }
 const METHODS_ALL = ["UPI","PayPal","Paytm","PhonePe","Binance","Bybit"];
 const FEE_KEY = {UPI:"upi", Paytm:"paytm", PhonePe:"phonepe", PayPal:"paypal", Binance:"binance", Bybit:"bybit"};
-const FEE_DEFAULT = {UPI:30, Paytm:30, PhonePe:30, PayPal:18, Binance:18, Bybit:18};
+const FEE_DEFAULT = {UPI:0, Paytm:0, PhonePe:0, PayPal:18, Binance:18, Bybit:18};
 const IN_METHODS = ["UPI","Paytm","PhonePe"];
 // India extra "Processing Fee" (admin toggle in_proc_enabled + in_proc_percent, default OFF) is charged on top of the Tax (TDS) for UPI/Paytm/PhonePe.
 function taxPct(method, c){
   c = c || cfg(); const k = FEE_KEY[method]; if(!k) return 0;
+  if(IN_METHODS.indexOf(method)>=0) return 0; // India tax (TDS) removed completely
   if(c[k+"_fee_enabled"] === false) return 0;
   const v = Number(c[k+"_fee_percent"]);
   return (isFinite(v) && v>=0 && v<=100) ? v : FEE_DEFAULT[method];
@@ -484,7 +485,7 @@ function defaultConfig(){ return {
   upiEnabled: true, paypalEnabled: true, usdToInr: 83,
   binanceEnabled: true,
   bybitEnabled: true,
-  upi_fee_enabled: true, upi_fee_percent: 30, paytm_fee_enabled: true, paytm_fee_percent: 30, phonepe_fee_enabled: true, phonepe_fee_percent: 30,
+  upi_fee_enabled: false, upi_fee_percent: 0, paytm_fee_enabled: false, paytm_fee_percent: 0, phonepe_fee_enabled: false, phonepe_fee_percent: 0,
   in_proc_enabled: false, in_proc_percent: 2, paypal_fee_enabled: true, paypal_fee_percent: 18, binance_fee_enabled: true, binance_fee_percent: 18, bybit_fee_enabled: true, bybit_fee_percent: 18,
   manualTours: [], // admin-created extra tournaments [{id,g,pool,min}]
   paytmEnabled: true, phonepeEnabled: true,
@@ -1325,18 +1326,18 @@ function saveBans(arr){ try{ localStorage.setItem("esp_bans", JSON.stringify(arr
 function loadAccounts(){ try{ return JSON.parse(localStorage.getItem("esp_accounts"))||{}; }catch(e){ return {}; } }
 function saveAccounts(obj){ try{ localStorage.setItem("esp_accounts", JSON.stringify(obj)); }catch(e){} }
 const GAME_CANON = {
-  arctic:{id:1,g:"arctic",name:"Arctic Voyage",split:"Top 50",pool:20000},
-  hoop:{id:2,g:"hoop",name:"Hoop Challenge",split:"Top 50",pool:20000},
-  loop:{id:4,g:"loop",name:"Infinity Loop",split:"Top 50",pool:20000},
-  colorbounce:{id:6,g:"colorbounce",name:"Colour Bounce Match Up",split:"Top 50",pool:20000},
-  bubble:{id:7,g:"bubble",name:"Guardian of the Bubble",split:"Top 50",pool:20000},
-  drive:{id:8,g:"drive",name:"Car Driving School Simulator",split:"Top 50",pool:20000},
-  shooter:{id:9,g:"shooter",name:"Space Shooter",split:"Top 50",pool:20000},
-  knife:{id:10,g:"knife",name:"Knife Hit",split:"Top 50",pool:20000},
-  blockmatch:{id:11,g:"blockmatch",name:"Color Block Match",split:"Top 50",pool:20000},
-  dollar:{id:12,g:"dollar",name:"Dollar Catch",split:"Top 50",pool:20000},
-  candle:{id:13,g:"candle",name:"Candle Jump",split:"Top 50",pool:20000},
-  dollarbox:{id:14,g:"dollarbox",name:"Dollar Box",split:"Top 50",pool:20000}
+  arctic:{id:1,g:"arctic",name:"Polar Sail",split:"Top 50",pool:20000},
+  hoop:{id:2,g:"hoop",name:"Net Blitz",split:"Top 50",pool:20000},
+  loop:{id:4,g:"loop",name:"Orbit Link",split:"Top 50",pool:20000},
+  colorbounce:{id:6,g:"colorbounce",name:"Hue Hop",split:"Top 50",pool:20000},
+  bubble:{id:7,g:"bubble",name:"Orb Defender",split:"Top 50",pool:20000},
+  drive:{id:8,g:"drive",name:"City Drive Trial",split:"Top 50",pool:20000},
+  shooter:{id:9,g:"shooter",name:"Galaxy Defender",split:"Top 50",pool:20000},
+  knife:{id:10,g:"knife",name:"Blade Toss",split:"Top 50",pool:20000},
+  blockmatch:{id:11,g:"blockmatch",name:"Tile Fusion",split:"Top 50",pool:20000},
+  dollar:{id:12,g:"dollar",name:"Cash Grab",split:"Top 50",pool:20000},
+  candle:{id:13,g:"candle",name:"Chart Climber",split:"Top 50",pool:20000},
+  dollarbox:{id:14,g:"dollarbox",name:"Cash Catcher",split:"Top 50",pool:20000}
 };
 function seedT(){
   const t = now(), c = cfg(), dur = (c.tourDurationMin||30)*MIN;
@@ -1488,6 +1489,7 @@ function reconcileTours(){
   // admin changed the tournament duration -> apply it to all active tournaments' timers
   if(S.tourDurApplied !== cfg().tourDurationMin){ S.tours.forEach(t=>{ t.end = now()+(cfg().tourDurationMin||30)*MIN; }); S.tourDurApplied = cfg().tourDurationMin; fixed = true; }
   // admin changed a game's prize pool -> sync it onto the live tournament
+  S.tours.forEach(t=>{ if(!t.manual && GAME_CANON[t.g] && t.name!==GAME_CANON[t.g].name){ t.name = GAME_CANON[t.g].name; fixed = true; } });
   S.tours.forEach(t=>{ const p = cfg().gamePools && cfg().gamePools[t.g]; if(p && !t.manual && t.pool!==p){ t.pool = p; fixed = true; } });
   // admin-created manual tournaments: add new ones, drop the ones admin deleted
   const mts = (cfg().manualTours||[]).filter(m=>m && GAME_CANON[m.g] && enabled[m.g]!==false);
@@ -2556,7 +2558,7 @@ function wdHistory(){
       const badge = {PENDING:["⏳ Pending","#8a93a8"],APPROVED:["✔️ Approved","#38bdf8"],SUCCESS:["✅ Success","#1fa971"],REJECTED:["❌ Rejected","#ff5c5c"]}[w.status]||["",w.status];
       const inr = usd => Math.round(parseFloat(usd)*cfg().usdToInr).toLocaleString("en-IN");
       const mainLine = !isFeeMethod(w.method)
-        ? `${esc(w.method)} • ₹${inr(w.net)} net <span class="mut">(req ₹${inr(w.requested)}, TDS ${w.pct!=null?w.pct:tdsPctForMethod(w.method)}%: -₹${inr(w.tds)})</span>`
+        ? `${esc(w.method)} • ₹${inr(w.net)} net <span class="mut">(req ₹${inr(w.requested)}${parseFloat(w.tds)>0?`, Fee ${w.pct!=null?w.pct:tdsPctForMethod(w.method)}%: -₹${inr(w.tds)}`:""})</span>`
         : `${esc(w.method)} • ${isUsdtMethod(w.method)?"USDT ":"$"}${w.net} net <span class="mut">(req ${isUsdtMethod(w.method)?"USDT ":"$"}${w.requested}, Fee ${w.pct!=null?w.pct:feePctForMethod(w.method)}%: -${isUsdtMethod(w.method)?"USDT ":"$"}${(parseFloat(w.requested)-parseFloat(w.net)).toFixed(2)})</span>`;
       return `<div class="lb" style="flex-wrap:wrap"><span class="n">${mainLine}${w.country?`<br><span class="mut">🌍 ${esc(w.country)}${w.autoReject?" • "+esc(w.autoReject):""}</span>`:""}${w.utr?`<br><span class="mut">UTR: ${esc(w.utr)}</span>`:""}<br><span class="mut">📅 ${esc(new Date(w.created||Date.now()).toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}))} • ${w.status==="REJECTED"?"Coins wapas mil gaye":"🪙 "+esc(w.coins)+" coins"}</span></span><span style="color:${badge[1]};font-weight:700;font-size:12px">${badge[0]}</span></div>`;
     }).join(""):`<div class="mut">Abhi koi request nahi.</div>`;
@@ -2586,8 +2588,8 @@ function wdBreakup(coins, opt){
   const g = gross*mul, cut = g*pct/100, net = g-cut;
   const tp = fee ? 0 : taxPct(m), pp = fee ? 0 : procPct(m);
   const line = (n, pc) => `<div style="display:flex;justify-content:space-between;color:#ff9b5c"><span>${n} (${pc}%)</span><b>-${sy}${f(g*pc/100)}</b></div>`;
-  const cutLines = fee ? line("Processing Fee", pct) : (tp>0||pp===0 ? line("Tax (TDS)", tp) : "") + (pp>0 ? line("Processing Fee", pp) : "");
-  return {m, pct, sy, g, cut, net, label: fee ? "Processing Fee" : "Tax (TDS)", html:
+  const cutLines = fee ? line("Processing Fee", pct) : (tp>0 ? line("Tax", tp) : "") + (pp>0 ? line("Processing Fee", pp) : "");
+  return {m, pct, sy, g, cut, net, label: "Processing Fee", html:
     `<div style="display:flex;justify-content:space-between"><span>Requested Amount</span><b>${sy}${f(g)}</b></div>
      ${cutLines}
      <div style="display:flex;justify-content:space-between;border-top:1px solid #ffffff22;margin-top:4px;padding-top:4px"><span>Net Payable Amount</span><b style="color:var(--ok)">${sy}${f(net)}</b></div>`};
@@ -3202,9 +3204,9 @@ function tWal(){
   ${A.doc.config.wdDaysEnabled?days("Allowed days","config.wdDays"):""}
   <div class="mut" style="margin:10px 0 2px">Preset Withdrawal Amounts (comma se alag karo)</div>
   <input data-p="config.presetAmounts" data-t="csv" value="${E((A.doc.config.presetAmounts||[]).join(","))}">
-  <div class="mut" style="margin:12px 0 2px">🇮🇳 UPI / Paytm / PhonePe — Tax (TDS), default 30%</div>
-  ${[["UPI","upi"],["Paytm","paytm"],["PhonePe","phonepe"]].map(([n,k])=>`${tg(n+" Method ON/OFF","config."+k+"Enabled","1")}${tg(n+" Tax (TDS) ON/OFF","config."+k+"_fee_enabled","1")}${inp(n+" Tax %","config."+k+"_fee_percent","n",{w:80})}`).join("")}
-  <div class="mut" style="margin:8px 0 2px">🇮🇳 India Processing Fee (Tax ke upar alag se, UPI / Paytm / PhonePe) — default OFF</div>
+  <div class="mut" style="margin:12px 0 2px">🇮🇳 UPI / Paytm / PhonePe</div>
+  ${[["UPI","upi"],["Paytm","paytm"],["PhonePe","phonepe"]].map(([n,k])=>`${tg(n+" Method ON/OFF","config."+k+"Enabled","1")}`).join("")}
+  <div class="mut" style="margin:8px 0 2px">🇮🇳 India Processing Fee (UPI / Paytm / PhonePe) — default OFF</div>
   ${tg("India Processing Fee ON/OFF","config.in_proc_enabled","")}${inp("India Processing Fee %","config.in_proc_percent","n",{w:80})}
   ${inp("USD → INR Rate","config.usdToInr","n",{w:80})}
   <div class="mut" style="margin:12px 0 2px">🌐 PayPal / Binance / Bybit — Processing Fee, default 18%</div>
@@ -3415,7 +3417,7 @@ function tRep(){
   <div class="ar"><span class="mut">Status</span><select data-a2="rp" data-k="status">${selS("","All")}${selS("Paid","Successful only")}${selS("Pending","Pending only")}${selS("Rejected","Rejected only")}</select></div>
   <div class="ar" style="gap:6px;flex-wrap:wrap">${[["tm","Is mahina"],["lm","Pichla mahina"],["tq","Is quarter"],["lq","Pichla quarter"],["fy","Is FY (Apr-Mar)"]].map(([k,l])=>`<button class="b s sm" data-a="rpre" data-p="${k}">${l}</button>`).join("")}</div>
   <div class="mut" style="margin:4px 0 10px">Dates IST mein hain (Start se End tak, dono din shaamil). Monthly / quarterly filing ke liye range chuno.</div>
-  <div class="card2"><b>🇮🇳 India TDS Tax Report</b><div class="mut" style="margin:4px 0 8px">Country = India • UPI, Paytm, PhonePe • amounts ₹</div>${btns("in")}</div>
+  
   <div class="card2"><b>🌐 Global Processing Fee Report</b><div class="mut" style="margin:4px 0 8px">India ke alawa sab countries • PayPal, Binance, Bybit • amounts $ / USDT</div>${btns("gl")}</div>
   <div class="card2"><b>📋 All Transactions — Master Export</b><div class="mut" style="margin:4px 0 8px">Poora database, extra filters:</div>
     <div class="ar"><span class="mut">Method</span><select data-a2="rp" data-k="method"><option value="">All methods</option>${METHODS.map(m=>`<option value="${m}" ${r.method===m?"selected":""}>${m}</option>`).join("")}</select></div>
