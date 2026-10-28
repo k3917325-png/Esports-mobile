@@ -2531,7 +2531,6 @@ function wallet(){
     ${(selCc && selCc!=="IN" && enabledOpts.length)?`<div class="mut" style="margin-bottom:6px">🌍 Global</div>
     <div class="chips" style="flex-wrap:wrap">
       ${paypalOn?`<button class="chip ${window.opt==2?"on":""}" id="o2" onclick="setOpt(2)" style="display:flex;align-items:center;gap:5px"><span style="background:#003087;color:#fff;font-weight:900;font-style:italic;font-size:12px;padding:1px 5px;border-radius:4px">Pay<span style="color:#009cde">Pal</span></span> (Processing Fee ${appliedPct('PayPal')}%)</button>`:""}
-      ${binanceOn?`<button class="chip ${window.opt==5?"on":""}" id="o5" onclick="setOpt(5)" style="display:flex;align-items:center;gap:5px"><span style="background:#0B0E11;color:#F3BA2F;font-weight:900;font-size:12px;padding:1px 6px;border-radius:4px">Binance</span> (Processing Fee ${appliedPct('Binance')}%)</button>`:""}
       ${c.bybitEnabled!==false?`<button class="chip ${window.opt==6?"on":""}" id="o6" onclick="setOpt(6)" style="display:flex;align-items:center;gap:5px"><span style="background:#0B0E11;color:#F7A600;font-weight:900;font-size:12px;padding:1px 6px;border-radius:4px">Bybit</span> (Processing Fee ${appliedPct('Bybit')}%)</button>`:""}
     </div>`:""}
     ${selCc && !enabledOpts.length?`<div class="mut" style="margin:6px 0">Is country ke liye abhi koi payment method ON nahi hai.</div>`:""}
@@ -2548,11 +2547,11 @@ function wallet(){
     <h3>History</h3>${wdHistory()}`;
   if(notify){ S.wdNotify = null; save(); }
 }
-// India -> Google Play code, Amazon gift card, PhonePe gift card.  Every other country -> PayPal, Binance, Bybit.  Admin ON/OFF toggles still apply on top.
+// India -> Google Play code, Amazon gift card, PhonePe gift card.  Every other country -> PayPal, Bybit.  Admin ON/OFF toggles still apply on top.
 function wdOptsFor(cc){
   const c = cfg(), on = {7:c.googleplayEnabled!==false, 8:c.amazonEnabled!==false, 9:c.phonepegiftEnabled!==false, 2:c.paypalEnabled!==false, 5:c.binanceEnabled!==false, 6:c.bybitEnabled!==false};
   if(!cc) return [];
-  return (cc==="IN" ? [7,8,9] : [2,5,6]).filter(o=>on[o]);
+  return (cc==="IN" ? [7,8,9] : [2,6]).filter(o=>on[o]);
 }
 
 function wdHistory(){
@@ -3211,8 +3210,8 @@ function tWal(){
   <div class="mut" style="margin:8px 0 2px">🇮🇳 India Processing Fee (gift cards) — default OFF</div>
   ${tg("India Processing Fee ON/OFF","config.in_proc_enabled","")}${inp("India Processing Fee %","config.in_proc_percent","n",{w:80})}
   ${inp("USD → INR Rate","config.usdToInr","n",{w:80})}
-  <div class="mut" style="margin:12px 0 2px">🌐 PayPal / Binance / Bybit — Processing Fee, default 18%</div>
-  ${[["PayPal","paypal"],["Binance","binance"],["Bybit","bybit"]].map(([n,k])=>`${tg(n+" Method ON/OFF","config."+k+"Enabled","1")}${tg(n+" Processing Fee ON/OFF","config."+k+"_fee_enabled","1")}${inp(n+" Fee %","config."+k+"_fee_percent","n",{w:80})}`).join("")}
+  <div class="mut" style="margin:12px 0 2px">🌐 PayPal / Bybit — Processing Fee, default 18%</div>
+  ${[["PayPal","paypal"],["Bybit","bybit"]].map(([n,k])=>`${tg(n+" Method ON/OFF","config."+k+"Enabled","1")}${tg(n+" Processing Fee ON/OFF","config."+k+"_fee_enabled","1")}${inp(n+" Fee %","config."+k+"_fee_percent","n",{w:80})}`).join("")}
   <div class="mut">Tax/Fee OFF = 0% katega (India: Tax aur Processing Fee dono alag ON/OFF; dono ON ho to dono jud kar katte hain), user ko poora amount milega. Naya % sirf naye withdrawals par lagta hai; purani requests ka % unke saath save rehta hai.</div>
   ${tPayout()}`;
 }
