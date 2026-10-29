@@ -106,8 +106,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cp app/build/outputs/apk/release/app-release.apk EsportsReward.apk
+          cp app/build/outputs/bundle/release/app-release.aab EsportsReward.aab
           TAG="apk-${{ github.run_number }}"
-          gh release create "$TAG" EsportsReward.apk --title "Esports Reward APK ($TAG)" --notes "Signed release APK (com.sportsreward.app). Install: download -> allow unknown sources -> install." --prerelease
+          gh release create "$TAG" EsportsReward.apk EsportsReward.aab --title "Esports Reward APK ($TAG)" --notes "Signed release APK (com.sportsreward.app). Install: download -> allow unknown sources -> install." --prerelease
           echo "::notice title=APK link::https://github.com/${{ github.repository }}/releases/download/$TAG/EsportsReward.apk"
       - uses: actions/upload-artifact@v4
         with:
