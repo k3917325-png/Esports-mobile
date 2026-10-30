@@ -3140,12 +3140,12 @@ const A = {sum:null, tk:{filter:"Open", items:[], loaded:false}, au:{items:[], l
   wd:{filter:"Pending", method:"all", items:[], counts:{}, loaded:false},
   us:{q:"", items:[], total:0, loaded:false}, cq:"", hiddenAt:0, msg:"",
   payout:{auto:false, providers:[], merchantId:"", webhookUrl:""}, sent:{}};
-const PAYOUT_LIST = [["upi","UPI Payout Gateway (Razorpay/Cashfree etc.)"],["phonepe","PhonePe Business (Payouts)"],["paytm","Paytm for Business (Payouts)"],["paypal","PayPal Payouts (Mass Pay API)"],["binance","Binance Pay / Withdrawal API"],["bybit","Bybit Pay / Withdrawal API"]];
+const PAYOUT_LIST = [["paypal","PayPal Payouts (Mass Pay API)"],["bybit","Bybit Pay / Withdrawal API"]];
 try{ A.sent = JSON.parse(localStorage.getItem("adm_sent")||"{}") || {}; }catch(e){ A.sent = {}; }
 const CFG_TABS = ["games","lb","wal","bonus","ads","info","ctry","promo","ctl"];
-const TABS = [["wd","💸 Withdrawals"],["rep","📊 Reports"],["users","👥 Users"],["games","🎮 Games"],["lb","🏆 Leaderboard"],["wal","💰 Wallet"],["bonus","🎁 Bonus"],["ads","📺 Ads"],["info","📢 Notice & Links"],["ctry","🌍 Countries"],["promo","🎟 Promo"],["ctl","🛠 App Control"],["sup","🆘 Support"],["aud","🧾 Audit Log"]];
+const TABS = [["wd","💸 Withdrawals"],["rep","📊 Reports"],["users","👥 Users"],["games","🎮 Games"],["wal","💰 Wallet"],["bonus","🎁 Bonus"],["ads","📺 Ads"],["info","📢 Notice & Links"],["ctry","🌍 Countries"],["promo","🎟 Promo"],["ctl","🛠 App Control"],["sup","🆘 Support"],["aud","🧾 Audit Log"]];
 const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-const METHODS = ["UPI","PayPal","Paytm","PhonePe","Binance","Bybit","GooglePlay","Amazon","PhonePeGift"];
+const METHODS = ["PayPal","Bybit","GooglePlay","Amazon","PhonePeGift"];
 
 /* ---------- small helpers ---------- */
 function flash(t){
@@ -3369,10 +3369,6 @@ function table(prefix, n, label){
 function tGames(){
   const c = A.doc.config, order = (c.gamesOrder||[]).filter(g=>GAME_CANON[g]);
   return `<h3>1️⃣ Tournaments & Games</h3>
-  ${inp("Tournament Duration (minutes)","config.tourDurationMin","n",{w:90})}
-  <div class="mut" style="margin:8px 0 2px">Prize Pool per Game (RP)</div>
-  ${order.map(g=>inp(E(GAME_CANON[g].name),`config.gamePools.${g}`,"n",{w:100})).join("")}
-  ${inp("Prize Split — Top N Players","config.topN","n",{w:80})}
   <div class="mut" style="margin:10px 0 4px">Game Management — ON/OFF + Position</div>
   ${order.map((g,i)=>{ const on = (c.gamesEnabled||{})[g]!==false; return `<div class="ar"><span style="flex:1">${E(GAME_CANON[g].name)}</span>
     <select data-a2="pos" data-g="${g}">${order.map((_,k)=>`<option value="${k}" ${k===i?"selected":""}>#${k+1}</option>`).join("")}</select>
@@ -3387,9 +3383,7 @@ function tGames(){
   <div class="ar"><select id="mtG">${Object.keys(GAME_CANON).map(g=>`<option value="${g}">${E(GAME_CANON[g].name)}</option>`).join("")}</select></div>
   <input id="mtPool" placeholder="Tournament pool (RP)" inputmode="numeric"><input id="mtMin" placeholder="Kitne minute chalega?" inputmode="numeric">
   <button class="b g wf" data-a="addmt">Tournament Add Karo</button>
-  ${(c.manualTours||[]).map((m,i)=>`<div class="ar lb2"><span>🎯 ${E((GAME_CANON[m.g]||{}).name||m.g)} • ${E(m.pool)} RP • ${E(m.min)} min</span><button class="b s sm" data-a="delmt" data-i="${i}">✕</button></div>`).join("")}
-  <h3 style="margin-top:18px">🏆 Tournament Prize Split — Top 50 (RP per rank)</h3>
-  ${table("config.tourPrizeTable",50,"Har tournament ke \"Prize Split: Top 50\" popup mein yehi rank-wise RP dikhega")}`;
+  ${(c.manualTours||[]).map((m,i)=>`<div class="ar lb2"><span>🎯 ${E((GAME_CANON[m.g]||{}).name||m.g)} • ${E(m.pool)} RP • ${E(m.min)} min</span><button class="b s sm" data-a="delmt" data-i="${i}">✕</button></div>`).join("")}`;
 }
 function tLb(){
   const c = A.doc.config, mode = c.lbResetMode==="days"||c.lbResetMode==="interval" ? c.lbResetMode : "daily";
