@@ -102,6 +102,54 @@ canvas{display:block;margin:0 auto 10px;border-radius:10px;max-width:100%}
 #adm .b-Pending{background:#f5a30030;color:#f5a300}#adm .b-Paid{background:#1fa97130;color:#1fa971}#adm .b-Rejected{background:#e5484d30;color:#e5484d}
 #adm .amod{position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;z-index:5;padding:20px}
 #adm .abox{background:var(--card);border-radius:16px;padding:16px;width:100%;max-width:380px}
+
+/* ===== Visual polish v2 (design only) ===== */
+:root{--glow:rgba(139,77,255,.35);--gold2:#ffd54a;--line:rgba(160,120,255,.18)}
+body{background:radial-gradient(120% 60% at 50% -10%,rgba(139,77,255,.28),transparent 60%),var(--bg);background-attachment:fixed}
+header{padding:16px 16px 8px}
+.logo{font-weight:900;letter-spacing:.6px;font-size:20px}
+.logo span{background:linear-gradient(90deg,#8b4dff,#e04dff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.bal{background:linear-gradient(135deg,rgba(255,213,74,.18),rgba(139,77,255,.18));border:1px solid var(--line);color:var(--text);box-shadow:0 4px 14px rgba(80,40,160,.18);padding:8px 14px}
+.card{border:1px solid var(--line);box-shadow:0 6px 20px rgba(60,25,130,.12);border-radius:18px}
+.btn{background:linear-gradient(180deg,#9a5cff,#6d2fe0);box-shadow:0 6px 16px rgba(109,47,224,.38);border-radius:12px;transition:transform .12s,box-shadow .12s}
+.btn:active{transform:translateY(1px) scale(.99);box-shadow:0 3px 8px rgba(109,47,224,.3)}
+.btn.g{background:linear-gradient(180deg,#34d399,#1fa971);color:#03281a;box-shadow:0 6px 16px rgba(31,169,113,.35)}
+.btn.s{background:var(--in);box-shadow:none;color:var(--text)}
+.chip{border:1px solid var(--line)}
+.cat{position:relative;overflow:hidden;border-radius:18px;padding:16px 12px;min-height:76px;border:1px solid rgba(255,255,255,.12);box-shadow:0 8px 20px rgba(50,20,110,.28)}
+.cat::after{content:"";position:absolute;right:-26px;top:-26px;width:90px;height:90px;border-radius:50%;background:rgba(255,255,255,.08)}
+.cat .ci{width:44px;height:44px;font-size:26px;border-radius:14px;background:rgba(255,255,255,.14)}
+.grid .cat:nth-child(1){background:linear-gradient(135deg,#7c3aed,#4c1d95)}
+.grid .cat:nth-child(2){background:linear-gradient(135deg,#db2777,#7e1d4b)}
+.grid .cat:nth-child(3){background:linear-gradient(135deg,#0891b2,#164e63)}
+.grid .cat:nth-child(4){background:linear-gradient(135deg,#d97706,#78350f)}
+.tc{border:1px solid var(--line);box-shadow:0 10px 26px rgba(60,25,130,.22);border-radius:20px}
+.tb{height:112px;position:relative}
+.play{background:linear-gradient(180deg,#ffd54a,#f59e0b);color:#3a1f00;box-shadow:0 6px 16px rgba(245,158,11,.4)}
+nav{margin:0 12px calc(8px + env(safe-area-inset-bottom,0px));padding:6px 4px;border-radius:22px;border:1px solid var(--line);box-shadow:0 10px 28px rgba(40,15,100,.3);background:var(--card)}
+nav button{border-radius:16px;padding:7px 2px;font-weight:700;transition:background .15s,color .15s}
+nav button.on{background:linear-gradient(180deg,rgba(139,77,255,.22),rgba(139,77,255,.08));color:var(--acc)}
+nav span{font-size:20px;margin-bottom:1px}
+.lb{border:1px solid var(--line);border-radius:14px}
+.lb:nth-child(1){background:linear-gradient(90deg,rgba(255,213,74,.22),var(--card))}
+.lb:nth-child(2){background:linear-gradient(90deg,rgba(203,213,225,.2),var(--card))}
+.lb:nth-child(3){background:linear-gradient(90deg,rgba(217,119,6,.2),var(--card))}
+input{border-radius:12px;border:1.5px solid var(--line)}
+.wh{position:relative;overflow:hidden;border-radius:22px;padding:18px 18px 16px;margin-bottom:12px;color:#fff;
+  background:radial-gradient(90% 120% at 100% 0%,rgba(255,213,74,.35),transparent 55%),linear-gradient(135deg,#5b21b6,#7c3aed 55%,#c026d3);
+  box-shadow:0 14px 32px rgba(109,47,224,.45);border:1px solid rgba(255,255,255,.18)}
+.wh::after{content:"";position:absolute;left:-40px;bottom:-60px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.08)}
+.wh .hi{font-size:12px;opacity:.85;font-weight:600}
+.wh .big{font-size:34px;font-weight:900;line-height:1.1;margin:4px 0 2px;display:flex;align-items:baseline;gap:8px}
+.wh .big small{font-size:13px;font-weight:700;opacity:.85}
+.wh .sub{font-size:12px;opacity:.9;display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.wh .sub b{background:rgba(255,255,255,.16);padding:3px 9px;border-radius:12px;font-weight:700}
+.wh .acts{display:flex;gap:8px;position:relative;z-index:1}
+.wh .acts button{flex:1;border:0;border-radius:12px;padding:11px 8px;font-weight:800;font-size:13px;cursor:pointer}
+.wh .acts .a1{background:#ffd54a;color:#3a1f00}
+.wh .acts .a2{background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.3)}
+main{padding-bottom:12px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
 <body>
@@ -568,7 +616,7 @@ const FS_ROOT = () => (FB_HOST ? FB_HOST+"/fs" : "https://firestore.googleapis.c
 const FS_DB = () => "projects/"+FB.projectId+"/databases/(default)/documents";
 const AUTH_URL = p => (FB_HOST ? FB_HOST+"/auth/" : "https://identitytoolkit.googleapis.com/v1/") + p + "?key=" + encodeURIComponent(FB.apiKey);
 const TOKEN_URL = () => (FB_HOST ? FB_HOST+"/token" : "https://securetoken.googleapis.com/v1/token") + "?key=" + encodeURIComponent(FB.apiKey);
-const MAX_WD_PER_DAY = 5, COIN_TOLERANCE = 30000, MAX_COIN_JUMP = 200000;
+const MAX_WD_PER_DAY = 5, COIN_TOLERANCE = 30000, MAX_COIN_JUMP = 100000;
 
 /* ---- typed value (de)serialisation ---- */
 function toV(v){
@@ -881,6 +929,7 @@ const FBA = {
     const blk = wdOn ? Array.from(new Set((doc.config.blockedWithdrawCountries||[]).map(cleanCc).filter(Boolean))) : [];
     const lblk = loginOn ? Array.from(new Set((doc.config.blockedLoginCountries||[]).map(cleanCc).filter(Boolean))) : [];
     await commit("admin",[wUpdate("config","app",{json, unityAds: wantUnity?"ON":"OFF"},{now:["updated"]}), wUpdate("config","blocked",{list:blk, loginList:lblk},{now:["updated"]}), wUpdate("config","fees",{pct:feeMap(doc.config)},{now:["updated"]}),
+      (()=>{ const c = doc.config, rate = Math.max(1, Math.round(Number(c.rate)||1500)); return wUpdate("config","wdlimits",{rate, minCoins:Math.max(1,Math.round((Number(c.minWithdrawUsd)||1.32)*rate)), maxCoins:Math.max(1,Math.round((Number(c.maxWithdrawUsd)||10)*rate)), usdToInr:Math.max(1,Number(c.usdToInr)||83)},{now:["updated"]}); })(),
       wUpdate("config","flags",{maintenance:doc.config.maintenanceOn===true, vpnBlock: wdOn && doc.config.vpnBlock!==false, minVer: doc.config.forceUpdateOn===true ? Math.max(0,Math.floor(Number(doc.config.minVersion)||0)) : 0},{now:["updated"]}),
       auditW("settings saved","config","maintenance="+(doc.config.maintenanceOn===true?"ON":"off")+" • force-update="+(doc.config.forceUpdateOn===true?"ON(min v"+doc.config.minVersion+")":"off")+" • blocked countries="+blk.length)]);
     return {ok:true};
@@ -917,10 +966,23 @@ const FBA = {
     rows.sort((a,b)=>String(b.created).localeCompare(String(a.created)));
     const flags = {};
     if(!month){ (await runQuery("admin",{from:[{collectionId:"users"}], where:{fieldFilter:{field:{fieldPath:"flag"}, op:"GREATER_THAN", value:{stringValue:""}}}, limit:500}).catch(()=>[])).forEach(u=>{ flags[u.mobile] = u.flag; }); }
+    // Anti-cheat: for pending requests compare the user's coins with what an account of that age could really have earned (~18,000 coins/day)
+    const sus = {};
+    if(!month){
+      const ms = Array.from(new Set(rows.filter(r=>r.status==="Pending").map(r=>r.mobile))).slice(0,60);
+      for(const m of ms){
+        const u = await getDoc("admin","users",m).catch(()=>null); if(!u) continue;
+        const ageD = Math.max(0, (Date.now() - new Date(u.first).getTime())/86400000), exp = Math.round(18000*(ageD+1)), have = Number(u.coins)||0, why = [];
+        if(have > exp*1.5) why.push("coins "+have+" hain, par "+ageD.toFixed(1)+" din purane account ka andaza sirf ~"+exp+" hai");
+        if(ageD < 1) why.push("account 1 din se kam purana hai");
+        if(String(u.flag||"").indexOf("COIN JUMP")===0) why.push("pehle coin jump flag hua tha");
+        if(why.length) sus[m] = why.join(" • ");
+      }
+    }
     const counts = {Pending:0, Paid:0, Rejected:0};
     for(const s of Object.keys(counts)) counts[s] = await countQuery("admin",{from:[{collectionId:"withdrawals"}], where:fEq("status", s)});
     const items = rows.map(r=>({time:istTime(r.created), mobile:r.mobile, email:r.email||"", country:r.country||"", ipCountry:r.ipCountry||"", risk:r.risk||"", to:r.to, coins:String(r.coins), status:r.status, txn:r.txn||"", id:r.id, method:r.method,
-      net:Number(r.net_payable_amount!==undefined?r.net_payable_amount:r.net).toFixed(2), currency:r.currency, name:r.name||"", gross:Number(r.gross_amount!==undefined?r.gross_amount:r.gross).toFixed(2), pct:r.applied_fee_percent, taxFee:Number(r.tax_or_fee_deducted||0).toFixed(2), flag:flags[r.mobile]||""}));
+      net:Number(r.net_payable_amount!==undefined?r.net_payable_amount:r.net).toFixed(2), currency:r.currency, name:r.name||"", gross:Number(r.gross_amount!==undefined?r.gross_amount:r.gross).toFixed(2), pct:r.applied_fee_percent, taxFee:Number(r.tax_or_fee_deducted||0).toFixed(2), flag:flags[r.mobile]||"", sus:sus[r.mobile]||""}));
     return {ok:true, items, counts};
   },
   // Report rows: ONE range query on `created` (single-field index = automatic, no composite index to deploy); country / method / status are filtered here.
@@ -1675,7 +1737,11 @@ function home(){
     : waitingForWindow ? `Sirf ${fmtT(c.dailyBonusTimeStart)} - ${fmtT(c.dailyBonusTimeEnd)} ke beech available`
     : (c.dailyBonusIntervalDays>1 ? `Har ${c.dailyBonusIntervalDays} din mein ek baar free RP` : "Roz free RP claim karo");
   const extCard = (c.extAppOn===true && (c.extAppPkg||c.extAppUrl)) ? `<div class="card" style="display:flex;justify-content:space-between;align-items:center"><div><h3 style="margin:0 0 2px">🎮 ${esc(c.extAppName||"Partner Game")}</h3><div class="mut">Game / app kholo</div></div><button class="btn sm" onclick="openExternalApp(cfg().extAppPkg, cfg().extAppUrl)">Open</button></div>` : "";
-  $("#view").innerHTML = adBox('home') + noticeBanner('home') + extCard
+  const _usd = ((S.coins||0)/(c.rate||1500)).toFixed(2), _nm = esc(String(S.name||"Player").split(" ")[0]);
+  const walletHero = `<div class="wh"><div class="hi">👋 Welcome, ${_nm}</div><div class="big">🪙 ${S.coins||0}<small>coins ≈ $${_usd}</small></div>
+      <div class="sub"><b>💜 ${S.rp||0} RP</b><b>🔥 Streak day ${S.streakDay||1}</b></div>
+      <div class="acts"><button class="a1" onclick="tab='play';render()">🎮 Play &amp; Earn</button><button class="a2" onclick="tab='wallet';render()">💰 Redeem</button></div></div>`;
+  $("#view").innerHTML = walletHero + adBox('home') + noticeBanner('home') + extCard
     + (("Notification" in window) ? `<div class="row" style="margin-bottom:8px"><span class="mut">🔔 Reminders ${(S.notifyEnabled && Notification.permission==="granted")?"ON ✅":"OFF"}</span>${(S.notifyEnabled && Notification.permission==="granted")?"":`<button class="btn s sm" onclick="enableNotifications()">Enable</button>`}</div>` : "")
     + `<div class="card" style="background:linear-gradient(135deg,#3a1f78,#6d2fe0);display:flex;justify-content:space-between;align-items:center">
       <div><h3 style="color:#fff;margin:0 0 2px">🎁 Daily Bonus</h3><div style="color:#e4d9ff;font-size:12px">${bonusSub}</div></div>
