@@ -570,7 +570,7 @@ function defaultConfig(){ return {
     100,100,100,100,100,100,100,100,100,100,
     65,65,65,65,65,65,65,65,65,65];
     const t = {}; p.forEach((v,i)=>t[i+1]=v); return t; })(),
-  rpPerCent: 100000, // RP needed for $0.01 (shown on the Games screen; admin can change)
+  rpPerCent: 100000, rpCoins: 15, // rpPerCent RP = rpCoins coins (shown on the Games screen; admin can change). 15 coins = $0.01 at the default rate
   dailyBonusRp: 10000,
   dailyBonusIntervalDays: 1, // 1=roz, 2=har 2 din mein ek baar, 3=har 3 din mein ek baar, etc.
   dailyBonusTimeEnabled: false, dailyBonusTimeStart: "18:00", dailyBonusTimeEnd: "22:00", // sirf is window mein claim available
@@ -1846,13 +1846,13 @@ function claimBonus(){
 }
 
 function left(end){ const s = Math.max(0, Math.floor((end-now())/1000)); return s>=3600 ? Math.floor(s/3600)+"h "+Math.floor(s%3600/60)+"m" : Math.floor(s/60)+"m "+(s%60)+"s"; }
-function rpUsd(rp){ const per = Math.max(1, Number(cfg().rpPerCent)||100000); return (rp/per)*0.01; }
+function rpCoinsOf(rp){ const c = cfg(), per = Math.max(1, Number(c.rpPerCent)||100000), co = (c.rpCoins===undefined||c.rpCoins===null||c.rpCoins==="") ? 15 : Math.max(0, Number(c.rpCoins)||0); return (rp/per)*co; }
 function rewardsCard(){
   const c = cfg(), rate = c.rate||1500, coins = S.coins||0, rp = S.rp||0, per = Math.max(1, Number(c.rpPerCent)||100000);
   return `<div class="rw"><div class="rw-top"><div><div class="rw-l">Current Rewards</div><div class="rw-v">🪙 ${coins}<small>≈ $${(coins/rate).toFixed(2)}</small></div></div>
     <button class="rw-b" onclick="tab='wallet';render()">Withdraw</button></div>
-    <div class="rw-rp"><div><div class="rw-l">💜 RP Balance</div><div class="rw-rv">${rp} RP<small>≈ $${rpUsd(rp).toFixed(4)}</small></div></div>
-      <div class="rw-rate">${per.toLocaleString("en-IN")} RP<br>= $0.01</div></div>
+    <div class="rw-rp"><div><div class="rw-l">💜 RP Balance</div><div class="rw-rv">${rp} RP<small>≈ 🪙 ${rpCoinsOf(rp).toFixed(2)} coins</small></div></div>
+      <div class="rw-rate">${per.toLocaleString("en-IN")} RP<br>= 🪙 ${Number((c.rpCoins===undefined||c.rpCoins===null||c.rpCoins==="")?15:c.rpCoins)} coins</div></div>
     <div class="rw-t">Min withdraw $${c.minWithdrawUsd} • Max $${c.maxWithdrawUsd}</div></div>`;
 }
 function play(){
