@@ -570,7 +570,7 @@ function defaultConfig(){ return {
     100,100,100,100,100,100,100,100,100,100,
     65,65,65,65,65,65,65,65,65,65];
     const t = {}; p.forEach((v,i)=>t[i+1]=v); return t; })(),
-  rpPerCent: 100000, rpCoins: 15, // rpPerCent RP = rpCoins coins (shown on the Games screen; admin can change). 15 coins = $0.01 at the default rate
+  rpPerCent: 100000, rpCoins: 15, premiumCountries: ["US","CA","GB","AU","NZ","DE","CH","NO","SE"], rpPremiumUsd: 0.10, // rpPerCent RP = rpCoins coins (shown on the Games screen; admin can change). 15 coins = $0.01 at the default rate
   dailyBonusRp: 10000,
   dailyBonusIntervalDays: 1, // 1=roz, 2=har 2 din mein ek baar, 3=har 3 din mein ek baar, etc.
   dailyBonusTimeEnabled: false, dailyBonusTimeStart: "18:00", dailyBonusTimeEnd: "22:00", // sirf is window mein claim available
@@ -1446,11 +1446,11 @@ const NAMES = ["ProGamer_X","NightWolf","AceHunter","SkyBlade","Rohit_YT","Clutc
   "FrostByte","BlazeRunner","KnightRider","ViperFang","SkullCrusher","AlphaWolf","RogueAce","CrimsonBlade","NovaStar","JetStreak",
   "HawkEye77","MaxPower","ChaosLord","SteelHeart","WildFire01","PhantomX","RapidRex","GoldenGun","IceBreaker","TurboCharge"];
 function genReport(t){
-  if(!S.reports) S.reports = {};
+  if(!S.reports || S.reportsV!==2){ S.reports = {}; S.reportsV = 2; }
   if(!S.reports[t.id]){
     let seed = t.id%1000+1;
     const rnd = () => { seed = (seed*9301+49297)%233280; return seed/233280; };
-    const base = ({hoop:40,arctic:180,loop:150,colorbounce:35,bubble:170,drive:150,shooter:220,knife:22,blockmatch:650,dollar:45,candle:120,dollarbox:700})[t.g] || 150;
+    const base = ({hoop:30,arctic:130,loop:110,colorbounce:28,bubble:120,drive:110,shooter:160,knife:18,blockmatch:450,dollar:32,candle:90,dollarbox:500})[t.g] || 150;
     let sc = base + Math.floor(rnd()*30);
     const list = [];
     for(let i=0;i<50;i++){ list.push({name:NAMES[i], score:sc}); sc = Math.max(1, sc - Math.ceil(1+rnd()*(base/22))); }
@@ -1460,23 +1460,22 @@ function genReport(t){
 }
 function showReport(id){
   const t = S.tours.find(x=>x.id===id); const list = genReport(t).slice();
-  const my = S.best[id]||0, myEntry = {name:S.name+" (You)", score:my, me:true};
-  let rank = list.findIndex(e=>my>=e.score);
-  if(rank===-1) rank = my>0 ? list.length : -1;
-  if(rank>=0) list.splice(rank,0,myEntry);
-  const rows = list.slice(0,51).map((e,i)=>{ const top3 = i<3;
-    return `<div class="lb" style="${e.me?'border:1px solid var(--acc)':''}${top3?';padding:14px':''}">
+  const my = S.best[id]||0;
+  const tp = tourPrizes();
+  const rows = list.slice(0,50).map((e,i)=>{ const top3 = i<3;
+    const hit = my>=e.score;
+    return `<div class="lb" style="${hit&&(i===0||my<list[i-1].score)?'border:1px solid var(--acc)':''}${top3?';padding:14px':''}">
       <b style="${top3?'font-size:20px;color:var(--gold)':''}">${i+1}</b>
-      <span class="n" style="${top3?'font-size:16px':''}">${esc(e.name)}</span>
-      <span class="mut" style="margin-right:8px${top3?';font-size:14px':''}">${e.score}</span>
-      <span class="p" style="${top3?'font-size:18px;font-weight:900':''}">${tourPrizes()[i]?"💜 "+tourPrizes()[i]:"-"}</span></div>`;
+      <span class="n" style="${top3?'font-size:16px':''}">Score ${e.score}+</span>
+      <span class="mut" style="margin-right:8px">${hit?"✅":""}</span>
+      <span class="p" style="${top3?'font-size:18px;font-weight:900':''}">${tp[i]?"💜 "+tp[i]:"-"}</span></div>`;
   }).join("");
   const o = document.createElement("div"); o.id = "rp";
   o.style.cssText = "position:fixed;inset:0;z-index:99;background:#00000080;display:flex;align-items:flex-end;justify-content:center";
   o.onclick = e => { if(e.target===o) o.remove(); };
   o.innerHTML = `<div style="background:var(--card);width:100%;max-width:440px;max-height:78vh;overflow-y:auto;border-radius:18px 18px 0 0;padding:16px">
     <div class="row" style="margin-bottom:10px"><h3 style="margin:0">🏁 ${esc(t.name)} - Results</h3><button class="btn s sm" onclick="document.getElementById('rp').remove()">✕</button></div>
-    <div class="mut" style="margin-bottom:8px">Score ke hisab se ranking (Top 50 + aapka score)</div>${rows}</div>`;
+    <div class="mut" style="margin-bottom:8px">Score targets: itna score karo to itne RP milte hain. Aapka best: <b>${my}</b></div>${rows}</div>`;
   document.body.appendChild(o);
 }
 function showPrizes(){
@@ -1593,6 +1592,34 @@ function estimateRank(myScore){
   if(myScore <= LB_MIN) return LB_TOTAL-1;
   return Math.min(LB_TOTAL-1, Math.max(LB_TOP_N, Math.round(LB_TOP_N + Math.log(LB_MID/myScore)/LB_K2)));
 }
+let LBP = {list:null, at:0, busy:false, err:false, sig:"", payAt:0, payBusy:false};
+function lbpName(){ return (String(S&&S.name||"Player").trim().split(/\s+/)[0]||"Player").slice(0,14); }
+async function lbpPush(){
+  if(!SHEETS_URL || !S || S.isGuest || !acctOf(S.phone)) return;
+  const rp = Math.max(0, Math.min(100000000, Math.floor(S.rp||0))), sig = rp+"|"+lbpName();
+  if(sig===LBP.sig) return;
+  try{ await commit("user", [wUpdate("lbp", S.phone, {uid:S.phone, name:lbpName(), rp}, {now:["updated"]})]); LBP.sig = sig; }catch(e){}
+}
+async function lbpFetch(force){
+  if(LBP.busy || !SHEETS_URL || !S || S.isGuest) return LBP.list;
+  if(!force && Date.now()-LBP.at < 30000) return LBP.list;
+  LBP.busy = true;
+  try{
+    await lbpPush();
+    LBP.list = (await runQuery("user", {from:[{collectionId:"lbp"}], orderBy:[{field:{fieldPath:"rp"}, direction:"DESCENDING"}], limit:50})).filter(b=>b.rp>0);
+    LBP.err = false;
+  }catch(e){ LBP.err = true; }
+  LBP.at = Date.now(); LBP.busy = false; return LBP.list;
+}
+// Real players only: top-50 list with my live RP merged in. rank = 0-based position, -1 = not in top 50.
+function lbpBoard(){
+  if(!LBP.list) return null;
+  const me = {uid:S.phone, name:lbpName(), rp:S.rp||0, me:true};
+  const others = LBP.list.filter(b=>b.uid!==S.phone);
+  const all = others.concat(me.rp>0 ? [me] : []).sort((a,b)=>b.rp-a.rp || String(a.uid).localeCompare(String(b.uid))).slice(0,50);
+  return {list:all, rank:all.findIndex(b=>b.me), need:(others.length>=50?others[49].rp+1:1)};
+}
+setInterval(()=>{ lbpPush(); }, 60000);
 function lbFmt(n){ return new Intl.NumberFormat("en",{notation:"compact",maximumFractionDigits:1}).format(n); }
 function lbPrizeTable(){ return cfg().lbPrizeTable || defaultConfig().lbPrizeTable; }
 function genLeaderboardTop(count){
@@ -1754,7 +1781,7 @@ function home(){
   const extCard = (c.extAppOn===true && (c.extAppPkg||c.extAppUrl)) ? `<div class="card" style="display:flex;justify-content:space-between;align-items:center"><div><h3 style="margin:0 0 2px">🎮 ${esc(c.extAppName||"Partner Game")}</h3><div class="mut">Game / app kholo</div></div><button class="btn sm" onclick="openExternalApp(cfg().extAppPkg, cfg().extAppUrl)">Open</button></div>` : "";
   const _usd = ((S.coins||0)/(c.rate||1500)).toFixed(2), _nm = esc(String(S.name||"Player").split(" ")[0]);
   const walletHero = `<div class="wh"><div class="hi">👋 Welcome, ${_nm}</div><div class="big">🪙 ${S.coins||0}<small>coins ≈ $${_usd}</small></div>
-      <div class="sub"><b>💜 ${S.rp||0} RP</b><b>🔥 Streak day ${S.streakDay||1}</b><b>${(Number(cfg().rpPerCent)||100000).toLocaleString("en-IN")} RP = 🪙 ${(cfg().rpCoins===undefined||cfg().rpCoins===null||cfg().rpCoins==="")?15:cfg().rpCoins}</b></div>
+      <div class="sub"><b>💜 ${S.rp||0} RP</b><b>🔥 Streak day ${S.streakDay||1}</b></div>
       <div class="acts"><button class="a1" onclick="tab='play';render()">🎮 Play &amp; Earn</button><button class="a2" onclick="tab='wallet';render()">💰 Redeem</button></div></div>`;
   $("#view").innerHTML = walletHero + adBox('home') + noticeBanner('home') + extCard
     + (("Notification" in window) ? `<div class="row" style="margin-bottom:8px"><span class="mut">🔔 Reminders ${(S.notifyEnabled && Notification.permission==="granted")?"ON ✅":"OFF"}</span>${(S.notifyEnabled && Notification.permission==="granted")?"":`<button class="btn s sm" onclick="enableNotifications()">Enable</button>`}</div>` : "")
@@ -1846,42 +1873,53 @@ function claimBonus(){
 }
 
 function left(end){ const s = Math.max(0, Math.floor((end-now())/1000)); return s>=3600 ? Math.floor(s/3600)+"h "+Math.floor(s%3600/60)+"m" : Math.floor(s/60)+"m "+(s%60)+"s"; }
-function rpCoinsOf(rp){ const c = cfg(), per = Math.max(1, Number(c.rpPerCent)||100000), co = (c.rpCoins===undefined||c.rpCoins===null||c.rpCoins==="") ? 15 : Math.max(0, Number(c.rpCoins)||0); return (rp/per)*co; }
+function rpRate(){
+  const c = cfg(), per = Math.max(1, Number(c.rpPerCent)||100000), rate = Number(c.rate)||1500;
+  const list = (c.premiumCountries===undefined||c.premiumCountries===null) ? ["US","CA","GB","AU","NZ","DE","CH","NO","SE"] : c.premiumCountries;
+  const cc = String((S&&S.countryId)||window.wdIpCc||"").toUpperCase();
+  const prem = !!cc && list.map(x=>String(x).toUpperCase()).includes(cc);
+  const usd = (c.rpPremiumUsd===undefined||c.rpPremiumUsd===null||c.rpPremiumUsd==="") ? 0.10 : Math.max(0, Number(c.rpPremiumUsd)||0);
+  const co = prem ? usd*rate : ((c.rpCoins===undefined||c.rpCoins===null||c.rpCoins==="") ? 15 : Math.max(0, Number(c.rpCoins)||0));
+  return {per, co, prem};
+}
+function rpCoinsOf(rp){ const r = rpRate(); return (rp/r.per)*r.co; }
 function rewardsCard(){
-  const c = cfg(), rate = c.rate||1500, coins = S.coins||0, rp = S.rp||0, per = Math.max(1, Number(c.rpPerCent)||100000);
+  const c = cfg(), rate = c.rate||1500, coins = S.coins||0, rp = S.rp||0, rr = rpRate();
   return `<div class="rw"><div class="rw-top"><div><div class="rw-l">Current Rewards</div><div class="rw-v">🪙 ${coins}<small>≈ $${(coins/rate).toFixed(2)}</small></div></div>
     <button class="rw-b" onclick="tab='wallet';render()">Withdraw</button></div>
     <div class="rw-rp"><div><div class="rw-l">💜 RP Balance</div><div class="rw-rv">${rp} RP<small>≈ 🪙 ${rpCoinsOf(rp).toFixed(2)} coins</small></div></div>
-      <div class="rw-rate">${per.toLocaleString("en-IN")} RP<br>= 🪙 ${Number((c.rpCoins===undefined||c.rpCoins===null||c.rpCoins==="")?15:c.rpCoins)} coins</div></div>
+      <div class="rw-rate">${rr.per.toLocaleString("en-IN")} RP<br>= 🪙 ${+rr.co.toFixed(2)} coins</div></div>
     <div class="rw-t">Min withdraw $${c.minWithdrawUsd} • Max $${c.maxWithdrawUsd}</div></div>`;
 }
 function play(){
   const v = $("#view");
+  if(!(S&&S.countryId) && !window.wdIpCc){ ipCountry().then(cc=>{ if(cc && !window.wdIpCc){ window.wdIpCc = cc; if(tab==='play' && !$('#gm')) render(); } }).catch(()=>{}); }
   const chips = `<div class="chips"><button class="chip ${sub==="matches"?"on":""}" onclick="sub='matches';render()">Tournaments</button><button class="chip ${sub==="board"?"on":""}" onclick="sub='board';render()">Leaderboard</button></div>`;
   if(sub==="board"){
-    const myRP = S.rp||0, rank = estimateRank(myRP);
-    const me = {name:S.name+" (You)", score:myRP, me:true};
-    const top = genLeaderboardTop(lbShown);
-    if(rank<lbShown) top.splice(rank,0,me);
+    const myRP = S.rp||0;
+    if(!LBP.list && !LBP.busy && Date.now()-LBP.at>=30000) lbpFetch().then(()=>{ if(sub==="board" && !$("#gm")) render(); });
+    else if(LBP.list && Date.now()-LBP.at>=30000 && !LBP.busy) lbpFetch().then(()=>{ if(sub==="board" && !$("#gm")) render(); });
+    const bd = lbpBoard(), rank = bd ? bd.rank : -1;
+    const top = bd ? bd.list : [];
     const LB_PRIZE = lbPrizeTable();
     const medal = {1:"👑",2:"🥈",3:"🥉"};
-    const rows = top.map((b,i)=>{ const rk=i+1, prize=LB_PRIZE[rk], gold = rk===1;
+    const rows = top.length ? top.map((b,i)=>{ const rk=i+1, prize=LB_PRIZE[rk], gold = rk===1;
       return `<div class="lb" style="${b.me?"border:1px solid var(--acc)":gold?"border:1px solid var(--gold);box-shadow:0 0 14px rgba(245,163,0,.35)":""}">
         <b style="${gold?"color:var(--gold);font-size:17px":""}">${medal[rk]||rk}</b>
-        <span class="n">${esc(b.name)}</span>
+        <span class="n">${esc(b.name)}${b.me?" (You)":""}</span>
         <span style="display:flex;flex-direction:column;align-items:center;gap:2px">
-          <span class="p">💜 ${b.score}</span>
+          <span class="p">💜 ${b.rp}</span>
           ${prize?`<span style="background:linear-gradient(135deg,#ffe488,#f5a300);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:900;font-size:14px;text-shadow:0 0 12px rgba(245,163,0,.5)">🪙 ${prize.toLocaleString()}</span>`:""}
         </span></div>`;
-    }).join("");
-    const youRow = rank>=lbShown ? `<div class="lb" style="border:1px solid var(--acc);margin-top:6px"><b>#${(rank+1).toLocaleString()}</b><span class="n">${esc(S.name)} (You)</span><span class="p">💜 ${myRP}</span></div>` : "";
-    const loadMore = `<button class="btn s sm" style="width:100%;margin-top:10px" onclick="lbShown+=200;render()">Show More (${lbShown} of ${lbFmt(LB_TOTAL)})</button>`;
+    }).join("") : `<div class="card mut" style="text-align:center">${bd ? "Abhi koi player RP ke saath nahi hai. Tournament khelo aur #1 bano!" : (LBP.err ? "Leaderboard load nahi hua, thodi der baad try karo" : "Leaderboard load ho raha hai…")}</div>`;
+    const youRow = (bd && rank<0) ? `<div class="lb" style="border:1px solid var(--acc);margin-top:6px"><b>50+</b><span class="n">${esc(lbpName())} (You)</span><span class="p">💜 ${myRP}</span></div>` : "";
+    const loadMore = "";
     const payoutCard = `<div class="card" style="text-align:center">
       <div class="mut" style="margin-bottom:4px">⏰ Next Prize Distribution</div>
       <div id="lbCountdown" style="font-size:24px;font-weight:900;color:var(--gold)">${fmtCountdown(nextLbPayoutTime()-now())}</div>
       <div class="mut" style="margin-top:4px">${cfg().lbResetMode==="days" ? ((cfg().lbResetDays||[]).map(i=>["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][i]).join(", ")||"Koi din select nahi") : cfg().lbResetMode==="interval" ? `Every ${cfg().lbResetIntervalDays||1} Day(s)` : "Daily"} ${String(cfg().lbResetHour).padStart(2,"0")}:00 • Top rank ka prize account mein add hota hai</div>
     </div>`;
-    v.innerHTML = adBox('matches') + noticeBanner('matches') + chips + payoutCard + `<div class="mut" style="margin:10px 0 8px">Total ${lbFmt(LB_TOTAL)} Players • Your Rank: <b>#${(rank+1).toLocaleString()}</b></div>` + rows + youRow + loadMore; return; }
+    v.innerHTML = adBox('matches') + noticeBanner('matches') + chips + payoutCard + `<div class="mut" style="margin:10px 0 8px">Real players • ${bd ? (rank>=0 ? `Your Rank: <b>#${rank+1}</b>` : `Top 50 mein aane ke liye <b>${bd.need} RP</b> chahiye`) : "…"}</div>` + rows + youRow + loadMore; return; }
   const ord = ((cfg().gamesOrder&&cfg().gamesOrder.length)?cfg().gamesOrder:Object.keys(GAME_CANON)).filter(g=>GAME_CANON[g]);
   const toursSorted = S.tours.slice().sort((a,b)=>ord.indexOf(a.g)-ord.indexOf(b.g));
   const customLinks = (cfg().customGames||[]).map(cg=>`<div class="tc">
@@ -1889,9 +1927,9 @@ function play(){
     <div style="padding:12px 14px 0;font-weight:800;color:var(--acc);font-size:18px">${esc(cg.name)}</div>
     <div class="mut" style="padding:6px 14px 0">External game link</div>
     <button class="btn play" style="margin:10px 14px 14px" onclick="window.open('${esc(cg.url)}','_blank')">Open Link ›</button></div>`).join("");
-  v.innerHTML = adBox('matches') + noticeBanner('matches') + chips + `<div class="hero"><b>24/7</b>TOURNAMENTS</div>` + toursSorted.map(t=>`<div class="tc">
+  v.innerHTML = adBox('matches') + noticeBanner('matches') + chips + rewardsCard() + toursSorted.map(t=>`<div class="tc">
     <div class="tb" style="background:${TCONF[t.g].grad}">${TCONF[t.g].emoji} ${esc(t.name.toUpperCase())}</div>
-    <div style="padding:12px 14px 0;font-weight:800;color:var(--acc);font-size:18px;display:flex;justify-content:space-between;align-items:center;gap:8px"><span>${esc(t.name)}</span><span style="font-size:13px;font-weight:800;color:#b45309;background:linear-gradient(135deg,#fff3c4,#ffe08a);padding:4px 10px;border-radius:12px;white-space:nowrap">🏆 Prize 💜 ${Math.max.apply(null, tourPrizes())} RP</span></div>
+    <div style="padding:12px 14px 0;font-weight:800;color:var(--acc);font-size:18px">${esc(t.name)}</div>
     <div class="tm"><div>Prize Split<b style="text-decoration:underline;cursor:pointer" onclick="showReport(${t.id})">${esc(t.split)}</b></div><div>Tournament Pool<b>💜 ${t.pool} RP</b></div><div>Time Left<b data-end="${t.end}">${left(t.end)}</b></div></div>
     <div style="margin:0 14px 12px;background:var(--in);border-radius:10px;padding:10px;display:flex;justify-content:space-between;align-items:center">
       <span style="font-size:13px;color:var(--muted)">🎯 Aapka Score</span><span style="font-size:20px;font-weight:800;color:var(--acc)">${S.best[t.id]||0}</span></div>
@@ -1938,10 +1976,19 @@ setInterval(()=>{
     }
   } else { lbDayOk = true; }
   if(!lbc.lbServerPayout && lbDayOk && d.getHours()>=lbc.lbResetHour && S.lastLbPayout !== todayStr){
-    const rnk = estimateRank(S.rp||0), prize = lbPrizeTable()[rnk+1];
-    if(prize){ S.coins = (S.coins||0)+prize; }
-    S.rp = 0; // daily leaderboard reset: har din prize milne ke baad RP zero, rank dobara se shuru
-    S.lastLbPayout = todayStr; ch = true;
+    if(S.isGuest || !acctOf(S.phone)){ S.rp = 0; S.lastLbPayout = todayStr; ch = true; }
+    else if(!LBP.payBusy && Date.now()>LBP.payAt){
+      LBP.payBusy = true;
+      lbpFetch(true).then(()=>{
+        LBP.payBusy = false;
+        if(LBP.err || !LBP.list){ LBP.payAt = Date.now()+30000; return; }   // real data nahi mila: baad mein dobara try
+        if(S.lastLbPayout === todayStr) return;
+        const bd = lbpBoard(), prize = (bd && bd.rank>=0) ? lbPrizeTable()[bd.rank+1] : 0;
+        if(prize){ S.coins = (S.coins||0)+prize; }
+        S.rp = 0; // daily leaderboard reset
+        S.lastLbPayout = todayStr; save(); lbpPush(); if(!$("#gm")) render();
+      });
+    }
   }
   if(ch){ save(); if(!$("#gm")) render(); }
   document.querySelectorAll("[data-end]").forEach(e=>e.textContent = left(+e.dataset.end));
@@ -2006,7 +2053,7 @@ function openGame(t){
   const c = $("#gc");
   G = {t, score:0, over:false, tx:160, ty:240, frame:0, ice:[], time:30, ball:null, raf:0, c, x:c.getContext("2d"), sx:160, sy:240, mt:0,
        lane:1, obst:[], gems:[], target:null, left:true, colors:["#ff5c5c","#3ddc97","#3b82f6","#ffb020"],
-       startMs:now(), bullets:[], roids:[], knifeRot:0, knifeRotSpeed:0.028, stuck:[], grid:null, bmTime:60};
+       startMs:now(), bullets:[], roids:[], knifeRot:0, knifeRotSpeed:0.038, stuck:[], grid:null, bmTime:45};
   $("#gh").textContent = ({
     hoop:"Ball ko ungli se left-right ghumao, ungli uthate hi ball jayegi • Hoop mein daalo (30s)",
     arctic:"Screen par drag karo • Icebergs se bacho!",
@@ -2143,7 +2190,7 @@ function arcticStep(){
   for(let k=0;k<5;k++){ x.strokeStyle = "rgba(255,255,255,"+(0.05+k*0.02)+")"; x.lineWidth = 2; x.beginPath();
     for(let px=0;px<=320;px+=8){ const py = 70+k*90 + Math.sin(px/38+tw*(1+k*0.2)+k)*7; if(px===0) x.moveTo(px,py); else x.lineTo(px,py); } x.stroke(); }
   G.tx = Math.max(24, Math.min(296, G.tx)); G.sx = G.tx; // character follows the finger instantly
-  if(Math.random() < 0.014+Math.min(0.025,G.score/3000)) G.ice.push({x:20+Math.random()*280,y:-30,r:12+Math.random()*12,v:2+Math.random()*1.2+G.score/400,rot:Math.random()*6.28,vr:(Math.random()-0.5)*0.04});
+  if(Math.random() < 0.02+Math.min(0.035,G.score/2200)) G.ice.push({x:20+Math.random()*280,y:-30,r:12+Math.random()*12,v:2.5+Math.random()*1.4+G.score/300,rot:Math.random()*6.28,vr:(Math.random()-0.5)*0.04});
   G.ice.forEach(i=>{ i.y += i.v; i.rot += i.vr;
     x.save(); x.translate(i.x,i.y); x.rotate(i.rot);
     const g = x.createLinearGradient(-i.r,-i.r,i.r,i.r); g.addColorStop(0,"#ffffff"); g.addColorStop(0.6,"#bae6fd"); g.addColorStop(1,"#38bdf8");
@@ -2166,7 +2213,7 @@ function loopStep(){
   if(G.spawnCd <= 0 && Math.random() < 0.5){
     const ln = Math.floor(Math.random()*3);
     if(Math.random() < 0.35) G.gems.push({lane:ln,y:-20}); else G.obst.push({lane:ln,y:-20});
-    G.spawnCd = Math.max(22, 34 - Math.floor(G.score/60));
+    G.spawnCd = Math.max(16, 28 - Math.floor(G.score/45));
   }
   const spd = 2.4+Math.min(3,G.score/500);
   G.obst.forEach(o=>o.y+=spd); G.gems.forEach(o=>o.y+=spd);
@@ -2191,7 +2238,7 @@ function newColorRound(){
   G.left = Math.random()<0.5;
   G.leftColor = G.left ? G.target : other;
   G.rightColor = G.left ? other : G.target;
-  G.roundStart = now(); G.roundDur = Math.max(650, 1500 - G.score*12);
+  G.roundStart = now(); G.roundDur = Math.max(450, 1150 - G.score*14);
 }
 function checkColorTap(side){
   if(!G || G.over || !G.target) return;
@@ -2217,7 +2264,7 @@ function bubbleStep(){
   if(!G.bgGrad2){ G.bgGrad2 = x.createLinearGradient(0,0,0,480); G.bgGrad2.addColorStop(0,"#1e3a8a"); G.bgGrad2.addColorStop(1,"#4c1d95"); }
   x.fillStyle = G.bgGrad2; x.fillRect(0,0,320,480);
   G.tx = Math.max(24,Math.min(296,G.tx)); G.sx = G.tx; // character follows the finger instantly
-  if(Math.random() < 0.025+Math.min(0.03,G.score/1800)) G.ice.push({x:20+Math.random()*280,y:-20,r:10+Math.random()*12,v:2.2+Math.random()*1.3+G.score/350});
+  if(Math.random() < 0.035+Math.min(0.04,G.score/1400)) G.ice.push({x:20+Math.random()*280,y:-20,r:10+Math.random()*12,v:2.8+Math.random()*1.5+G.score/260});
   G.ice = G.ice.filter(i=>{
     i.y += i.v; x.fillStyle = "#f87171"; x.beginPath(); x.arc(i.x,i.y,i.r,0,7); x.fill();
     if(Math.hypot(i.x-G.sx,i.y-430) < i.r+13) G.over = true;
@@ -2237,7 +2284,7 @@ function driveStep(){
   if(G.spawnCd2<=0 && Math.random()<0.5){
     const ln = Math.floor(Math.random()*3);
     if(Math.random()<0.3) G.gems2.push({lane:ln,y:-30}); else G.obst2.push({lane:ln,y:-30});
-    G.spawnCd2 = Math.max(24, 36-Math.floor(G.score/60));
+    G.spawnCd2 = Math.max(17, 28-Math.floor(G.score/45));
   }
   const spd = 2.6+Math.min(3.4,G.score/450);
   G.obst2.forEach(o=>o.y+=spd); G.gems2.forEach(o=>o.y+=spd);
@@ -2259,12 +2306,12 @@ function driveStep(){
 function hoopStep(){
   const x = G.x; G.time -= 1/60; if(G.time <= 0){ G.over = true; return gameOver(); }
   x.fillStyle = "#1b1240"; x.fillRect(0,0,320,480);
-  G.hx = 160+Math.sin(G.frame/40)*(100+Math.min(40,G.score*2));
+  G.hx = 160+Math.sin(G.frame/(G.score>=10?24:32))*(100+Math.min(50,G.score*3));
   x.fillStyle = "#fff"; x.fillRect(G.hx-34,50,68,40); x.fillStyle = "#ff7a1a"; x.fillRect(G.hx-30,92,60,6);
   x.strokeStyle = "#ffffff88"; for(let i=-24;i<=24;i+=12){ x.beginPath(); x.moveTo(G.hx+i,98); x.lineTo(G.hx+i/2,124); x.stroke(); }
   x.font = "30px serif"; x.textAlign = "center";
   if(G.ball){ const b = G.ball; b.f++; b.y = 430-(b.f/22)*332;
-    if(b.f >= 22){ if(Math.abs(G.hx-b.x) < 28){ G.score += 2; G.msg = "🏀 Swish! +2"; } else G.msg = "Miss!"; G.mt = 35; G.ball = null; }
+    if(b.f >= 22){ if(Math.abs(G.hx-b.x) < 20){ G.score += 2; G.msg = "🏀 Swish! +2"; } else G.msg = "Miss!"; G.mt = 35; G.ball = null; }
     else x.fillText("🏀",b.x,b.y); }
   else x.fillText("🏀",G.tx,430);
   x.fillStyle = "#fff"; x.font = "bold 16px sans-serif"; x.textAlign = "left"; x.fillText(Math.ceil(G.time)+"s",10,24);
@@ -2281,7 +2328,7 @@ function shooterStep(){
   G.shootCd = (G.shootCd||0) - 1;
   if(G.shootCd<=0){ G.bullets.push({x:G.sx,y:420}); G.shootCd = 14; }
   G.bullets.forEach(b=>b.y-=9); G.bullets = G.bullets.filter(b=>b.y>-10);
-  if(Math.random() < 0.02+Math.min(0.035,G.score/3500)) G.roids.push({x:20+Math.random()*280,y:-20,r:12+Math.random()*10,v:1.6+Math.random()*1.2+G.score/450});
+  if(Math.random() < 0.03+Math.min(0.045,G.score/2400)) G.roids.push({x:20+Math.random()*280,y:-20,r:12+Math.random()*10,v:2.2+Math.random()*1.4+G.score/330});
   G.roids.forEach(r=>r.y+=r.v);
   // single-pass bullet↔asteroid collision check (avoids repeated array rebuilds that caused frame-rate lag)
   const deadBullets = new Set(), deadRoids = new Set();
@@ -2398,9 +2445,9 @@ function dollarStep(){
   if(!G.over){
     D.cd--;
     if(D.cd <= 0){
-      const green = Math.random() < 0.62;
-      D.balls.push({x:20+Math.random()*280, y:-14, r:11, green, v:2.4 + Math.min(3.2, G.score/45) + Math.random()*0.6});
-      D.cd = Math.max(22, 50 - G.score*0.5) + Math.random()*10;
+      const green = Math.random() < 0.55;
+      D.balls.push({x:20+Math.random()*280, y:-14, r:11, green, v:3 + Math.min(4, G.score/35) + Math.random()*0.6});
+      D.cd = Math.max(16, 40 - G.score*0.6) + Math.random()*10;
     }
   }
   D.balls.forEach(b=>{
@@ -2496,7 +2543,7 @@ function dollarboxStep(){
   // Dollar Box: upar se 💵 dollars girte hain, niche "$1" box ko left/right karke pakdo. Har dollar = +50 score.
   // 3 dollar miss = game over. Score badhne ke saath dollars tez girte hain, aate zyada hain, box chhota hota jaata hai.
   const x = G.x;
-  if(!G.db) G.db = {items:[], pops:[], cd:28, lives:3, flash:0, grid:0, catches:0};
+  if(!G.db) G.db = {items:[], pops:[], cd:28, lives:2, flash:0, grid:0, catches:0};
   const D = G.db, n = D.catches;
   if(!G.bgDb){ G.bgDb = x.createLinearGradient(0,0,0,480); G.bgDb.addColorStop(0,"#06281b"); G.bgDb.addColorStop(1,"#03140d"); }
   x.fillStyle = G.bgDb; x.fillRect(0,0,320,480);
@@ -2505,7 +2552,7 @@ function dollarboxStep(){
   for(let gy=D.grid; gy<480; gy+=48){ x.beginPath(); x.moveTo(0,gy); x.lineTo(320,gy); x.stroke(); }
   for(let gx=0; gx<=320; gx+=64){ x.beginPath(); x.moveTo(gx,0); x.lineTo(gx,480); x.stroke(); }
   if(G.keyL) G.tx -= 6; if(G.keyR) G.tx += 6;
-  const bw = Math.max(46, 70 - n*0.7);              // box chhota hota jaata hai
+  const bw = Math.max(38, 62 - n*0.8);              // box chhota hota jaata hai
   G.tx = Math.max(bw/2, Math.min(320-bw/2, G.tx));
   G.sx = G.tx;
   const boxTop = 424;
@@ -2516,8 +2563,8 @@ function dollarboxStep(){
       let nx = 20+Math.random()*280;
       const last = D.items[D.items.length-1];
       if(last && last.y < 90 && Math.abs(nx-last.x) < 36) nx = nx < 160 ? Math.min(300, nx+60) : Math.max(20, nx-60);   // dono ek ke upar ek na girein
-      D.items.push({x:nx, y:-16, red, v:2.4 + Math.min(3.8, n*0.09) + Math.random()*0.5, rot:Math.random()*6, spin:(Math.random()-0.5)*0.12});
-      D.cd = Math.max(26, 62 - n*1.1) + Math.random()*12;   // dollars jaldi-jaldi aate hain
+      D.items.push({x:nx, y:-16, red, v:3 + Math.min(4.4, n*0.1) + Math.random()*0.5, rot:Math.random()*6, spin:(Math.random()-0.5)*0.12});
+      D.cd = Math.max(20, 52 - n*1.1) + Math.random()*12;   // dollars jaldi-jaldi aate hain
     }
   }
   D.items.forEach(it=>{
