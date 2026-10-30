@@ -1704,7 +1704,7 @@ function render(){
     <p class="mut" style="text-align:center;margin-top:14px">Sirf Gmail se login (mail verify hota hai). Koi OTP ya phone number nahi.</div>`; return; }
   r.innerHTML = `<header><div class="logo">ESPORTS<span>REWARD</span></div><div class="bal">${balText()}</div></header>
     <main id="view"></main>
-    <nav>${[["home","🏠","Home"],["play","🎮","Games"],["promo","🎟️","Promo"],["wallet","💰","Wallet"],["me","👤","Profile"]].map(t=>`<button class="${tab===t[0]?"on":""}" onclick="tab='${t[0]}';render()"><span>${t[1]}</span>${t[2]}</button>`).join("")}</nav>`;
+    <nav>${[["home","🏠","Home"],["play","🎮","Matches"],["promo","🎟️","Promo"],["wallet","💰","Wallet"],["me","👤","Profile"]].map(t=>`<button class="${tab===t[0]?"on":""}" onclick="tab='${t[0]}';render()"><span>${t[1]}</span>${t[2]}</button>`).join("")}</nav>`;
   ({home,play,promo,wallet,me}[tab])();
 }
 
@@ -1754,7 +1754,7 @@ function home(){
   const extCard = (c.extAppOn===true && (c.extAppPkg||c.extAppUrl)) ? `<div class="card" style="display:flex;justify-content:space-between;align-items:center"><div><h3 style="margin:0 0 2px">🎮 ${esc(c.extAppName||"Partner Game")}</h3><div class="mut">Game / app kholo</div></div><button class="btn sm" onclick="openExternalApp(cfg().extAppPkg, cfg().extAppUrl)">Open</button></div>` : "";
   const _usd = ((S.coins||0)/(c.rate||1500)).toFixed(2), _nm = esc(String(S.name||"Player").split(" ")[0]);
   const walletHero = `<div class="wh"><div class="hi">👋 Welcome, ${_nm}</div><div class="big">🪙 ${S.coins||0}<small>coins ≈ $${_usd}</small></div>
-      <div class="sub"><b>💜 ${S.rp||0} RP</b><b>🔥 Streak day ${S.streakDay||1}</b></div>
+      <div class="sub"><b>💜 ${S.rp||0} RP</b><b>🔥 Streak day ${S.streakDay||1}</b><b>${(Number(cfg().rpPerCent)||100000).toLocaleString("en-IN")} RP = 🪙 ${(cfg().rpCoins===undefined||cfg().rpCoins===null||cfg().rpCoins==="")?15:cfg().rpCoins}</b></div>
       <div class="acts"><button class="a1" onclick="tab='play';render()">🎮 Play &amp; Earn</button><button class="a2" onclick="tab='wallet';render()">💰 Redeem</button></div></div>`;
   $("#view").innerHTML = walletHero + adBox('home') + noticeBanner('home') + extCard
     + (("Notification" in window) ? `<div class="row" style="margin-bottom:8px"><span class="mut">🔔 Reminders ${(S.notifyEnabled && Notification.permission==="granted")?"ON ✅":"OFF"}</span>${(S.notifyEnabled && Notification.permission==="granted")?"":`<button class="btn s sm" onclick="enableNotifications()">Enable</button>`}</div>` : "")
@@ -1765,7 +1765,7 @@ function home(){
         <button class="btn sm" style="background:#ffd54a;color:#3a1f00;font-weight:800;white-space:nowrap" ${(claimed||waitingForWindow)?"disabled":""} onclick="claimBonus()">
           ${claimed?"✅ Claimed":waitingForWindow?"⏰ Band":"Claim"}</button>
       </div></div>
-    <h3>Game Categories</h3><div class="grid">${catCard("🎮","Games","tab='play';render()")}${catCard("🎟️","Promo Code","tab='promo';render()")}${catCard("💰","Rewards","tab='wallet';render()")}${catCard("👤","Profile","tab='me';render()")}</div>
+    <h3>Game Categories</h3><div class="grid">${catCard("🏆","Tournaments","tab='play';render()")}${catCard("🎟️","Promo Code","tab='promo';render()")}${catCard("🕹️","Mini Games","tab='play';render()")}${catCard("📊","Leaderboard","tab='play';sub='board';render()")}</div>
     ${streakCard()}<div class="msg" id="msg"></div>`;
 }
 function streakRewards(){ return cfg().streakRewards || defaultConfig().streakRewards; }
@@ -1857,7 +1857,7 @@ function rewardsCard(){
 }
 function play(){
   const v = $("#view");
-  sub = "matches"; const chips = "";   // Leaderboard tab removed (games only)
+  const chips = `<div class="chips"><button class="chip ${sub==="matches"?"on":""}" onclick="sub='matches';render()">Tournaments</button><button class="chip ${sub==="board"?"on":""}" onclick="sub='board';render()">Leaderboard</button></div>`;
   if(sub==="board"){
     const myRP = S.rp||0, rank = estimateRank(myRP);
     const me = {name:S.name+" (You)", score:myRP, me:true};
@@ -1889,12 +1889,13 @@ function play(){
     <div style="padding:12px 14px 0;font-weight:800;color:var(--acc);font-size:18px">${esc(cg.name)}</div>
     <div class="mut" style="padding:6px 14px 0">External game link</div>
     <button class="btn play" style="margin:10px 14px 14px" onclick="window.open('${esc(cg.url)}','_blank')">Open Link ›</button></div>`).join("");
-  v.innerHTML = adBox('matches') + noticeBanner('matches') + chips + rewardsCard() + toursSorted.map(t=>`<div class="tc">
+  v.innerHTML = adBox('matches') + noticeBanner('matches') + chips + `<div class="hero"><b>24/7</b>TOURNAMENTS</div>` + toursSorted.map(t=>`<div class="tc">
     <div class="tb" style="background:${TCONF[t.g].grad}">${TCONF[t.g].emoji} ${esc(t.name.toUpperCase())}</div>
     <div style="padding:12px 14px 0;font-weight:800;color:var(--acc);font-size:18px;display:flex;justify-content:space-between;align-items:center;gap:8px"><span>${esc(t.name)}</span><span style="font-size:13px;font-weight:800;color:#b45309;background:linear-gradient(135deg,#fff3c4,#ffe08a);padding:4px 10px;border-radius:12px;white-space:nowrap">🏆 Prize 💜 ${Math.max.apply(null, tourPrizes())} RP</span></div>
+    <div class="tm"><div>Prize Split<b style="text-decoration:underline;cursor:pointer" onclick="showReport(${t.id})">${esc(t.split)}</b></div><div>Tournament Pool<b>💜 ${t.pool} RP</b></div><div>Time Left<b data-end="${t.end}">${left(t.end)}</b></div></div>
     <div style="margin:0 14px 12px;background:var(--in);border-radius:10px;padding:10px;display:flex;justify-content:space-between;align-items:center">
       <span style="font-size:13px;color:var(--muted)">🎯 Aapka Score</span><span style="font-size:20px;font-weight:800;color:var(--acc)">${S.best[t.id]||0}</span></div>
-    <button class="btn play" onclick="playT(${t.id})">Play Now! ›</button></div>`).join("") + customLinks;
+    <button class="btn play" onclick="playT(${t.id})">Play Now! ›</button><button class="btn s sm" style="margin:0 14px 14px" onclick="showReport(${t.id})">🏁 Winning Report</button></div>`).join("") + customLinks;
 }
 function nextLbPayoutTime(){
   const c = cfg(), d = new Date();
@@ -2049,7 +2050,8 @@ function openGame(t){
     G.ku = e => { if(e.key==="ArrowLeft"||e.key==="a") G.keyL = false; if(e.key==="ArrowRight"||e.key==="d") G.keyR = false; };
     addEventListener("keydown", G.kd); addEventListener("keyup", G.ku);
   }
-  loop();
+  fxReset(); fxAudio();
+  fxCountdown(()=>{ if(G){ G.startMs = now(); G.lastTs = null; loop(); } });
 }
 function loop(ts){
   if(!G || G.over) return;
@@ -2061,22 +2063,99 @@ function loop(ts){
     G.acc -= 16.667; steps++; G.frame++; G.x.clearRect(0,0,320,480);
     ({hoop:hoopStep, arctic:arcticStep, loop:loopStep, colorbounce:colorbounceStep, bubble:bubbleStep, drive:driveStep, shooter:shooterStep, knife:knifeStep, blockmatch:blockmatchStep, dollar:dollarStep, candle:candleStep, dollarbox:dollarboxStep})[G.t.g]();
   }
+  if(G && !G.over){ try{ fxFrame(); }catch(e){} }
   if(G){
     const sc = Math.floor(G.score);
     if(sc !== G.shown){ G.shown = sc; const gs = $("#gs"); if(gs) gs.textContent = "Score: "+sc; }
     if(!G.over) G.raf = requestAnimationFrame(loop);
   }
 }
+
+/* ===== Game FX (sound, particles, score pops, level-up, countdown) ===== */
+const FX = {parts:[], pops:[], stars:[], lastSc:0, lvl:1, lvlT:0, ac:null, lastSnd:0, on:true};
+function fxAudio(){ try{ if(!FX.ac){ const C = window.AudioContext||window.webkitAudioContext; if(C) FX.ac = new C(); } if(FX.ac && FX.ac.state==="suspended") FX.ac.resume(); }catch(e){} return FX.ac; }
+function fxSound(kind){
+  const ac = fxAudio(); if(!ac || !FX.on) return;
+  const t = ac.currentTime, tone = (f, d, type, v, at)=>{ const o = ac.createOscillator(), g = ac.createGain(); o.type = type||"sine"; o.frequency.setValueAtTime(f, t+(at||0));
+    g.gain.setValueAtTime(0.0001, t+(at||0)); g.gain.exponentialRampToValueAtTime(v||0.12, t+(at||0)+0.01); g.gain.exponentialRampToValueAtTime(0.0001, t+(at||0)+d); o.connect(g); g.connect(ac.destination); o.start(t+(at||0)); o.stop(t+(at||0)+d+0.02); };
+  try{
+    if(kind==="coin"){ tone(880,0.09,"triangle",0.1); tone(1320,0.12,"triangle",0.1,0.07); }
+    else if(kind==="beep"){ tone(520,0.12,"square",0.08); }
+    else if(kind==="go"){ tone(784,0.12,"square",0.09); tone(1175,0.22,"square",0.09,0.1); }
+    else if(kind==="level"){ tone(523,0.12,"triangle",0.12); tone(659,0.12,"triangle",0.12,0.1); tone(784,0.2,"triangle",0.12,0.2); }
+    else if(kind==="over"){ tone(300,0.18,"sawtooth",0.1); tone(220,0.18,"sawtooth",0.1,0.14); tone(150,0.35,"sawtooth",0.1,0.28); }
+  }catch(e){}
+}
+function fxBurst(x, y, n, cols){
+  for(let i=0;i<n;i++){ const a = Math.random()*6.283, v = 1.2+Math.random()*3.2; FX.parts.push({x, y, vx:Math.cos(a)*v, vy:Math.sin(a)*v-1.4, l:1, c:cols[i%cols.length], r:2+Math.random()*3}); }
+  if(FX.parts.length>160) FX.parts.splice(0, FX.parts.length-160);
+}
+function fxReset(){ FX.parts = []; FX.pops = []; FX.lastSc = 0; FX.lvl = 1; FX.lvlT = 0; FX.stars = Array.from({length:16},()=>({x:Math.random()*320, y:Math.random()*480, s:0.4+Math.random()*1.1, p:Math.random()*6.28})); }
+function fxFrame(){
+  if(!G || !G.x) return;
+  const x = G.x, sc = Math.floor(G.score), d = sc - FX.lastSc;
+  if(d >= 2){
+    const px = Math.max(30, Math.min(290, G.sx||G.tx||160));
+    FX.pops.push({x:px, y:G.t.g==="dollarbox"||G.t.g==="dollar"?400:340, t:0, v:"+"+d});
+    fxBurst(px, G.t.g==="dollarbox"||G.t.g==="dollar"?420:360, Math.min(18, 6+d), ["#ffd54a","#ffffff","#ff8a5c","#7cf0ff"]);
+    const n = performance.now(); if(n-FX.lastSnd>70){ FX.lastSnd = n; fxSound("coin"); try{ navigator.vibrate && navigator.vibrate(8); }catch(e){} }
+  }
+  if(sc !== FX.lastSc) FX.lastSc = sc;
+  const lv = 1 + Math.floor(sc/100);
+  if(lv > FX.lvl){ FX.lvl = lv; FX.lvlT = 90; fxSound("level"); fxBurst(160, 200, 26, ["#ffd54a","#c084fc","#60a5fa","#34d399"]); }
+  x.save();
+  // twinkling sparkles
+  const tt = G.frame/30;
+  FX.stars.forEach(s=>{ s.y -= s.s*0.35; if(s.y<-4){ s.y = 484; s.x = Math.random()*320; } x.globalAlpha = 0.12+0.2*Math.abs(Math.sin(tt+s.p)); x.fillStyle = "#fff"; x.beginPath(); x.arc(s.x, s.y, 1+s.s, 0, 6.283); x.fill(); });
+  // particles
+  FX.parts = FX.parts.filter(p=>p.l>0);
+  FX.parts.forEach(p=>{ p.x += p.vx; p.y += p.vy; p.vy += 0.12; p.l -= 0.025; x.globalAlpha = Math.max(0,p.l); x.fillStyle = p.c; x.beginPath(); x.arc(p.x, p.y, p.r*p.l+0.5, 0, 6.283); x.fill(); });
+  // floating +N
+  FX.pops = FX.pops.filter(p=>p.t<40);
+  x.textAlign = "center"; x.font = "900 22px sans-serif";
+  FX.pops.forEach(p=>{ p.t++; p.y -= 1.3; x.globalAlpha = 1 - p.t/40; x.lineWidth = 4; x.strokeStyle = "rgba(0,0,0,.55)"; x.strokeText(p.v, p.x, p.y); x.fillStyle = "#ffe066"; x.fillText(p.v, p.x, p.y); });
+  // level banner
+  if(FX.lvlT>0){ FX.lvlT--; const k = FX.lvlT/90, sl = k>0.85 ? (1-k)/0.15 : (k<0.2 ? k/0.2 : 1); x.globalAlpha = Math.max(0, sl); x.font = "900 34px sans-serif"; x.lineWidth = 6; x.strokeStyle = "rgba(60,20,140,.9)"; x.strokeText("LEVEL "+FX.lvl+" ⭐", 160, 150); x.fillStyle = "#fff"; x.fillText("LEVEL "+FX.lvl+" ⭐", 160, 150); }
+  // soft vignette
+  x.globalAlpha = 1; const vg = x.createRadialGradient(160,240,150,160,240,330); vg.addColorStop(0,"rgba(0,0,0,0)"); vg.addColorStop(1,"rgba(0,0,0,.28)"); x.fillStyle = vg; x.fillRect(0,0,320,480);
+  x.restore();
+}
+function fxCountdown(done){
+  const x = G.x, steps = ["3","2","1","GO!"]; let i = 0;
+  const draw = ()=>{
+    if(!G || !G.x || G.over) return;
+    x.clearRect(0,0,320,480);
+    const g = x.createLinearGradient(0,0,0,480); g.addColorStop(0,"#1e1b4b"); g.addColorStop(1,"#4c1d95"); x.fillStyle = g; x.fillRect(0,0,320,480);
+    x.textAlign = "center"; x.font = "900 96px sans-serif"; x.lineWidth = 10; x.strokeStyle = "rgba(0,0,0,.4)"; x.strokeText(steps[i],160,270); x.fillStyle = i===3 ? "#34d399" : "#ffd54a"; x.fillText(steps[i],160,270);
+    x.font = "700 16px sans-serif"; x.fillStyle = "#e9d5ff"; x.fillText("Taiyaar ho jao!", 160, 330);
+    fxSound(i===3?"go":"beep");
+    i++;
+    if(i<steps.length) G.cdT = setTimeout(draw, 600); else G.cdT = setTimeout(()=>{ if(G && !G.over) done(); }, 450);
+  };
+  draw();
+}
 function arcticStep(){
   const x = G.x;
-  if(!G.bgGrad){ G.bgGrad = x.createLinearGradient(0,0,0,480); G.bgGrad.addColorStop(0,"#0e7490"); G.bgGrad.addColorStop(1,"#082f49"); }
+  if(!G.bgGrad){ G.bgGrad = x.createLinearGradient(0,0,0,480); G.bgGrad.addColorStop(0,"#38bdf8"); G.bgGrad.addColorStop(0.45,"#0e7490"); G.bgGrad.addColorStop(1,"#082f49"); }
   x.fillStyle = G.bgGrad; x.fillRect(0,0,320,480);
+  // animated waves
+  const tw = G.frame/40;
+  for(let k=0;k<5;k++){ x.strokeStyle = "rgba(255,255,255,"+(0.05+k*0.02)+")"; x.lineWidth = 2; x.beginPath();
+    for(let px=0;px<=320;px+=8){ const py = 70+k*90 + Math.sin(px/38+tw*(1+k*0.2)+k)*7; if(px===0) x.moveTo(px,py); else x.lineTo(px,py); } x.stroke(); }
   G.tx = Math.max(24, Math.min(296, G.tx)); G.sx = G.tx; // character follows the finger instantly
-  if(Math.random() < 0.014+Math.min(0.025,G.score/3000)) G.ice.push({x:20+Math.random()*280,y:-20,r:10+Math.random()*10,v:2+Math.random()*1.2+G.score/400});
-  G.ice.forEach(i=>{ i.y += i.v; x.fillStyle = "#e0f7ff"; x.beginPath(); x.arc(i.x,i.y,i.r,0,7); x.fill(); if(Math.hypot(i.x-G.sx,i.y-430) < i.r+12) G.over = true; });
+  if(Math.random() < 0.014+Math.min(0.025,G.score/3000)) G.ice.push({x:20+Math.random()*280,y:-30,r:12+Math.random()*12,v:2+Math.random()*1.2+G.score/400,rot:Math.random()*6.28,vr:(Math.random()-0.5)*0.04});
+  G.ice.forEach(i=>{ i.y += i.v; i.rot += i.vr;
+    x.save(); x.translate(i.x,i.y); x.rotate(i.rot);
+    const g = x.createLinearGradient(-i.r,-i.r,i.r,i.r); g.addColorStop(0,"#ffffff"); g.addColorStop(0.6,"#bae6fd"); g.addColorStop(1,"#38bdf8");
+    x.shadowColor = "rgba(186,230,253,.9)"; x.shadowBlur = 12; x.fillStyle = g; x.beginPath();
+    for(let q=0;q<7;q++){ const an = q/7*6.283, rr = i.r*(0.82+0.22*((q*37)%3)/2); x.lineTo(Math.cos(an)*rr, Math.sin(an)*rr); } x.closePath(); x.fill();
+    x.shadowBlur = 0; x.fillStyle = "rgba(255,255,255,.65)"; x.beginPath(); x.ellipse(-i.r*0.25,-i.r*0.3,i.r*0.22,i.r*0.12,-0.6,0,7); x.fill(); x.restore();
+    if(Math.hypot(i.x-G.sx,i.y-430) < i.r+12) G.over = true; });
   G.ice = G.ice.filter(i=>i.y<520); G.score += 0.1;
-  x.font = "32px serif"; x.textAlign = "center"; x.fillText("🚢",G.sx,440);
-  if(G.over) setTimeout(()=>{ if(G) gameOver(); }, 1000);
+  // wake behind ship
+  if(G.frame%3===0) FX.parts.push({x:G.sx+(Math.random()-0.5)*10, y:458, vx:(Math.random()-0.5)*0.6, vy:0.8, l:0.8, c:"#e0f2fe", r:3});
+  x.save(); x.shadowColor = "rgba(255,213,74,.8)"; x.shadowBlur = 14; x.font = "34px serif"; x.textAlign = "center"; x.fillText("🚢",G.sx,440+Math.sin(G.frame/10)*2); x.restore();
+  if(G.over){ fxBurst(G.sx,430,30,["#ffffff","#bae6fd","#ffd54a"]); setTimeout(()=>{ if(G) gameOver(); }, 1000); }
 }
 function loopStep(){
   const x = G.x; x.fillStyle = "#0a2a33"; x.fillRect(0,0,320,480);
@@ -2502,6 +2581,7 @@ function bank(){
   return sc;
 }
 function gameOver(){
+  try{ fxSound("over"); navigator.vibrate && navigator.vibrate([60,40,90]); }catch(e){}
   const t = G.t, sc = bank(), gh = $("#gh");
   gh.style.bottom = "auto"; gh.style.top = "30px"; gh.style.pointerEvents = "auto";
   const list = genReport(t);
@@ -2553,7 +2633,7 @@ function claim2x(sc, id){
 }
 function closeGame(){
   if(G && G.kd){ removeEventListener("keydown", G.kd); removeEventListener("keyup", G.ku); }
-  if(G){ cancelAnimationFrame(G.raf); if(!G.over && G.score > 0){ G.over = true; bank(); } }
+  if(G){ cancelAnimationFrame(G.raf); clearTimeout(G.cdT); if(!G.over && G.score > 0){ G.over = true; bank(); } }
   const o = $("#gm"); if(o) o.remove(); G = null; render();
 }
 
