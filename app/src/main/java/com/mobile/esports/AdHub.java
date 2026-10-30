@@ -199,6 +199,7 @@ class AdHub {
     // ================= banner =================
     /** LevelPlay banner first; if it fails (or LevelPlay is OFF / not configured) the Start.io banner is used. */
     private String bannerNetwork() {
+        if (true) return "";   // banner ads removed completely - rewarded ads only
         if (lpUsable() && lpReady && !bannerUnit().isEmpty() && !lpBannerFailed) return "levelplay";
         if (startUsable() && startInit && !startBannerFailed) return "startio";
         return "";

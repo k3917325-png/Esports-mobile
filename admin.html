@@ -164,6 +164,11 @@ main{padding-bottom:12px}
 .rw-bar u{position:absolute;top:-3px;width:4px;height:18px;border-radius:3px;background:#fff;margin-left:-2px}
 .rw-lb{position:relative;display:flex;justify-content:space-between;font-size:11px;font-weight:800;opacity:.92;margin:0 4px;min-height:16px}
 .rw-t{margin-top:8px;font-size:12px;font-weight:700;opacity:.95}
+
+.rw-rp{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:14px;background:rgba(255,255,255,.14);border-radius:14px;padding:10px 12px}
+.rw-rv{font-size:20px;font-weight:900;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.rw-rv small{font-size:11px;font-weight:700;opacity:.9}
+.rw-rate{font-size:11px;font-weight:800;text-align:right;line-height:1.3;background:rgba(0,0,0,.18);padding:6px 10px;border-radius:10px;white-space:nowrap}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 <style>#splash{display:none!important}#adm .aw{max-width:1100px}#adm .abody{padding-bottom:110px}#adm .card2{max-width:100%}@media(min-width:900px){#adm input,#adm select,#adm textarea{max-width:720px}}</style>
@@ -562,12 +567,13 @@ function defaultConfig(){ return {
     for(let r=31;r<=40;r++) t[r] = 50;
     for(let r=41;r<=50;r++) t[r] = 25;
     return t; })(),
-  tourPrizeTable: (()=>{ const p = [3000,2500,2000,1000,950,800,750,700,650,500,
+  tourPrizeTable: (()=>{ const p = [5000,3000,2000,1000,950,800,750,700,650,500,
     350,350,350,350,350,350,350,350,350,350,
     200,200,200,200,200,200,200,200,200,200,
     100,100,100,100,100,100,100,100,100,100,
     65,65,65,65,65,65,65,65,65,65];
     const t = {}; p.forEach((v,i)=>t[i+1]=v); return t; })(),
+  rpPerCent: 100000, // RP needed for $0.01 (shown on the Games screen; admin can change)
   dailyBonusRp: 10000,
   dailyBonusIntervalDays: 1, // 1=roz, 2=har 2 din mein ek baar, 3=har 3 din mein ek baar, etc.
   dailyBonusTimeEnabled: false, dailyBonusTimeStart: "18:00", dailyBonusTimeEnd: "22:00", // sirf is window mein claim available
@@ -1433,7 +1439,9 @@ const TCONF = {
 };
 function tourPrizes(){
   const t = cfg().tourPrizeTable || defaultConfig().tourPrizeTable;
-  return Array.from({length:50},(_,i)=>t[i+1]||0);
+  const arr = Array.from({length:50},(_,i)=>t[i+1]||0);
+  if(arr[0]===3000) arr[0] = 5000;   // old default top prize -> new default 5000 RP (admin can set any other value)
+  return arr;
 }
 const NAMES = ["ProGamer_X","NightWolf","AceHunter","SkyBlade","Rohit_YT","ClutchKing","ShadowFox","IronViper","PixelQueen","RajuGamer",
   "TurboKid","GhostRider99","NinjaStrike","BlazeKing","CyberPunk7","DesiSniper","MidnightWolf","ThunderBolt","SavageOP","ArcticFox",
@@ -1531,15 +1539,9 @@ function pushAdCfg(){
     unityGame:u.gameId||"", unityBanner:u.bannerId||"", unityRewarded:u.rewardedId||"", startId:st.appId||"", lpKey:lp.appKey||"", lpRewarded:lp.rewardedId||"", lpBanner:lp.bannerId||""})); }catch(e){}
 }
 function adBox(screen){
-  pushAdCfg();
-  const overlayOpen = (typeof A!=="undefined" && A && A.open) || (typeof G!=="undefined" && G);   // admin panel / game overlay: no banner
-  const wantB = !overlayOpen && !!(S.adConfig && S.adConfig.on) && !(screen && S.adConfig.screens && S.adConfig.screens[screen]===false);
-  if(window.AndroidAds && window.AndroidAds.setBanner){ try{ window.AndroidAds.setBanner(wantB); }catch(e){} }
-  if(!S.adConfig || !S.adConfig.on) return "";
-  if(screen && S.adConfig.screens && S.adConfig.screens[screen]===false) return "";
-  if(window.AndroidAds && window.AndroidAds.hasBanner){ try{ if(window.AndroidAds.hasBanner()) return ""; }catch(e){} }   // native banner shown at screen bottom
-  const id = S.adConfig.bannerId || S.adConfig.id || "";
-  return `<div class="adbox">${id?"Banner Ad • "+esc(id):"Ad Space (320x50 / 320x100)"}</div>`;
+  // Banner ads removed completely (rewarded ads only). Always tell the native side to hide any banner.
+  if(window.AndroidAds && window.AndroidAds.setBanner){ try{ window.AndroidAds.setBanner(false); }catch(e){} }
+  return "";
 }
 function noticeBanner(screen){
   const c = cfg();
@@ -1847,15 +1849,14 @@ function claimBonus(){
 }
 
 function left(end){ const s = Math.max(0, Math.floor((end-now())/1000)); return s>=3600 ? Math.floor(s/3600)+"h "+Math.floor(s%3600/60)+"m" : Math.floor(s/60)+"m "+(s%60)+"s"; }
+function rpUsd(rp){ const per = Math.max(1, Number(cfg().rpPerCent)||100000); return (rp/per)*0.01; }
 function rewardsCard(){
-  const c = cfg(), rate = c.rate||1500, coins = S.coins||0, mn = minCoins(), mx = maxCoins();
-  const pct = Math.max(0, Math.min(100, coins/Math.max(1,mx)*100)), mnPct = Math.max(0, Math.min(100, mn/Math.max(1,mx)*100));
-  const ok = coins>=mn;
+  const c = cfg(), rate = c.rate||1500, coins = S.coins||0, rp = S.rp||0, per = Math.max(1, Number(c.rpPerCent)||100000);
   return `<div class="rw"><div class="rw-top"><div><div class="rw-l">Current Rewards</div><div class="rw-v">🪙 ${coins}<small>≈ $${(coins/rate).toFixed(2)}</small></div></div>
     <button class="rw-b" onclick="tab='wallet';render()">Withdraw</button></div>
-    <div class="rw-bar"><i style="width:${pct}%"></i><u style="left:${mnPct}%"></u></div>
-    <div class="rw-lb"><span>0</span><span style="position:absolute;left:${mnPct}%;transform:translateX(-50%)">MIN $${c.minWithdrawUsd}</span><span>MAX $${c.maxWithdrawUsd}</span></div>
-    <div class="rw-t">${ok?"✅ Aap withdraw kar sakte ho":"Min withdraw ke liye "+(mn-coins)+" coins aur chahiye"}</div></div>`;
+    <div class="rw-rp"><div><div class="rw-l">💜 RP Balance</div><div class="rw-rv">${rp} RP<small>≈ $${rpUsd(rp).toFixed(4)}</small></div></div>
+      <div class="rw-rate">${per.toLocaleString("en-IN")} RP<br>= $0.01</div></div>
+    <div class="rw-t">Min withdraw $${c.minWithdrawUsd} • Max $${c.maxWithdrawUsd}</div></div>`;
 }
 function play(){
   const v = $("#view");
@@ -1893,7 +1894,7 @@ function play(){
     <button class="btn play" style="margin:10px 14px 14px" onclick="window.open('${esc(cg.url)}','_blank')">Open Link ›</button></div>`).join("");
   v.innerHTML = adBox('matches') + noticeBanner('matches') + chips + rewardsCard() + toursSorted.map(t=>`<div class="tc">
     <div class="tb" style="background:${TCONF[t.g].grad}">${TCONF[t.g].emoji} ${esc(t.name.toUpperCase())}</div>
-    <div style="padding:12px 14px 0;font-weight:800;color:var(--acc);font-size:18px">${esc(t.name)}</div>
+    <div style="padding:12px 14px 0;font-weight:800;color:var(--acc);font-size:18px;display:flex;justify-content:space-between;align-items:center;gap:8px"><span>${esc(t.name)}</span><span style="font-size:13px;font-weight:800;color:#b45309;background:linear-gradient(135deg,#fff3c4,#ffe08a);padding:4px 10px;border-radius:12px;white-space:nowrap">🏆 Prize 💜 ${Math.max.apply(null, tourPrizes())} RP</span></div>
     <div style="margin:0 14px 12px;background:var(--in);border-radius:10px;padding:10px;display:flex;justify-content:space-between;align-items:center">
       <span style="font-size:13px;color:var(--muted)">🎯 Aapka Score</span><span style="font-size:20px;font-weight:800;color:var(--acc)">${S.best[t.id]||0}</span></div>
     <button class="btn play" onclick="playT(${t.id})">Play Now! ›</button></div>`).join("") + customLinks;
@@ -3282,7 +3283,7 @@ function tLb(){
 }
 function tWal(){
   return `<h3>3️⃣ Wallet & Withdrawal Controls</h3>
-  ${inp("Coin Rate (coins = $1)","config.rate","n",{w:100})}${inp("Min Withdraw ($)","config.minWithdrawUsd","n",{w:100})}${inp("Max Withdraw ($)","config.maxWithdrawUsd","n",{w:100})}
+  ${inp("Coin Rate (coins = $1)","config.rate","n",{w:100})}${inp("RP value: itne RP = $0.01","config.rpPerCent","n",{w:110})}${inp("Min Withdraw ($)","config.minWithdrawUsd","n",{w:100})}${inp("Max Withdraw ($)","config.maxWithdrawUsd","n",{w:100})}
   ${inp("Max Withdrawals Per Day","config.wdMaxPerDay","i",{w:80})}
   ${tg("Withdrawal Timing Window","config.wdTimeEnabled","0")}
   ${A.doc.config.wdTimeEnabled?`${inp("Start","config.wdTimeStart","t",{type:"time"})}${inp("End","config.wdTimeEnd","t",{type:"time"})}`:""}
