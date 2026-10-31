@@ -1621,7 +1621,7 @@ function lbpBoard(){
   const all = others.concat(me.rp>0 ? [me] : []).sort((a,b)=>b.rp-a.rp || String(a.uid).localeCompare(String(b.uid))).slice(0,50);
   return {list:all, rank:all.findIndex(b=>b.me), need:(others.length>=50?others[49].rp+1:1)};
 }
-setInterval(()=>{ lbpPush(); }, 60000);
+
 function lbFmt(n){ return new Intl.NumberFormat("en",{notation:"compact",maximumFractionDigits:1}).format(n); }
 function lbPrizeTable(){ return cfg().lbPrizeTable || defaultConfig().lbPrizeTable; }
 function genLeaderboardTop(count){
@@ -1733,7 +1733,7 @@ function render(){
     <p class="mut" style="text-align:center;margin-top:14px">Sirf Gmail se login (mail verify hota hai). Koi OTP ya phone number nahi.</div>`; return; }
   r.innerHTML = `<header><div class="logo">ESPORTS<span>REWARD</span></div><div class="bal">${balText()}</div></header>
     <main id="view"></main>
-    <nav>${[["home","🏠","Home"],["play","🎮","Matches"],["promo","🎟️","Promo"],["wallet","💰","Wallet"],["me","👤","Profile"]].map(t=>`<button class="${tab===t[0]?"on":""}" onclick="tab='${t[0]}';render()"><span>${t[1]}</span>${t[2]}</button>`).join("")}</nav>`;
+    <nav>${[["home","🏠","Home"],["play","🎮","Games"],["promo","🎟️","Promo"],["wallet","💰","Wallet"],["me","👤","Profile"]].map(t=>`<button class="${tab===t[0]?"on":""}" onclick="tab='${t[0]}';render()"><span>${t[1]}</span>${t[2]}</button>`).join("")}</nav>`;
   ({home,play,promo,wallet,me}[tab])();
 }
 
@@ -1896,8 +1896,9 @@ function rewardsCard(){
 function play(){
   const v = $("#view");
   if(!(S&&S.countryId) && !window.wdIpCc){ ipCountry().then(cc=>{ if(cc && !window.wdIpCc){ window.wdIpCc = cc; if(tab==='play' && !$('#gm')) render(); } }).catch(()=>{}); }
-  const chips = `<div class="chips"><button class="chip ${sub==="matches"?"on":""}" onclick="sub='matches';render()">Tournaments</button><button class="chip ${sub==="board"?"on":""}" onclick="sub='board';render()">Leaderboard</button></div>`;
-  if(sub==="board"){
+  const chips = "";
+  sub = "matches";
+  if(false){
     const myRP = S.rp||0;
     if(!LBP.list && !LBP.busy && Date.now()-LBP.at>=30000) lbpFetch().then(()=>{ if(sub==="board" && !$("#gm")) render(); });
     else if(LBP.list && Date.now()-LBP.at>=30000 && !LBP.busy) lbpFetch().then(()=>{ if(sub==="board" && !$("#gm")) render(); });
@@ -1932,7 +1933,7 @@ function play(){
   v.innerHTML = adBox('matches') + noticeBanner('matches') + chips + rewardsCard() + toursSorted.map(t=>`<div class="tc">
     <div class="tb" style="background:${TCONF[t.g].grad}">${TCONF[t.g].emoji} ${esc(t.name.toUpperCase())}</div>
     <div style="padding:12px 14px 0;font-weight:800;color:var(--acc);font-size:18px">${esc(t.name)}</div>
-    <div class="tm"><div>Prize Split<b style="text-decoration:underline;cursor:pointer" onclick="showReport(${t.id})">${esc(t.split)}</b></div><div>Tournament Pool<b>💜 ${t.pool} RP</b></div><div>Time Left<b data-end="${t.end}">${left(t.end)}</b></div></div>
+    <div style="margin:10px 14px 0;text-align:center"><span style="font-size:20px;font-weight:900;color:#b45309;background:linear-gradient(135deg,#fff3c4,#ffe08a);padding:6px 18px;border-radius:14px;display:inline-block">💜 ${Math.max.apply(null, tourPrizes())} RP</span></div>
     <div style="margin:0 14px 12px;background:var(--in);border-radius:10px;padding:10px;display:flex;justify-content:space-between;align-items:center">
       <span style="font-size:13px;color:var(--muted)">🎯 Aapka Score</span><span style="font-size:20px;font-weight:800;color:var(--acc)">${S.best[t.id]||0}</span></div>
     <button class="btn play" onclick="playT(${t.id})">Play Now! ›</button><button class="btn s sm" style="margin:0 14px 14px" onclick="showReport(${t.id})">🏁 Winning Report</button></div>`).join("") + customLinks;
@@ -1977,7 +1978,7 @@ setInterval(()=>{
       lbDayOk = Math.round((todMid-lastMid)/86400000) >= iv;
     }
   } else { lbDayOk = true; }
-  if(!lbc.lbServerPayout && lbDayOk && d.getHours()>=lbc.lbResetHour && S.lastLbPayout !== todayStr){
+  if(false && !lbc.lbServerPayout && lbDayOk && d.getHours()>=lbc.lbResetHour && S.lastLbPayout !== todayStr){
     if(S.isGuest || !acctOf(S.phone)){ S.rp = 0; S.lastLbPayout = todayStr; ch = true; }
     else if(!LBP.payBusy && Date.now()>LBP.payAt){
       LBP.payBusy = true;
