@@ -5,7 +5,7 @@
 <script>window.__ADMIN_ONLY=true;</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Esports Reward — Admin</title>
+<title>Play Rewards — Admin</title>
 <style>
 :root{--bg:#ece6fa;--card:#fff;--text:#2a1560;--muted:#7b6c9f;--acc:#6d2fe0;--gold:#f5a300;--ok:#1fa971;--in:rgba(109,47,224,.09);
   box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -193,7 +193,7 @@ main{padding-bottom:12px}
       <circle cx="64" cy="44" r="9" fill="url(#spB)"/><path d="M64 38l2.2 4.5 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5-3.6-3.5 5-.7z" fill="#ffe27a"/>
     </svg>
   </div>
-  <div class="sp-title">Esports<span>REWARD</span></div>
+  <div class="sp-title">Play<span>REWARDS</span></div>
   <div class="sp-bar"><i></i></div>
   <div class="sp-load">LOADING...</div>
 </div>
@@ -1203,7 +1203,7 @@ function checkGate(){
   let el = document.getElementById("gate");
   if(!h){ if(el) el.remove(); return; }
   if(!el){ el = document.createElement("div"); el.id = "gate"; el.style.cssText = "position:fixed;inset:0;z-index:2147483000;background:#160c2e;color:#f3ecff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px"; document.body.appendChild(el); }
-  el.innerHTML = `<div class="logo" style="font-size:22px;margin-bottom:26px">ESPORTS<span>REWARD</span></div>`+h;
+  el.innerHTML = `<div class="logo" style="font-size:22px;margin-bottom:26px">PLAY<span>REWARDS</span></div>`+h;
 }
 async function geoCheck(){
   try{
@@ -1718,7 +1718,7 @@ function toast(t,ok=true){ const m=$("#msg"); if(m){ m.textContent=t; m.classNam
 function render(){
   const r = $("#root");
   if(!S){
-    r.innerHTML = `<div class="login"><div class="logo" style="font-size:26px;margin-bottom:6px">ESPORTS<span>REWARD</span></div>
+    r.innerHTML = `<div class="login"><div class="logo" style="font-size:26px;margin-bottom:6px">PLAY<span>REWARDS</span></div>
     <p class="mut">Games khelo, coins kamao, redeem karo.</p>
     <input id="lr" placeholder="Referral code (optional, +50 coins)">
     <label style="display:flex;align-items:flex-start;gap:8px;margin:4px 0 14px;font-size:12.5px;color:var(--muted);text-align:left;cursor:pointer">
@@ -1737,7 +1737,7 @@ function render(){
     <button class="btn s" onclick="loginAsGuest()">👤 Continue as Guest</button>
     <div class="mut" style="text-align:center;margin-top:6px;font-size:12px">Guest sirf games khel sakta hai — withdrawal ke liye Google login zaroori hai</div>
     <p class="mut" style="text-align:center;margin-top:14px">Sirf Gmail se login (mail verify hota hai). Koi OTP ya phone number nahi.</div>`; return; }
-  r.innerHTML = `<header><div class="logo">ESPORTS<span>REWARD</span></div><div class="bal">${balText()}</div></header>
+  r.innerHTML = `<header><div class="logo">PLAY<span>REWARDS</span></div><div class="bal">${balText()}</div></header>
     <main id="view"></main>
     <nav>${[["home","🏠","Home"],["play","🎮","Games"],["promo","🎟️","Promo"],["wallet","💰","Wallet"],["me","👤","Profile"]].map(t=>`<button class="${tab===t[0]?"on":""}" onclick="tab='${t[0]}';render()"><span>${t[1]}</span>${t[2]}</button>`).join("")}</nav>`;
   ({home,play,promo,wallet,me}[tab])();
@@ -1750,7 +1750,7 @@ function maybeNotifyDaily(){
   const bonusLeft = bonusAvailable(), streakLeft = S.lastStreakClaim!==today;
   if(bonusLeft || streakLeft){
     S.lastNotifyDate = today; save();
-    try{ new Notification("🎁 Esports Reward", {body:"Aaj ka Daily Bonus aur Login Streak claim karna na bhoolo!"}); }catch(e){}
+    try{ new Notification("🎁 Play Rewards", {body:"Aaj ka Daily Bonus aur Login Streak claim karna na bhoolo!"}); }catch(e){}
   }
 }
 function enableNotifications(){
@@ -1773,7 +1773,7 @@ function notifyPreConfirm(){
   const o = $("#notifypre"); if(o) o.remove();
   Notification.requestPermission().then(p=>{
     S.notifyEnabled = p==="granted"; save(); me();
-    if(p==="granted") try{ new Notification("Esports Reward", {body:"Notifications ON! Daily streak aur bonus reminders milenge."}); }catch(e){}
+    if(p==="granted") try{ new Notification("Play Rewards", {body:"Notifications ON! Daily streak aur bonus reminders milenge."}); }catch(e){}
     else if(p==="denied") alert("Notifications block ho gaye — browser/app settings se allow karo. App waise hi chalta rahega.");
   });
 }
@@ -1891,12 +1891,27 @@ function rpRate(){
   return {per, co, prem};
 }
 function rpCoinsOf(rp){ const r = rpRate(); return (rp/r.per)*r.co; }
+function floatMsg(t){
+  const d = document.createElement("div");
+  d.style.cssText = "position:fixed;left:50%;bottom:100px;transform:translateX(-50%);z-index:120;background:#2a1560;color:#fff;padding:12px 18px;border-radius:14px;font-size:14px;font-weight:700;max-width:86vw;text-align:center;box-shadow:0 6px 20px rgba(0,0,0,.4)";
+  d.textContent = t; document.body.appendChild(d); setTimeout(()=>d.remove(), 3200);
+}
+function claimRp(){
+  const r = rpRate(), rp = Math.floor(S.rp||0), units = Math.floor(rp/r.per);
+  if(units<1){ return floatMsg("Claim ke liye "+r.per.toLocaleString("en-IN")+" RP chahiye"); }
+  const coins = Math.floor(units*r.co);
+  S.rp = rp - units*r.per; S.coins = (S.coins||0) + coins; save();
+  try{ fxSound("level"); }catch(e){}
+  floatMsg("🎉 "+(units*r.per).toLocaleString("en-IN")+" RP → 🪙 "+coins+" coins add ho gaye");
+  render();
+}
 function rewardsCard(){
   const c = cfg(), rate = c.rate||1500, coins = S.coins||0, rp = S.rp||0, rr = rpRate();
   return `<div class="rw"><div class="rw-top"><div><div class="rw-l">Current Rewards</div><div class="rw-v">🪙 ${coins}<small>≈ $${(coins/rate).toFixed(2)}</small></div></div>
     <button class="rw-b" onclick="tab='wallet';render()">Withdraw</button></div>
     <div class="rw-rp"><div><div class="rw-l">💜 RP Balance</div><div class="rw-rv">${rp} RP<small>≈ 🪙 ${rpCoinsOf(rp).toFixed(2)} coins</small></div></div>
-      <div class="rw-rate">${rr.per.toLocaleString("en-IN")} RP<br>= 🪙 ${+rr.co.toFixed(2)} coins</div></div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px"><div class="rw-rate">${rr.per.toLocaleString("en-IN")} RP<br>= 🪙 ${+rr.co.toFixed(2)} coins</div>
+        <button onclick="claimRp()" ${rp>=rr.per?"":"disabled"} style="white-space:nowrap;border:none;border-radius:12px;padding:7px 16px;font-weight:900;font-size:13px;${rp>=rr.per?"background:linear-gradient(180deg,#ffe488,#f5a300);color:#3a1f00;box-shadow:0 3px 0 #b45309":"background:rgba(255,255,255,.2);color:rgba(255,255,255,.6)"}">${rp>=rr.per?"🎁 Claim 🪙 "+Math.floor(Math.floor(rp/rr.per)*rr.co):"🔒 Claim"}</button></div></div>
     <div class="rw-t">Min withdraw $${c.minWithdrawUsd} • Max $${c.maxWithdrawUsd}</div></div>`;
 }
 function play(){
@@ -1938,7 +1953,7 @@ function play(){
     <button class="btn play" style="margin:10px 14px 14px" onclick="window.open('${esc(cg.url)}','_blank')">Open Link ›</button></div>`).join("");
   v.innerHTML = adBox('matches') + noticeBanner('matches') + chips + rewardsCard() + toursSorted.map(t=>`<div class="tc">
     <div class="tb" style="background:${TCONF[t.g].grad}">${TCONF[t.g].emoji} ${esc(t.name.toUpperCase())}</div>
-    <div style="padding:12px 14px 0;font-weight:800;color:var(--acc);font-size:18px;display:flex;align-items:center">${gLogo(t.g,34)}${esc(t.name)}</div>
+    <div style="padding:12px 14px 0;font-weight:800;color:var(--acc);font-size:18px;display:flex;align-items:center">${gLogo(t.g,34)}${esc(t.name)}<span style="margin-left:auto;font-size:13px;font-weight:800;color:#6d28d9;background:#ede9fe;padding:5px 11px;border-radius:12px;white-space:nowrap">⏱ 1:00</span></div>
     <div style="margin:10px 14px 0;text-align:center"><span style="font-size:20px;font-weight:900;color:#b45309;background:linear-gradient(135deg,#fff3c4,#ffe08a);padding:6px 18px;border-radius:14px;display:inline-block">💜 ${Math.max.apply(null, tourPrizes())} RP</span></div>
     <div style="margin:0 14px 12px;background:var(--in);border-radius:10px;padding:10px;display:flex;justify-content:space-between;align-items:center">
       <span style="font-size:13px;color:var(--muted)">🎯 Aapka Score</span><span style="font-size:20px;font-weight:800;color:var(--acc)">${S.best[t.id]||0}</span></div>
@@ -2009,7 +2024,7 @@ function playT(id){
   const t = S.tours.find(x=>x.id===id);
   if(!S.playCount) S.playCount = {};
   S.playCount[id] = (S.playCount[id]||0) + 1; save();
-  if(S.playCount[id] % 4 === 1) showRewardedAd(t); else openGame(t);
+  showRewardedAd(t);
 }
 function showRewardedAd(t){ watchAd("Ad khatam hote hi game apne aap shuru hoga", ()=>openGame(t), {optional:true}); }
 // Real AdMob rewarded ad (Android app exposes window.AndroidAds); browser/preview falls back to the 5s placeholder.
@@ -2061,11 +2076,11 @@ function openGame(t){
   document.body.appendChild(o);
   const c = $("#gc"), HD = Math.min(2.5, Math.max(2, window.devicePixelRatio||2));
   c.width = Math.round(320*HD); c.height = Math.round(480*HD);
-  G = {t, score:0, over:false, tx:160, ty:240, frame:0, ice:[], time:30, ball:null, raf:0, c, x:c.getContext("2d"), sx:160, sy:240, mt:0,
+  G = {t, score:0, over:false, tx:160, ty:240, frame:0, ice:[], time:60, ball:null, raf:0, c, x:c.getContext("2d"), sx:160, sy:240, mt:0,
        lane:1, obst:[], gems:[], target:null, left:true, colors:["#ff5c5c","#3ddc97","#3b82f6","#ffb020"],
-       startMs:now(), bullets:[], roids:[], knifeRot:0, knifeRotSpeed:0.038, stuck:[], grid:null, bmTime:45};
+       startMs:now(), bullets:[], roids:[], knifeRot:0, knifeRotSpeed:0.038, stuck:[], grid:null, bmTime:60};
   $("#gh").textContent = ({
-    hoop:"Ball ko ungli se left-right ghumao, ungli uthate hi ball jayegi • Hoop mein daalo (30s)",
+    hoop:"Ball ko ungli se left-right ghumao, ungli uthate hi ball jayegi • Hoop mein daalo (60s)",
     arctic:"Screen par drag karo • Icebergs se bacho!",
     loop:"Left/Right tap karo • Lane badlo, obstacles se bacho, gems lo!",
     colorbounce:"Upar wale color se match karta hua side jaldi tap karo!",
@@ -2076,8 +2091,8 @@ function openGame(t){
     blockmatch:"Same color wale 2+ blocks ke group par tap karo • Clear karo, bade group = zyada score (60s)",
     dollar:"💲 ko left/right drag karo • 🟢 green pakdo (+1) • 🔴 red se mat takrao, warna game over!",
     candle:"Left/Right drag karo • Green candle par jump karke upar jao • Red candle par land mat karo, neeche mat girna!",
-    tilematch:"Tile par tap karo • Tray mein same 3 fruits milao to clear • Tray (7) bhar gayi to game over • Dabe hue tiles pehle upar wale hatao (120s)",
-    blockfit:"Neeche se block ko drag karke 8×8 board par rakho • Poori row/column bharo to clear • Jagah khatam = game over (120s)",
+    tilematch:"Tile par tap karo • Tray mein same 3 fruits milao to clear • Tray (7) bhar gayi to game over • Dabe hue tiles pehle upar wale hatao (60s)",
+    blockfit:"Neeche se block ko drag karke 8×8 board par rakho • Poori row/column bharo to clear • Jagah khatam = game over (60s)",
     dollarbox:"Box ko left/right drag karo • 💵 dollar pakdo (+50 har dollar) • 🔴 red ball box mein aayi to game over • 3 dollar miss = game over!"
   })[t.g];
   G.x.setTransform(HD,0,0,HD,0,0); G.x.imageSmoothingEnabled = true; G.x.imageSmoothingQuality = "high";
@@ -2115,6 +2130,13 @@ function openGame(t){
   fxReset(); fxAudio();
   fxCountdown(()=>{ if(G){ G.startMs = now(); G.lastTs = null; if(G.t.g==="blockfit"||G.t.g==="tilematch"){ const h = $("#gh"); if(h) h.textContent = ""; } loop(); } });
 }
+function gameClock(){
+  const x = G.x, tl = Math.max(0, G.tl===undefined ? 60 : G.tl), m = Math.floor(Math.ceil(tl)/60), sec = Math.ceil(tl)%60, lbl = "⏱ "+m+":"+String(sec).padStart(2,"0");
+  x.save(); x.font = "bold 14px sans-serif"; x.textAlign = "center"; x.textBaseline = "middle";
+  const w = 76; x.fillStyle = tl<=10 ? "rgba(220,38,38,.85)" : "rgba(0,0,0,.45)"; x.beginPath(); if(x.roundRect) x.roundRect(160-w/2,8,w,22,11); else x.rect(160-w/2,8,w,22); x.fill();
+  x.fillStyle = "#fff"; x.fillText(lbl,160,19.5); x.restore();
+  if(tl<=0 && !G.over){ G.over = true; gameOver(); }
+}
 function loop(ts){
   if(!G || G.over) return;
   if(ts === undefined) ts = performance.now();
@@ -2123,9 +2145,11 @@ function loop(ts){
   let steps = 0;
   while(G && !G.over && G.acc >= 16.0 && steps < 3){
     G.acc -= 16.667; steps++; G.frame++; G.x.clearRect(0,0,320,480);
+    if(!G.over){ G.tl = 60 - G.frame/60; }
     ({hoop:hoopStep, arctic:arcticStep, loop:loopStep, colorbounce:colorbounceStep, bubble:bubbleStep, drive:driveStep, shooter:shooterStep, knife:knifeStep, blockmatch:blockmatchStep, dollar:dollarStep, candle:candleStep, dollarbox:dollarboxStep, blockfit:blockfitStep, tilematch:tilematchStep})[G.t.g]();
   }
   if(G && !G.over){ try{ fxFrame(); }catch(e){} }
+  if(G && !G.over){ try{ gameClock(); }catch(e){} }
   if(G){
     const sc = Math.floor(G.score);
     if(sc !== G.shown){ G.shown = sc; const gs = $("#gs"); if(gs) gs.textContent = "Score: "+sc; }
@@ -2329,7 +2353,7 @@ function hoopStep(){
     if(b.f >= 22){ if(Math.abs(G.hx-b.x) < 20){ G.score += 2; G.msg = "🏀 Swish! +2"; } else G.msg = "Miss!"; G.mt = 35; G.ball = null; }
     else x.fillText("🏀",b.x,b.y); }
   else x.fillText("🏀",G.tx,430);
-  x.fillStyle = "#fff"; x.font = "bold 16px sans-serif"; x.textAlign = "left"; x.fillText(Math.ceil(G.time)+"s",10,24);
+  x.fillStyle = "#fff"; x.font = "bold 16px sans-serif"; x.textAlign = "left"; 
   if(G.mt > 0){ G.mt--; x.textAlign = "center"; x.font = "bold 22px sans-serif"; x.fillText(G.msg,160,250); }
 }
 function shooterStep(){
@@ -2671,7 +2695,7 @@ function bfUp(){
 }
 function blockfitStep(){
   const x = G.x;
-  if(!G.bf){ G.bf = {b:Array.from({length:8},()=>Array(8).fill(0)), pcs:[null,null,null], drag:null, time:120}; bfSpawn(); }
+  if(!G.bf){ G.bf = {b:Array.from({length:8},()=>Array(8).fill(0)), pcs:[null,null,null], drag:null, time:60}; bfSpawn(); }
   const B = G.bf;
   B.time -= 1/60; if(B.time<=0){ G.over = true; return gameOver(); }
   x.fillStyle = "#0f172a"; x.fillRect(0,0,320,480);
@@ -2695,7 +2719,7 @@ function blockfitStep(){
   if(B.drag!==null && B.pcs[B.drag]){ const p = B.pcs[B.drag], sh = p.shape, d = bfAnchor(sh);
     x.globalAlpha = 0.92; x.fillStyle = BF_COL[p.color-1];
     sh.forEach((rw,r)=>rw.forEach((v,c)=>{ if(v) rr(d.px+c*BF_P, d.py+r*BF_P, 34, 34, 6); })); x.globalAlpha = 1; }
-  x.fillStyle = "#fff"; x.font = "bold 16px sans-serif"; x.textAlign = "left"; x.fillText(Math.ceil(B.time)+"s", 10, 24);
+  x.fillStyle = "#fff"; x.font = "bold 16px sans-serif"; x.textAlign = "left"; 
   x.textAlign = "right"; x.fillText("🟧 "+Math.floor(G.score), 310, 24);
 }
 
@@ -2731,7 +2755,7 @@ function tmTap(px,py){
 }
 function tilematchStep(){
   const x = G.x;
-  if(!G.tm){ G.tm = {level:1, tiles:[], tray:[], time:120, lvlT:0}; tmLevel(); }
+  if(!G.tm){ G.tm = {level:1, tiles:[], tray:[], time:60, lvlT:0}; tmLevel(); }
   const T = G.tm;
   T.time -= 1/60; if(T.time<=0){ G.over = true; return gameOver(); }
   if(!G.bgTm){ G.bgTm = x.createLinearGradient(0,0,0,480); G.bgTm.addColorStop(0,"#2e1065"); G.bgTm.addColorStop(1,"#0f172a"); }
@@ -2750,7 +2774,7 @@ function tilematchStep(){
   for(let i=0;i<7;i++){ const sx = 14+i*43; x.fillStyle = "rgba(255,255,255,.07)"; rr(sx,386,40,52,8);
     const ic = T.tray[i]; if(ic){ x.fillStyle = "#fff"; rr(sx,386,40,52,8); x.font = "24px serif"; x.fillStyle = "#000"; x.fillText(ic, sx+20, 413); } }
   x.textBaseline = "alphabetic";
-  x.fillStyle = "#fff"; x.font = "bold 16px sans-serif"; x.textAlign = "left"; x.fillText(Math.ceil(T.time)+"s  •  Lv "+T.level, 10, 24);
+  x.fillStyle = "#fff"; x.font = "bold 16px sans-serif"; x.textAlign = "left"; x.fillText("Lv "+T.level, 10, 24);
   x.textAlign = "right"; x.fillText("🍉 "+Math.floor(G.score), 310, 24);
   if(T.lvlT>0){ T.lvlT--; x.textAlign = "center"; x.font = "900 30px sans-serif"; x.fillStyle = "#ffd54a"; x.globalAlpha = Math.min(1,T.lvlT/30); x.fillText("LEVEL "+T.level+"!", 160, 220); x.globalAlpha = 1; }
 }
@@ -2766,7 +2790,7 @@ function blockmatchStep(){
     const px=gx+c*cell, py=gy+r*cell;
     x.beginPath(); x.roundRect ? x.roundRect(px+2,py+2,cell-4,cell-4,8) : x.rect(px+2,py+2,cell-4,cell-4); x.fill();
   }
-  x.fillStyle = "#fff"; x.font = "bold 16px sans-serif"; x.textAlign = "left"; x.fillText(Math.ceil(G.bmTime)+"s",10,24);
+  x.fillStyle = "#fff"; x.font = "bold 16px sans-serif"; x.textAlign = "left"; 
   x.textAlign = "right"; x.fillText("🧩 "+Math.floor(G.score),310,24);
 }
 function bank(){
@@ -3813,7 +3837,7 @@ function draw(){
   if(!A.open) return;
   const prev = $adm.querySelector("#admBody"), st = prev ? prev.scrollTop : 0;
   if(!A.doc){
-    $adm.innerHTML = `<div class="aw"><div class="atop"><b>🛡 Esports Reward Admin</b>${window.__ADMIN_ONLY?"":`<button class="b s sm" data-a="close">Close</button>`}</div>
+    $adm.innerHTML = `<div class="aw"><div class="atop"><b>🛡 Play Rewards Admin</b>${window.__ADMIN_ONLY?"":`<button class="b s sm" data-a="close">Close</button>`}</div>
     <div class="card2"><div class="mut">Admin email aur password daalo (Firebase server par check hota hai).</div>
     ${window.__ADMIN_ONLY?`<input id="admEmail" type="email" placeholder="Admin email" autocomplete="username" value="${E(A.email||"")}" ${A.loading?"disabled":""}>`:""}
     <input id="admPin" type="password" placeholder="Admin PIN / password" autocomplete="current-password" ${A.loading?"disabled":""}>
