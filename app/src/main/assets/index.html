@@ -539,6 +539,7 @@ function defaultConfig(){ return {
   cloudApiUrl: "", // public URL of the deployed Cloud API (esports-backend). No secrets here.
   rpAdCooldownMin: 3, // rewarded "2x" ad ke baad itne minute tak dobara RP-ad nahi (cooldown)
   blockedLoginCountries: [], // country id (ISO2) list — in countries se login/signup allowed nahi hoga
+  earnOffCountries: [], // ISO2 list: is_earning_allowed = false (Geo-Control)
   blockedWithdrawCountries: [], // country id (ISO2) list — in countries ko PayPal/Binance mobile verification mein allowed nahi
   wdTimeEnabled: false, wdTimeStart: "18:00", wdTimeEnd: "22:00", // sirf is window mein withdrawal allowed
   wdDaysEnabled: false, wdDays: [0,1,2,3,4,5,6], // sirf in weekdays par withdrawal allowed (0=Sun...6=Sat)
@@ -945,9 +946,10 @@ const FBA = {
     const wantUnity = doc.adConfig.unityOn !== false; delete doc.adConfig.unityOn;
     const json = JSON.stringify(doc); if(json.length > 700000) return {ok:false, error:"config too large"};
     const wdOn = doc.config.wdRestrictOn !== false, loginOn = doc.config.loginRestrictOn !== false;
-    const blk = wdOn ? Array.from(new Set((doc.config.blockedWithdrawCountries||[]).map(cleanCc).filter(Boolean))) : [];
+    const earnOff = Array.from(new Set((doc.config.earnOffCountries||[]).map(cleanCc).filter(Boolean)));
+    const blk = Array.from(new Set((wdOn ? (doc.config.blockedWithdrawCountries||[]).map(cleanCc).filter(Boolean) : []).concat(earnOff)));   // Earn OFF countries can never withdraw (enforced by Firestore rules via config/blocked)
     const lblk = loginOn ? Array.from(new Set((doc.config.blockedLoginCountries||[]).map(cleanCc).filter(Boolean))) : [];
-    await commit("admin",[wUpdate("config","app",{json, unityAds: wantUnity?"ON":"OFF"},{now:["updated"]}), wUpdate("config","blocked",{list:blk, loginList:lblk},{now:["updated"]}), wUpdate("config","fees",{pct:feeMap(doc.config)},{now:["updated"]}),
+    await commit("admin",[wUpdate("config","app",{json, unityAds: wantUnity?"ON":"OFF"},{now:["updated"]}), wUpdate("config","blocked",{list:blk, loginList:lblk},{now:["updated"]}), wUpdate("config","geo",{earnOff, is_earning_allowed_false:earnOff},{now:["updated"]}), wUpdate("config","fees",{pct:feeMap(doc.config)},{now:["updated"]}),
       (()=>{ const c = doc.config, rate = Math.max(1, Math.round(Number(c.rate)||1500)); return wUpdate("config","wdlimits",{rate, minCoins:Math.max(1,Math.round((Number(c.minWithdrawUsd)||1.32)*rate)), maxCoins:Math.max(1,Math.round((Number(c.maxWithdrawUsd)||10)*rate)), usdToInr:Math.max(1,Number(c.usdToInr)||83)},{now:["updated"]}); })(),
       wUpdate("config","flags",{maintenance:doc.config.maintenanceOn===true, vpnBlock: wdOn && doc.config.vpnBlock!==false, minVer: doc.config.forceUpdateOn===true ? Math.max(0,Math.floor(Number(doc.config.minVersion)||0)) : 0},{now:["updated"]}),
       auditW("settings saved","config","maintenance="+(doc.config.maintenanceOn===true?"ON":"off")+" • force-update="+(doc.config.forceUpdateOn===true?"ON(min v"+doc.config.minVersion+")":"off")+" • blocked countries="+blk.length)]);
@@ -1576,6 +1578,7 @@ function reconcileTours(){
 applyRemoteToS();
 reconcileTours();
 function payoutTournament(t){
+  if(!earnOk()) return;
   const my = S.best[t.id]||0; if(my<=0) return;
   const list = genReport(t);
   let rank = list.findIndex(e=>my>=e.score);
@@ -1734,9 +1737,12 @@ function render(){
     <button class="btn s" onclick="loginAsGuest()">👤 Continue as Guest</button>
     <div class="mut" style="text-align:center;margin-top:6px;font-size:12px">Guest sirf games khel sakta hai — withdrawal ke liye Google login zaroori hai</div>
     <p class="mut" style="text-align:center;margin-top:14px">Sirf Gmail se login (mail verify hota hai). Koi OTP ya phone number nahi.</div>`; return; }
-  r.innerHTML = `<header><div class="logo">GAMENEST<span>REWARDS</span></div><div class="bal">${balText()}</div></header>
+  geoDetect();
+  const _eo = earnOk();
+  if(!_eo && (tab==="wallet"||tab==="promo")) tab = "play";
+  r.innerHTML = `<header><div class="logo">GAMENEST<span>REWARDS</span></div>${_eo?`<div class="bal">${balText()}</div>`:""}</header>
     <main id="view"></main>
-    <nav>${[["home","🏠","Home"],["play","🎮","Games"],["promo","🎟️","Promo"],["wallet","💰","Wallet"],["me","👤","Profile"]].map(t=>`<button class="${tab===t[0]?"on":""}" onclick="tab='${t[0]}';render()"><span>${t[1]}</span>${t[2]}</button>`).join("")}</nav>`;
+    <nav>${[["home","🏠","Home"],["play","🎮","Games"],["promo","🎟️","Promo"],["wallet","💰","Wallet"],["me","👤","Profile"]].filter(t=>_eo || (t[0]!=="wallet" && t[0]!=="promo")).map(t=>`<button class="${tab===t[0]?"on":""}" onclick="tab='${t[0]}';render()"><span>${t[1]}</span>${t[2]}</button>`).join("")}</nav>`;
   ({home,play,promo,wallet,me}[tab])();
 }
 
@@ -1775,6 +1781,11 @@ function notifyPreConfirm(){
   });
 }
 function home(){
+  if(!earnOk()){
+    $("#view").innerHTML = `<div class="wh"><div class="hi">👋 Welcome, ${esc(String(S.name||"Player").split(" ")[0])}</div><div class="big" style="font-size:22px">🎮 Mini Games</div><div class="sub"><b>Khelo aur maza lo!</b></div>
+      <div class="acts"><button class="a1" onclick="tab='play';render()">🎮 Play Now</button></div></div>`+adBox('home')+noticeBanner('home')+`<div class="card mut" style="text-align:center">🌍 Rewards aur withdrawal aapke region mein abhi available nahi hain.</div>`;
+    return;
+  }
   maybeNotifyDaily();
   const c = cfg(), intervalDone = !bonusIntervalOk(), inWindow = bonusInTimeWindow();
   const claimed = intervalDone; // already claimed within the configured interval
@@ -1825,6 +1836,7 @@ function streakCard(){
     </div>`;
 }
 function claimStreak(){
+  if(!earnOk()) return earnBlockMsg();
   const todayStr = dailyPeriodKey(), SR = streakRewards();
   if(S.lastStreakClaim === todayStr) return;
   const day = S.streakDay, reward = SR[day-1];
@@ -1870,6 +1882,7 @@ function bonusInTimeWindow(){
 }
 function bonusAvailable(){ return bonusIntervalOk() && bonusInTimeWindow(); }
 function claimBonus(){
+  if(!earnOk()) return earnBlockMsg();
   if(!bonusIntervalOk() || !bonusInTimeWindow()) return;
   const amt = cfg().dailyBonusRp;
   watchAd(`Ad khatam hone par ${amt.toLocaleString()} RP mile`, ()=>{
@@ -1888,12 +1901,23 @@ function rpRate(){
   return {per, co, prem};
 }
 function rpCoinsOf(rp){ const r = rpRate(); return (rp/r.per)*r.co; }
+/* ===== Geo-Control: earnings allowed per country (admin: Countries tab -> config.earnOffCountries; written to Firebase as config/blocked + config.app) ===== */
+let _geoAt = 0, _geoLast = "";
+function earnCc(){ return String(window.wdIpCc||(S&&S.countryId)||"").toUpperCase(); }
+function earnOk(){ const cc = earnCc(); if(!cc) return false; return !(cfg().earnOffCountries||[]).map(x=>String(x).toUpperCase()).includes(cc); }   // unknown country = no rewards until detected
+function earnBlockMsg(){ floatMsg("Aapke region mein rewards available nahi hain. Game ka maza lo! 🎮"); }
+function geoDetect(){
+  if(!S || S.isGuest===undefined && !S.phone) return;
+  if(Date.now()-_geoAt < (window.__geoDone?600000:15000)) return; _geoAt = Date.now();
+  ipCountry(!window.__geoDone).then(cc=>{ if(!cc) return; window.__geoDone = 1; const before = earnOk()+earnCc(); window.wdIpCc = cc; if(before !== earnOk()+earnCc() && !$("#gm")) render(); }).catch(()=>{});
+}
 function floatMsg(t){
   const d = document.createElement("div");
   d.style.cssText = "position:fixed;left:50%;bottom:100px;transform:translateX(-50%);z-index:120;background:#2a1560;color:#fff;padding:12px 18px;border-radius:14px;font-size:14px;font-weight:700;max-width:86vw;text-align:center;box-shadow:0 6px 20px rgba(0,0,0,.4)";
   d.textContent = t; document.body.appendChild(d); setTimeout(()=>d.remove(), 3200);
 }
 function claimRp(){
+  if(!earnOk()) return earnBlockMsg();
   const r = rpRate(), rp = Math.floor(S.rp||0), units = Math.floor(rp/r.per);
   if(units<1){ return floatMsg("Claim ke liye "+r.per.toLocaleString("en-IN")+" RP chahiye"); }
   const coins = Math.floor(units*r.co);
@@ -1948,13 +1972,13 @@ function play(){
     <div style="padding:12px 14px 0;font-weight:800;color:var(--acc);font-size:18px">${esc(cg.name)}</div>
     <div class="mut" style="padding:6px 14px 0">External game link</div>
     <button class="btn play" style="margin:10px 14px 14px" onclick="window.open('${esc(cg.url)}','_blank')">Open Link ›</button></div>`).join("");
-  v.innerHTML = adBox('matches') + noticeBanner('matches') + chips + rewardsCard() + toursSorted.map(t=>`<div class="tc">
+  v.innerHTML = adBox('matches') + noticeBanner('matches') + chips + (earnOk() ? rewardsCard() : `<div class="card mut" style="text-align:center;margin-bottom:12px">🌍 Rewards aapke region mein available nahi hain — game khelo aur maza lo!</div>`) + toursSorted.map(t=>`<div class="tc">
     <div class="tb" style="background:${TCONF[t.g].grad}">${TCONF[t.g].emoji} ${esc(t.name.toUpperCase())}</div>
     <div style="padding:12px 14px 0;font-weight:800;color:var(--acc);font-size:18px;display:flex;align-items:center">${gLogo(t.g,34)}${esc(t.name)}<span style="margin-left:auto;font-size:13px;font-weight:800;color:#6d28d9;background:#ede9fe;padding:5px 11px;border-radius:12px;white-space:nowrap">⏱ 1:00</span></div>
-    <div style="margin:10px 14px 0;text-align:center"><span style="font-size:20px;font-weight:900;color:#b45309;background:linear-gradient(135deg,#fff3c4,#ffe08a);padding:6px 18px;border-radius:14px;display:inline-block">💜 ${Math.max.apply(null, tourPrizes())} RP</span></div>
+    ${!earnOk()?"":`<div style="margin:10px 14px 0;text-align:center"><span style="font-size:20px;font-weight:900;color:#b45309;background:linear-gradient(135deg,#fff3c4,#ffe08a);padding:6px 18px;border-radius:14px;display:inline-block">💜 ${Math.max.apply(null, tourPrizes())} RP</span></div>`}
     <div style="margin:0 14px 12px;background:var(--in);border-radius:10px;padding:10px;display:flex;justify-content:space-between;align-items:center">
       <span style="font-size:13px;color:var(--muted)">🎯 Aapka Score</span><span style="font-size:20px;font-weight:800;color:var(--acc)">${S.best[t.id]||0}</span></div>
-    <button class="btn play" onclick="playT(${t.id})">Play Now! ›</button><button class="btn s sm" style="margin:0 14px 14px" onclick="showReport(${t.id})">🏁 Winning Report</button></div>`).join("") + customLinks;
+    <button class="btn play" onclick="playT(${t.id})">Play Now! ›</button>${earnOk()?`<button class="btn s sm" style="margin:0 14px 14px" onclick="showReport(${t.id})">🏁 Winning Report</button>`:`<div style="height:14px"></div>`}</div>`).join("") + customLinks;
 }
 function nextLbPayoutTime(){
   const c = cfg(), d = new Date();
@@ -2839,6 +2863,7 @@ function rpAdTick(){
   upd(); rpAdIv = setInterval(upd, 1000);
 }
 function claim2x(sc, id){
+  if(!earnOk()) return earnBlockMsg();
   if(sc<=0) return toast("Score 0 hai, double karne ke liye pehle score banao", false);
   if(rpAdLeft()>0) return;
   const mult = 2;
@@ -2867,6 +2892,7 @@ function promo(){
     ${(S.usedPromos&&S.usedPromos.length)?`<h3>Used Codes</h3>${S.usedPromos.slice().reverse().map(c=>`<div class="lb"><span class="n">${esc(c)}</span><span class="p">✓ Redeemed</span></div>`).join("")}`:""}`;
 }
 function redeemPromo(){
+  if(!earnOk()) return earnBlockMsg();
   const code = $("#pc").value.trim();
   if(!/^\d{6}$/.test(code)) return toast("6 digit code daalo", false);
   if(!S.usedPromos) S.usedPromos = [];
