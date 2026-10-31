@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Esports Reward App</title>
+<title>Play Rewards</title>
 <style>
 :root{--bg:#ece6fa;--card:#fff;--text:#2a1560;--muted:#7b6c9f;--acc:#6d2fe0;--gold:#f5a300;--ok:#1fa971;--in:rgba(109,47,224,.09);
   box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -190,7 +190,7 @@ main{padding-bottom:12px}
       <circle cx="64" cy="44" r="9" fill="url(#spB)"/><path d="M64 38l2.2 4.5 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5-3.6-3.5 5-.7z" fill="#ffe27a"/>
     </svg>
   </div>
-  <div class="sp-title">Esports<span>REWARD</span></div>
+  <div class="sp-title">Play<span>REWARDS</span></div>
   <div class="sp-bar"><i></i></div>
   <div class="sp-load">LOADING...</div>
 </div>
@@ -1200,7 +1200,7 @@ function checkGate(){
   let el = document.getElementById("gate");
   if(!h){ if(el) el.remove(); return; }
   if(!el){ el = document.createElement("div"); el.id = "gate"; el.style.cssText = "position:fixed;inset:0;z-index:2147483000;background:#160c2e;color:#f3ecff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px"; document.body.appendChild(el); }
-  el.innerHTML = `<div class="logo" style="font-size:22px;margin-bottom:26px">ESPORTS<span>REWARD</span></div>`+h;
+  el.innerHTML = `<div class="logo" style="font-size:22px;margin-bottom:26px">PLAY<span>REWARDS</span></div>`+h;
 }
 async function geoCheck(){
   try{
@@ -1715,7 +1715,7 @@ function toast(t,ok=true){ const m=$("#msg"); if(m){ m.textContent=t; m.classNam
 function render(){
   const r = $("#root");
   if(!S){
-    r.innerHTML = `<div class="login"><div class="logo" style="font-size:26px;margin-bottom:6px">ESPORTS<span>REWARD</span></div>
+    r.innerHTML = `<div class="login"><div class="logo" style="font-size:26px;margin-bottom:6px">PLAY<span>REWARDS</span></div>
     <p class="mut">Games khelo, coins kamao, redeem karo.</p>
     <input id="lr" placeholder="Referral code (optional, +50 coins)">
     <label style="display:flex;align-items:flex-start;gap:8px;margin:4px 0 14px;font-size:12.5px;color:var(--muted);text-align:left;cursor:pointer">
@@ -1734,7 +1734,7 @@ function render(){
     <button class="btn s" onclick="loginAsGuest()">👤 Continue as Guest</button>
     <div class="mut" style="text-align:center;margin-top:6px;font-size:12px">Guest sirf games khel sakta hai — withdrawal ke liye Google login zaroori hai</div>
     <p class="mut" style="text-align:center;margin-top:14px">Sirf Gmail se login (mail verify hota hai). Koi OTP ya phone number nahi.</div>`; return; }
-  r.innerHTML = `<header><div class="logo">ESPORTS<span>REWARD</span></div><div class="bal">${balText()}</div></header>
+  r.innerHTML = `<header><div class="logo">PLAY<span>REWARDS</span></div><div class="bal">${balText()}</div></header>
     <main id="view"></main>
     <nav>${[["home","🏠","Home"],["play","🎮","Games"],["promo","🎟️","Promo"],["wallet","💰","Wallet"],["me","👤","Profile"]].map(t=>`<button class="${tab===t[0]?"on":""}" onclick="tab='${t[0]}';render()"><span>${t[1]}</span>${t[2]}</button>`).join("")}</nav>`;
   ({home,play,promo,wallet,me}[tab])();
@@ -1747,7 +1747,7 @@ function maybeNotifyDaily(){
   const bonusLeft = bonusAvailable(), streakLeft = S.lastStreakClaim!==today;
   if(bonusLeft || streakLeft){
     S.lastNotifyDate = today; save();
-    try{ new Notification("🎁 Esports Reward", {body:"Aaj ka Daily Bonus aur Login Streak claim karna na bhoolo!"}); }catch(e){}
+    try{ new Notification("🎁 Play Rewards", {body:"Aaj ka Daily Bonus aur Login Streak claim karna na bhoolo!"}); }catch(e){}
   }
 }
 function enableNotifications(){
@@ -1770,7 +1770,7 @@ function notifyPreConfirm(){
   const o = $("#notifypre"); if(o) o.remove();
   Notification.requestPermission().then(p=>{
     S.notifyEnabled = p==="granted"; save(); me();
-    if(p==="granted") try{ new Notification("Esports Reward", {body:"Notifications ON! Daily streak aur bonus reminders milenge."}); }catch(e){}
+    if(p==="granted") try{ new Notification("Play Rewards", {body:"Notifications ON! Daily streak aur bonus reminders milenge."}); }catch(e){}
     else if(p==="denied") alert("Notifications block ho gaye — browser/app settings se allow karo. App waise hi chalta rahega.");
   });
 }
