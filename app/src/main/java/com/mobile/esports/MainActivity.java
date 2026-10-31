@@ -43,7 +43,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Thin native wrapper around the Esports Reward single-file HTML app.
+ * Thin native wrapper around the GameNest Rewards single-file HTML app.
  * The app's own UI, game logic, hidden admin view, localStorage-based persistence
  * etc. all run inside this WebView, loaded from assets/index.html.
  *

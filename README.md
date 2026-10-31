@@ -1,4 +1,4 @@
-# Esports Reward — poora source code (A to Z)
+# GameNest Rewards — poora source code (A to Z)
 
 | Kya | Kahan hai |
 |---|---|
