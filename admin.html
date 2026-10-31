@@ -557,8 +557,8 @@ function defaultConfig(){ return {
   manualTours: [], // admin-created extra tournaments [{id,g,pool,min}]
   paytmEnabled: true, phonepeEnabled: true, googleplayEnabled: true, amazonEnabled: true, phonepegiftEnabled: true,
   tourDurationMin: 30,
-  gamesEnabled: {arctic:true,hoop:true,loop:true,colorbounce:true,bubble:true,drive:true,blockmatch:true,dollar:true,dollarbox:true},
-  gamesOrder: ["arctic","hoop","loop","colorbounce","bubble","drive","blockmatch","dollar","dollarbox"],
+  gamesEnabled: {arctic:true,hoop:true,loop:true,colorbounce:true,bubble:true,drive:true,blockmatch:true,dollar:true,dollarbox:true,blockfit:true},
+  gamesOrder: ["arctic","hoop","loop","colorbounce","bubble","drive","blockmatch","dollar","dollarbox","blockfit"],
   lbResetHour: 5,
   lbResetMode: "daily", lbResetDays: [0,1,2,3,4,5,6], lbResetIntervalDays: 1, // mode: "daily" (har din), "days" (sirf selected weekdays par; 0=Sun...6=Sat), ya "interval" (har N din mein ek baar)
   lbPrizeTable: (()=>{ const t = {1:7500,2:4500,3:3750,4:1500,5:1500,6:750,7:750,8:750,9:150,10:150};
@@ -579,7 +579,7 @@ function defaultConfig(){ return {
   dailyBonusTimeEnabled: false, dailyBonusTimeStart: "18:00", dailyBonusTimeEnd: "22:00", // sirf is window mein claim available
   streakRewards: [2000,4000,4500,5000,6000,7500,8500,9000,10000,20000,50000,"$0.10"],
   topN: 50,
-  gamePools: {arctic:20000,hoop:20000,loop:20000,colorbounce:20000,bubble:20000,drive:20000,blockmatch:20000,dollar:20000,dollarbox:20000},
+  gamePools: {arctic:20000,hoop:20000,loop:20000,colorbounce:20000,bubble:20000,drive:20000,blockmatch:20000,dollar:20000,dollarbox:20000,blockfit:20000},
   customGames: [],
   noticeText: "",
   noticeColor: "red",   // v14: "red" | "green" banner
@@ -1416,7 +1416,8 @@ const GAME_CANON = {
   drive:{id:8,g:"drive",name:"City Drive Trial",split:"Top 50",pool:20000},
   blockmatch:{id:11,g:"blockmatch",name:"Tile Fusion",split:"Top 50",pool:20000},
   dollar:{id:12,g:"dollar",name:"Cash Grab",split:"Top 50",pool:20000},
-  dollarbox:{id:14,g:"dollarbox",name:"Cash Catcher",split:"Top 50",pool:20000}
+  dollarbox:{id:14,g:"dollarbox",name:"Cash Catcher",split:"Top 50",pool:20000},
+  blockfit:{id:15,g:"blockfit",name:"Block Fit",split:"Top 50",pool:20000}
 };
 function seedT(){
   const t = now(), c = cfg(), dur = (c.tourDurationMin||30)*MIN;
@@ -1435,7 +1436,8 @@ const TCONF = {
   blockmatch:{emoji:"🧩",grad:"linear-gradient(135deg,#059669,#065f46)"},
   dollar:{emoji:"💲",grad:"linear-gradient(135deg,#047857,#0b1d3a)"},
   candle:{emoji:"🕯️",grad:"linear-gradient(135deg,#16a34a,#7f1d1d)"},
-  dollarbox:{emoji:"💵",grad:"linear-gradient(135deg,#15803d,#a16207)"}
+  dollarbox:{emoji:"💵",grad:"linear-gradient(135deg,#15803d,#a16207)"},
+  blockfit:{emoji:"🟧",grad:"linear-gradient(135deg,#f59e0b,#7c2d12)"}
 };
 function tourPrizes(){
   const t = cfg().tourPrizeTable || defaultConfig().tourPrizeTable;
@@ -1453,7 +1455,7 @@ function genReport(t){
   if(!S.reports[t.id]){
     let seed = t.id%1000+1;
     const rnd = () => { seed = (seed*9301+49297)%233280; return seed/233280; };
-    const base = ({hoop:30,arctic:130,loop:110,colorbounce:28,bubble:120,drive:110,shooter:160,knife:18,blockmatch:450,dollar:32,candle:90,dollarbox:500})[t.g] || 150;
+    const base = ({hoop:30,arctic:130,loop:110,colorbounce:28,bubble:120,drive:110,shooter:160,knife:18,blockmatch:450,dollar:32,candle:90,dollarbox:500,blockfit:150})[t.g] || 150;
     let sc = base + Math.floor(rnd()*30);
     const list = [];
     for(let i=0;i<50;i++){ list.push({name:NAMES[i], score:sc}); sc = Math.max(1, sc - Math.ceil(1+rnd()*(base/22))); }
@@ -2069,6 +2071,7 @@ function openGame(t){
     blockmatch:"Same color wale 2+ blocks ke group par tap karo • Clear karo, bade group = zyada score (60s)",
     dollar:"💲 ko left/right drag karo • 🟢 green pakdo (+1) • 🔴 red se mat takrao, warna game over!",
     candle:"Left/Right drag karo • Green candle par jump karke upar jao • Red candle par land mat karo, neeche mat girna!",
+    blockfit:"Neeche se block ko drag karke 8×8 board par rakho • Poori row/column bharo to clear • Jagah khatam = game over (120s)",
     dollarbox:"Box ko left/right drag karo • 💵 dollar pakdo (+50 har dollar) • 🔴 red ball box mein aayi to game over • 3 dollar miss = game over!"
   })[t.g];
   let rc = c.getBoundingClientRect(); const refreshRc = () => { rc = c.getBoundingClientRect(); };
@@ -2083,8 +2086,9 @@ function openGame(t){
     if(t.g==="colorbounce" && !G.over) checkColorTap(G.tx < 160 ? 0 : 1);
     if(t.g==="knife" && !G.over) throwKnife();
     if(t.g==="blockmatch" && !G.over) tapBlock(G.tx, G.ty);
+    if(t.g==="blockfit" && !G.over) bfDown();
   };
-  const onUp = () => { if(t.g==="hoop" && G && G.hold && !G.ball && !G.over){ G.hold = false; G.ball = {x:G.tx,y:430,f:0}; } else if(G) G.hold = false; };
+  const onUp = () => { if(t.g==="blockfit" && G && !G.over) bfUp(); if(t.g==="hoop" && G && G.hold && !G.ball && !G.over){ G.hold = false; G.ball = {x:G.tx,y:430,f:0}; } else if(G) G.hold = false; };
   c.style.touchAction = "none"; c.style.userSelect = "none"; c.style.webkitUserSelect = "none"; c.style.webkitTouchCallout = "none";
   c.onpointerdown = e => { try{ c.setPointerCapture(e.pointerId); }catch(_){} onDown(e.clientX, e.clientY); };
   c.onpointermove = e => setXY(e.clientX, e.clientY);
@@ -2101,7 +2105,7 @@ function openGame(t){
     addEventListener("keydown", G.kd); addEventListener("keyup", G.ku);
   }
   fxReset(); fxAudio();
-  fxCountdown(()=>{ if(G){ G.startMs = now(); G.lastTs = null; loop(); } });
+  fxCountdown(()=>{ if(G){ G.startMs = now(); G.lastTs = null; if(G.t.g==="blockfit"){ const h = $("#gh"); if(h) h.textContent = ""; } loop(); } });
 }
 function loop(ts){
   if(!G || G.over) return;
@@ -2111,7 +2115,7 @@ function loop(ts){
   let steps = 0;
   while(G && !G.over && G.acc >= 16.0 && steps < 3){
     G.acc -= 16.667; steps++; G.frame++; G.x.clearRect(0,0,320,480);
-    ({hoop:hoopStep, arctic:arcticStep, loop:loopStep, colorbounce:colorbounceStep, bubble:bubbleStep, drive:driveStep, shooter:shooterStep, knife:knifeStep, blockmatch:blockmatchStep, dollar:dollarStep, candle:candleStep, dollarbox:dollarboxStep})[G.t.g]();
+    ({hoop:hoopStep, arctic:arcticStep, loop:loopStep, colorbounce:colorbounceStep, bubble:bubbleStep, drive:driveStep, shooter:shooterStep, knife:knifeStep, blockmatch:blockmatchStep, dollar:dollarStep, candle:candleStep, dollarbox:dollarboxStep, blockfit:blockfitStep})[G.t.g]();
   }
   if(G && !G.over){ try{ fxFrame(); }catch(e){} }
   if(G){
@@ -2603,6 +2607,89 @@ function dollarboxStep(){
     setTimeout(()=>{ if(G) gameOver(); }, 1000);
   }
 }
+
+/* ===== Block Fit (8x8 drag-and-drop block puzzle) ===== */
+const BF_SHAPES = [
+  [[1]], [[1,1]], [[1],[1]], [[1,1,1]], [[1],[1],[1]], [[1,1],[1,1]], [[1,1,1],[0,1,0]], [[1,1],[1,0]],
+  [[1,1,1,1]], [[1],[1],[1],[1]], [[1,1,1],[1,0,0]], [[0,0,1],[1,1,1]], [[0,1,1],[1,1,0]], [[1,1,0],[0,1,1]],
+  [[1,1,1],[1,1,1]], [[1,1],[1,1],[1,1]], [[1,1,1,1,1]], [[1,0,0],[1,0,0],[1,1,1]]
+];
+const BF_COL = ["#ef4444","#3b82f6","#10b981","#f59e0b","#8b5cf6"], BF_X = 17, BF_Y = 52, BF_P = 36, BF_SLOT = [56,160,264], BF_SY = 412;
+function bfSpawn(){
+  const B = G.bf;
+  for(let i=0;i<3;i++){ let sh; do{ sh = BF_SHAPES[Math.floor(Math.random()*BF_SHAPES.length)]; }while(sh.length===1 && sh[0].length===1 && Math.random()<0.7);
+    B.pcs[i] = {shape:sh, color:1+Math.floor(Math.random()*5)}; }
+}
+function bfCan(sh, r0, c0){
+  const b = G.bf.b;
+  for(let r=0;r<sh.length;r++) for(let c=0;c<sh[r].length;c++) if(sh[r][c]){
+    const rr=r0+r, cc=c0+c; if(rr<0||cc<0||rr>=8||cc>=8||b[rr][cc]) return false; }
+  return true;
+}
+function bfAnchor(sh){
+  const w = sh[0].length, h = sh.length, cx = G.tx, cy = G.ty-70;
+  return {col:Math.round((cx-w*BF_P/2-BF_X)/BF_P), row:Math.round((cy-h*BF_P/2-BF_Y)/BF_P), px:cx-w*BF_P/2, py:cy-h*BF_P/2};
+}
+function bfDown(){
+  const B = G.bf; if(!B || B.drag!==null) return;
+  if(G.ty < 340) return;
+  for(let i=0;i<3;i++) if(B.pcs[i] && Math.abs(G.tx-BF_SLOT[i])<54){ B.drag = i; fxSound("beep"); return; }
+}
+function bfUp(){
+  const B = G.bf; if(!B || B.drag===null) return;
+  const i = B.drag, p = B.pcs[i]; B.drag = null; if(!p) return;
+  const a = bfAnchor(p.shape);
+  if(!bfCan(p.shape, a.row, a.col)) return;
+  let cells = 0;
+  p.shape.forEach((rw,r)=>rw.forEach((v,c)=>{ if(v){ B.b[a.row+r][a.col+c] = p.color; cells++; } }));
+  B.pcs[i] = null; G.score += cells; fxSound("coin");
+  const rows = [], cols = [];
+  for(let r=0;r<8;r++) if(B.b[r].every(v=>v)) rows.push(r);
+  for(let c=0;c<8;c++){ let f = true; for(let r=0;r<8;r++) if(!B.b[r][c]){ f = false; break; } if(f) cols.push(c); }
+  const n = rows.length+cols.length;
+  if(n){
+    rows.forEach(r=>{ for(let c=0;c<8;c++) fxBurst(BF_X+c*BF_P+17, BF_Y+r*BF_P+17, 2, [BF_COL[B.b[r][c]-1]||"#fff","#fff"]); });
+    cols.forEach(c=>{ for(let r=0;r<8;r++) if(B.b[r][c]) fxBurst(BF_X+c*BF_P+17, BF_Y+r*BF_P+17, 2, [BF_COL[B.b[r][c]-1]||"#fff","#fff"]); });
+    rows.forEach(r=>{ for(let c=0;c<8;c++) B.b[r][c] = 0; });
+    cols.forEach(c=>{ for(let r=0;r<8;r++) B.b[r][c] = 0; });
+    G.score += 10*n*n; fxSound("level");
+    try{ navigator.vibrate && navigator.vibrate(20); }catch(e){}
+  }
+  if(B.pcs.every(q=>!q)) bfSpawn();
+  let ok = false;
+  for(let k=0;k<3 && !ok;k++){ const q = B.pcs[k]; if(!q) continue;
+    for(let r=0;r<8 && !ok;r++) for(let c=0;c<8;c++) if(bfCan(q.shape,r,c)){ ok = true; break; } }
+  if(!ok){ G.over = true; gameOver(); }
+}
+function blockfitStep(){
+  const x = G.x;
+  if(!G.bf){ G.bf = {b:Array.from({length:8},()=>Array(8).fill(0)), pcs:[null,null,null], drag:null, time:120}; bfSpawn(); }
+  const B = G.bf;
+  B.time -= 1/60; if(B.time<=0){ G.over = true; return gameOver(); }
+  x.fillStyle = "#0f172a"; x.fillRect(0,0,320,480);
+  const rr = (px,py,w,h,r)=>{ x.beginPath(); if(x.roundRect) x.roundRect(px,py,w,h,r); else x.rect(px,py,w,h); x.fill(); };
+  x.fillStyle = "#1e293b"; rr(BF_X-6, BF_Y-6, 8*BF_P+10, 8*BF_P+10, 14);
+  const a = (B.drag!==null && B.pcs[B.drag]) ? bfAnchor(B.pcs[B.drag].shape) : null;
+  const okDrop = a && bfCan(B.pcs[B.drag].shape, a.row, a.col);
+  for(let r=0;r<8;r++) for(let c=0;c<8;c++){
+    const v = B.b[r][c], px = BF_X+c*BF_P, py = BF_Y+r*BF_P;
+    x.fillStyle = v ? BF_COL[v-1] : "#334155"; rr(px, py, 34, 34, 6);
+    if(v){ x.fillStyle = "rgba(0,0,0,.22)"; x.fillRect(px+2, py+29, 30, 3); x.fillStyle = "rgba(255,255,255,.22)"; x.fillRect(px+3, py+3, 28, 4); }
+  }
+  if(okDrop){ const sh = B.pcs[B.drag].shape; x.fillStyle = "rgba(255,255,255,.35)";
+    sh.forEach((rw,r)=>rw.forEach((v,c)=>{ if(v) rr(BF_X+(a.col+c)*BF_P, BF_Y+(a.row+r)*BF_P, 34, 34, 6); })); }
+  // dock
+  x.fillStyle = "#1e293b"; rr(8, 344, 304, 134, 14);
+  for(let i=0;i<3;i++){ const p = B.pcs[i]; if(!p || B.drag===i) continue;
+    const sh = p.shape, w = sh[0].length, h = sh.length, sp = 20, ox = BF_SLOT[i]-w*sp/2, oy = BF_SY-h*sp/2;
+    x.fillStyle = BF_COL[p.color-1];
+    sh.forEach((rw,r)=>rw.forEach((v,c)=>{ if(v) rr(ox+c*sp, oy+r*sp, sp-2, sp-2, 4); })); }
+  if(B.drag!==null && B.pcs[B.drag]){ const p = B.pcs[B.drag], sh = p.shape, d = bfAnchor(sh);
+    x.globalAlpha = 0.92; x.fillStyle = BF_COL[p.color-1];
+    sh.forEach((rw,r)=>rw.forEach((v,c)=>{ if(v) rr(d.px+c*BF_P, d.py+r*BF_P, 34, 34, 6); })); x.globalAlpha = 1; }
+  x.fillStyle = "#fff"; x.font = "bold 16px sans-serif"; x.textAlign = "left"; x.fillText(Math.ceil(B.time)+"s", 10, 24);
+  x.textAlign = "right"; x.fillText("🟧 "+Math.floor(G.score), 310, 24);
+}
 function blockmatchStep(){
   const x = G.x;
   if(!G.grid) initBlockGrid();
@@ -2623,7 +2710,7 @@ function bank(){
   // Anti-cheat: cap the banked score to a plausible max based on real elapsed play time,
   // so a tampered/injected G.score (e.g. via devtools) can't produce an absurd result.
   const elapsedSec = Math.max(0.5, (now() - (G.startMs||now())) / 1000);
-  const MAX_RATE = {arctic:9, hoop:7, loop:15, colorbounce:9, bubble:9, drive:15, shooter:16, knife:4, blockmatch:34, dollar:4, candle:30, dollarbox:130};
+  const MAX_RATE = {arctic:9, hoop:7, loop:15, colorbounce:9, bubble:9, drive:15, shooter:16, knife:4, blockmatch:34, dollar:4, candle:30, dollarbox:130, blockfit:20};
   const cap = Math.ceil(elapsedSec * (MAX_RATE[G.t.g]||12)) + 25;
   const sc = Math.min(rawSc, cap);
   S.best[id] = Math.max(S.best[id]||0, sc); save();
