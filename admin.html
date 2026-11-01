@@ -15,6 +15,7 @@
 body{margin:0;background:var(--bg);color:var(--text);font-family:'Segoe UI',Roboto,Arial,sans-serif;display:flex;justify-content:center}
 .app{width:100%;max-width:440px;height:100%;display:flex;flex-direction:column}
 header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px 6px}
+header .logo{font-size:19px!important;white-space:nowrap}header .bal{white-space:nowrap;font-size:13px!important;padding:8px 12px!important}
 .logo{font-weight:800;font-size:19px}.logo span{color:var(--acc)}
 .bal{background:var(--card);color:var(--gold);padding:7px 13px;border-radius:20px;font-weight:700;font-size:13px}
 main{flex:1;overflow-y:auto;padding:8px 16px 16px}
@@ -449,6 +450,7 @@ const TERMS_HTML = `
 <p>Is app ka use karne ke liye user ki minimum age 18 years honi chahiye (ya kam age par parental guidance zaroori hai). Har user ko sirf ek (1) account rakhne ki permission hai — multiple accounts banana, fake details use karna, ya bots/automation ka use karna strictly prohibited hai aur isse account ban ho sakta hai.</p>
 <h3>2. RP Points & Reward Policy</h3>
 <p>RP (Reward Points) is app ke andar ki ek virtual in-app currency hai. Jab tak isse kisi reward (coins/cash/gift) ke roop mein claim na kiya jaye, RP ki koi real-world cash value nahi hai. Rewards, Leaderboard Ranks, aur RP points ko kisi bhi waqt change, adjust ya void karne ka right Admin/Management ke paas reserved hai.</p>
+<p><b>Free to play:</b> App mein koi deposit, entry fee ya in-app purchase nahi hai. Rewards promotional hote hain, ads se funded hain, aur fixed score milestones par milte hain — kisi dusre player se muqabla ya paise lagakar jeetne wala koi system nahi hai. Ye app gambling, betting ya real-money gaming nahi hai.</p>
 <h3>3. Anti-Fraud & Cheating Policy</h3>
 <p>Auto-clickers, VPN, Proxy, Emulators, ya kisi bhi tarah ke app modification/hacking/cheating tools ka use strictly forbidden hai. Agar fraud ya cheating detect hoti hai to Admin bina kisi prior warning ke account suspend ya permanently ban kar sakta hai, aur saare earned RP/rewards void kiye ja sakte hain.</p>
 <h3>4. Taxes</h3>
@@ -558,8 +560,8 @@ function defaultConfig(){ return {
   manualTours: [], // admin-created extra tournaments [{id,g,pool,min}]
   paytmEnabled: true, phonepeEnabled: true, googleplayEnabled: true, amazonEnabled: true, phonepegiftEnabled: true,
   tourDurationMin: 30,
-  gamesEnabled: {arctic:true,hoop:true,loop:true,colorbounce:true,bubble:true,drive:true,blockmatch:true,dollar:true,dollarbox:true,blockfit:true,tilematch:true,bricksmash:true,colortubes:true},
-  gamesOrder: ["arctic","hoop","loop","colorbounce","bubble","drive","blockmatch","dollar","dollarbox","blockfit","tilematch","bricksmash","colortubes"],
+  gamesEnabled: {arctic:true,hoop:true,loop:true,drive:true,blockfit:true,tilematch:true,bricksmash:true,colortubes:true},
+  gamesOrder: ["arctic","hoop","loop","drive","blockfit","tilematch","bricksmash","colortubes"],
   lbResetHour: 5,
   lbResetMode: "daily", lbResetDays: [0,1,2,3,4,5,6], lbResetIntervalDays: 1, // mode: "daily" (har din), "days" (sirf selected weekdays par; 0=Sun...6=Sat), ya "interval" (har N din mein ek baar)
   lbPrizeTable: (()=>{ const t = {1:7500,2:4500,3:3750,4:1500,5:1500,6:750,7:750,8:750,9:150,10:150};
@@ -580,7 +582,7 @@ function defaultConfig(){ return {
   dailyBonusTimeEnabled: false, dailyBonusTimeStart: "18:00", dailyBonusTimeEnd: "22:00", // sirf is window mein claim available
   streakRewards: [2000,4000,4500,5000,6000,7500,8500,9000,10000,20000,50000,"$0.10"],
   topN: 50,
-  gamePools: {arctic:20000,hoop:20000,loop:20000,colorbounce:20000,bubble:20000,drive:20000,blockmatch:20000,dollar:20000,dollarbox:20000,blockfit:20000,tilematch:20000,bricksmash:20000,colortubes:20000},
+  gamePools: {arctic:20000,hoop:20000,loop:20000,drive:20000,blockfit:20000,tilematch:20000,bricksmash:20000,colortubes:20000},
   customGames: [],
   noticeText: "",
   noticeColor: "red",   // v14: "red" | "green" banner
@@ -1413,12 +1415,7 @@ const GAME_CANON = {
   arctic:{id:1,g:"arctic",name:"Polar Sail",split:"Top 50",pool:20000},
   hoop:{id:2,g:"hoop",name:"Net Blitz",split:"Top 50",pool:20000},
   loop:{id:4,g:"loop",name:"Orbit Link",split:"Top 50",pool:20000},
-  colorbounce:{id:6,g:"colorbounce",name:"Hue Hop",split:"Top 50",pool:20000},
-  bubble:{id:7,g:"bubble",name:"Orb Defender",split:"Top 50",pool:20000},
   drive:{id:8,g:"drive",name:"City Drive Trial",split:"Top 50",pool:20000},
-  blockmatch:{id:11,g:"blockmatch",name:"Tile Fusion",split:"Top 50",pool:20000},
-  dollar:{id:12,g:"dollar",name:"Cash Grab",split:"Top 50",pool:20000},
-  dollarbox:{id:14,g:"dollarbox",name:"Cash Catcher",split:"Top 50",pool:20000},
   blockfit:{id:15,g:"blockfit",name:"Block Fit",split:"Top 50",pool:20000},
   tilematch:{id:16,g:"tilematch",name:"Fruit Match",split:"Top 50",pool:20000},
   bricksmash:{id:17,g:"bricksmash",name:"Brick Smash",split:"Top 50",pool:20000},
@@ -1447,7 +1444,7 @@ const TCONF = {
   bricksmash:{emoji:"🧱",grad:"linear-gradient(135deg,#0ea5e9,#6d28d9)"},
   colortubes:{emoji:"🧪",grad:"linear-gradient(135deg,#10b981,#7c3aed)"}
 };
-function gLogo(g, sz){ const c = TCONF[g]||{emoji:"🎮",grad:"#7c3aed"}; sz = sz||30; return `<span style="display:inline-flex;align-items:center;justify-content:center;width:${sz}px;height:${sz}px;border-radius:${Math.round(sz*0.3)}px;background:${c.grad};font-size:${Math.round(sz*0.62)}px;box-shadow:0 2px 6px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.35);vertical-align:middle;margin-right:8px;flex:none">${c.emoji}</span>`; }
+function gLogo(g, sz, mr){ const c = TCONF[g]||{emoji:"🎮",grad:"#7c3aed"}; sz = sz||30; return `<span style="display:inline-flex;align-items:center;justify-content:center;width:${sz}px;height:${sz}px;border-radius:${Math.round(sz*0.3)}px;background:${c.grad};font-size:${Math.round(sz*0.62)}px;box-shadow:0 2px 6px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.35);vertical-align:middle;margin-right:${mr===undefined?8:mr}px;flex:none">${c.emoji}</span>`; }
 function tourPrizes(){
   const t = cfg().tourPrizeTable || defaultConfig().tourPrizeTable;
   const arr = Array.from({length:50},(_,i)=>t[i+1]||0);
@@ -1460,11 +1457,11 @@ const NAMES = ["ProGamer_X","NightWolf","AceHunter","SkyBlade","Rohit_YT","Clutc
   "FrostByte","BlazeRunner","KnightRider","ViperFang","SkullCrusher","AlphaWolf","RogueAce","CrimsonBlade","NovaStar","JetStreak",
   "HawkEye77","MaxPower","ChaosLord","SteelHeart","WildFire01","PhantomX","RapidRex","GoldenGun","IceBreaker","TurboCharge"];
 function genReport(t){
-  if(!S.reports || S.reportsV!==2){ S.reports = {}; S.reportsV = 2; }
+  if(!S.reports || S.reportsV!==3){ S.reports = {}; S.reportsV = 3; }
   if(!S.reports[t.id]){
     let seed = t.id%1000+1;
     const rnd = () => { seed = (seed*9301+49297)%233280; return seed/233280; };
-    const base = ({hoop:30,arctic:130,loop:110,colorbounce:28,bubble:120,drive:110,shooter:160,knife:18,blockmatch:450,dollar:32,candle:90,dollarbox:500,blockfit:150,tilematch:150,bricksmash:120,colortubes:150})[t.g] || 150;
+    const base = (({hoop:30,arctic:130,loop:110,colorbounce:28,bubble:120,drive:110,shooter:160,knife:18,blockmatch:450,dollar:32,candle:90,dollarbox:500,blockfit:150,tilematch:150,bricksmash:120,colortubes:150})[t.g]||150)*1.5 || 150;
     let sc = base + Math.floor(rnd()*30);
     const list = [];
     for(let i=0;i<50;i++){ list.push({name:NAMES[i], score:sc}); sc = Math.max(1, sc - Math.ceil(1+rnd()*(base/22))); }
@@ -1488,8 +1485,8 @@ function showReport(id){
   o.style.cssText = "position:fixed;inset:0;z-index:99;background:#00000080;display:flex;align-items:flex-end;justify-content:center";
   o.onclick = e => { if(e.target===o) o.remove(); };
   o.innerHTML = `<div style="background:var(--card);width:100%;max-width:440px;max-height:78vh;overflow-y:auto;border-radius:18px 18px 0 0;padding:16px">
-    <div class="row" style="margin-bottom:10px"><h3 style="margin:0">🏁 ${esc(t.name)} - Results</h3><button class="btn s sm" onclick="document.getElementById('rp').remove()">✕</button></div>
-    <div class="mut" style="margin-bottom:8px">Score targets: itna score karo to itne RP milte hain. Aapka best: <b>${my}</b></div>${rows}</div>`;
+    <div class="row" style="margin-bottom:10px"><h3 style="margin:0">🎯 ${esc(t.name)} - Score Milestones</h3><button class="btn s sm" onclick="document.getElementById('rp').remove()">✕</button></div>
+    <div class="mut" style="margin-bottom:8px">Fixed milestones: itna score karo to itne RP milte hain (kisi dusre player se muqabla nahi). Aapka best: <b>${my}</b></div>${rows}</div>`;
   document.body.appendChild(o);
 }
 function showPrizes(){
@@ -1498,7 +1495,7 @@ function showPrizes(){
   o.style.cssText = "position:fixed;inset:0;z-index:99;background:#00000080;display:flex;align-items:flex-end;justify-content:center";
   o.onclick = e => { if(e.target===o) o.remove(); };
   o.innerHTML = `<div style="background:var(--card);width:100%;max-width:440px;max-height:78vh;overflow-y:auto;border-radius:18px 18px 0 0;padding:16px">
-    <div class="row" style="margin-bottom:10px"><h3 style="margin:0">🏆 Top 50 Prize Split</h3><button class="btn s sm" onclick="document.getElementById('pz').remove()">✕</button></div>${rows}</div>`;
+    <div class="row" style="margin-bottom:10px"><h3 style="margin:0">🎯 Reward Milestones</h3><button class="btn s sm" onclick="document.getElementById('pz').remove()">✕</button></div>${rows}</div>`;
   document.body.appendChild(o);
 }
 applyRemoteToS();
@@ -1584,7 +1581,14 @@ function reconcileTours(){
 }
 applyRemoteToS();
 reconcileTours();
+function runReward(t, sc){
+  if(!earnOk() || sc<=0) return 0;
+  const list = genReport(t); let rank = list.findIndex(e=>sc>=e.score); if(rank===-1) rank = list.length;
+  const tp = tourPrizes();
+  return (rank<50 && tp[rank]) ? tp[rank] : Math.max(5, Math.floor(sc/4));
+}
 function payoutTournament(t){
+  return;   // RP is now credited right after every 2-minute run (see gameOver)
   if(!earnOk()) return;
   const my = S.best[t.id]||0; if(my<=0) return;
   const list = genReport(t);
@@ -1815,7 +1819,7 @@ function home(){
         <button class="btn sm" style="background:#ffd54a;color:#3a1f00;font-weight:800;white-space:nowrap" ${(claimed||waitingForWindow)?"disabled":""} onclick="claimBonus()">
           ${claimed?"✅ Claimed":waitingForWindow?"⏰ Band":"Claim"}</button>
       </div></div>
-    <h3>Game Categories</h3><div class="grid">${catCard("🏆","Tournaments","tab='play';render()")}${catCard("🎟️","Promo Code","tab='promo';render()")}${catCard("🕹️","Mini Games","tab='play';render()")}${catCard("📊","Leaderboard","tab='play';sub='board';render()")}</div>
+    <h3>Game Categories</h3><div class="grid">${catCard("🕹️","Mini Games","tab='play';render()")}${catCard("🎟️","Promo Code","tab='promo';render()")}</div>
     ${streakCard()}<div class="msg" id="msg"></div>`;
 }
 function streakRewards(){ return cfg().streakRewards || defaultConfig().streakRewards; }
@@ -1939,8 +1943,7 @@ function rewardsCard(){
     <button class="rw-b" onclick="tab='wallet';render()">Withdraw</button></div>
     <div class="rw-rp"><div><div class="rw-l">💜 RP Balance</div><div class="rw-rv">${rp} RP<small>≈ 🪙 ${rpCoinsOf(rp).toFixed(2)} coins</small></div></div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px"><div class="rw-rate">${rr.per.toLocaleString("en-IN")} RP<br>= 🪙 ${+rr.co.toFixed(2)} coins</div>
-        <button onclick="claimRp()" ${rp>=rr.per?"":"disabled"} style="white-space:nowrap;border:none;border-radius:12px;padding:7px 16px;font-weight:900;font-size:13px;${rp>=rr.per?"background:linear-gradient(180deg,#ffe488,#f5a300);color:#3a1f00;box-shadow:0 3px 0 #b45309":"background:rgba(255,255,255,.2);color:rgba(255,255,255,.6)"}">${rp>=rr.per?"🎁 Claim 🪙 "+Math.floor(Math.floor(rp/rr.per)*rr.co):"🔒 Claim"}</button></div></div>
-    <div class="rw-t">Min withdraw $${c.minWithdrawUsd} • Max $${c.maxWithdrawUsd}</div></div>`;
+        <button onclick="claimRp()" ${rp>=rr.per?"":"disabled"} style="white-space:nowrap;border:none;border-radius:12px;padding:7px 16px;font-weight:900;font-size:13px;${rp>=rr.per?"background:linear-gradient(180deg,#ffe488,#f5a300);color:#3a1f00;box-shadow:0 3px 0 #b45309":"background:rgba(255,255,255,.2);color:rgba(255,255,255,.6)"}">${rp>=rr.per?"🎁 Claim 🪙 "+Math.floor(Math.floor(rp/rr.per)*rr.co):"🔒 Claim"}</button></div></div></div>`;
 }
 function play(){
   const v = $("#view");
@@ -1980,12 +1983,11 @@ function play(){
     <div class="mut" style="padding:6px 14px 0">External game link</div>
     <button class="btn play" style="margin:10px 14px 14px" onclick="window.open('${esc(cg.url)}','_blank')">Open Link ›</button></div>`).join("");
   v.innerHTML = adBox('matches') + noticeBanner('matches') + chips + (earnOk() ? rewardsCard() : `<div class="card mut" style="text-align:center;margin-bottom:12px">🌍 Rewards aapke region mein available nahi hain — game khelo aur maza lo!</div>`) + toursSorted.map(t=>`<div class="tc">
-    <div class="tb" style="background:${TCONF[t.g].grad}">${TCONF[t.g].emoji} ${esc(t.name.toUpperCase())}</div>
-    <div style="padding:12px 14px 0;font-weight:800;color:var(--acc);font-size:18px;display:flex;align-items:center">${gLogo(t.g,34)}${esc(t.name)}<span style="margin-left:auto;font-size:13px;font-weight:800;color:#6d28d9;background:#ede9fe;padding:5px 11px;border-radius:12px;white-space:nowrap">⏱ 2:00</span></div>
-    ${!earnOk()?"":`<div style="margin:10px 14px 0;text-align:center"><span style="font-size:20px;font-weight:900;color:#b45309;background:linear-gradient(135deg,#fff3c4,#ffe08a);padding:6px 18px;border-radius:14px;display:inline-block">💜 ${Math.max.apply(null, tourPrizes())} RP</span></div>`}
+    <div class="tb" style="background:${TCONF[t.g].grad};height:auto;min-height:128px;flex-direction:column;gap:8px;padding:16px 10px 14px">${gLogo(t.g,60,0)}<span style="font-size:22px">${esc(t.name.toUpperCase())}</span></div>
+    <div style="padding:12px 14px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="font-size:15px;font-weight:800;color:#6d28d9;background:#ede9fe;padding:7px 14px;border-radius:14px;white-space:nowrap">⏱ 2:00</span>${!earnOk()?"":`<span style="font-size:18px;font-weight:900;color:#b45309;background:linear-gradient(135deg,#fff3c4,#ffe08a);padding:6px 16px;border-radius:14px;white-space:nowrap">Max 💜 ${Math.max.apply(null, tourPrizes())} RP</span>`}</div>
     <div style="margin:0 14px 12px;background:var(--in);border-radius:10px;padding:10px;display:flex;justify-content:space-between;align-items:center">
       <span style="font-size:13px;color:var(--muted)">🎯 Aapka Score</span><span style="font-size:20px;font-weight:800;color:var(--acc)">${S.best[t.id]||0}</span></div>
-    <button class="btn play" onclick="playT(${t.id})">Play Now! ›</button>${earnOk()?`<button class="btn s sm" style="margin:0 14px 14px" onclick="showReport(${t.id})">🏁 Winning Report</button>`:`<div style="height:14px"></div>`}</div>`).join("") + customLinks;
+    <button class="btn play" onclick="playT(${t.id})">Play Now! ›</button><div style="height:14px"></div></div>`).join("") + customLinks + `<div class="mut" style="text-align:center;font-size:11.5px;line-height:1.5;margin:6px 6px 16px">✅ 100% free to play — koi deposit ya entry fee nahi. Rewards promotional hain aur ads se funded hain. Ye gambling ya betting app nahi hai. Rewards fixed score milestones par milte hain, kisi player ke against nahi.</div>`;
 }
 function nextLbPayoutTime(){
   const c = cfg(), d = new Date();
@@ -3000,6 +3002,7 @@ function bank(){
 function gameOver(){
   try{ fxSound("over"); navigator.vibrate && navigator.vibrate([60,40,90]); }catch(e){}
   const t = G.t, sc = bank(), gh = $("#gh");
+  let runRp = 0; if(!G.paid){ G.paid = true; runRp = runReward(t, sc); if(runRp>0){ S.rp = (S.rp||0) + runRp; save(); } }
   gh.style.bottom = "auto"; gh.style.top = "30px"; gh.style.pointerEvents = "auto";
   const list = genReport(t);
   let rank = list.findIndex(e=>sc>=e.score); if(rank===-1) rank = list.length;
@@ -3012,6 +3015,7 @@ function gameOver(){
       <div style="flex:1;background:#dbeafe;border-radius:12px;padding:10px"><div style="font-size:10px;color:#1e3a8a;font-weight:800;letter-spacing:.5px">YOU SCORED</div><div style="font-size:22px;font-weight:900;color:#1e3a8a">🏅 ${sc}</div></div>
       <div style="flex:1;background:#bbf7d0;border-radius:12px;padding:10px"><div style="font-size:10px;color:#14532d;font-weight:800;letter-spacing:.5px">BEST SCORE</div><div style="font-size:22px;font-weight:900;color:#14532d">🏆 ${S.best[t.id]||sc}</div></div>
     </div>
+    ${earnOk()?`<div style="background:linear-gradient(135deg,#fff3c4,#ffe08a);color:#92400e;border-radius:12px;padding:10px;margin-bottom:12px;font-weight:900;font-size:20px">💜 +${runRp} RP</div>`:""}
     ${true?`<div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:4px">
       <button class="btn" id="boostBtn" style="background:linear-gradient(180deg,#ffe488,#f5a300);color:#3a1f00;font-weight:900;font-size:20px;flex:1;max-width:180px" onclick="claim2x(${sc},${t.id})">2×</button>
       <div style="background:#22c55e;color:#fff;font-size:11px;font-weight:800;padding:5px 10px;border-radius:8px;display:flex;align-items:center;gap:3px">🎬 ADS</div>
