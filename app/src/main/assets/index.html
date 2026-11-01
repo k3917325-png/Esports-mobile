@@ -447,6 +447,7 @@ const TERMS_HTML = `
 <p>Is app ka use karne ke liye user ki minimum age 18 years honi chahiye (ya kam age par parental guidance zaroori hai). Har user ko sirf ek (1) account rakhne ki permission hai — multiple accounts banana, fake details use karna, ya bots/automation ka use karna strictly prohibited hai aur isse account ban ho sakta hai.</p>
 <h3>2. RP Points & Reward Policy</h3>
 <p>RP (Reward Points) is app ke andar ki ek virtual in-app currency hai. Jab tak isse kisi reward (coins/cash/gift) ke roop mein claim na kiya jaye, RP ki koi real-world cash value nahi hai. Rewards, Leaderboard Ranks, aur RP points ko kisi bhi waqt change, adjust ya void karne ka right Admin/Management ke paas reserved hai.</p>
+<p><b>Free to play:</b> App mein koi deposit, entry fee ya in-app purchase nahi hai. Rewards promotional hote hain, ads se funded hain, aur fixed score milestones par milte hain — kisi dusre player se muqabla ya paise lagakar jeetne wala koi system nahi hai. Ye app gambling, betting ya real-money gaming nahi hai.</p>
 <h3>3. Anti-Fraud & Cheating Policy</h3>
 <p>Auto-clickers, VPN, Proxy, Emulators, ya kisi bhi tarah ke app modification/hacking/cheating tools ka use strictly forbidden hai. Agar fraud ya cheating detect hoti hai to Admin bina kisi prior warning ke account suspend ya permanently ban kar sakta hai, aur saare earned RP/rewards void kiye ja sakte hain.</p>
 <h3>4. Taxes</h3>
@@ -1486,8 +1487,8 @@ function showReport(id){
   o.style.cssText = "position:fixed;inset:0;z-index:99;background:#00000080;display:flex;align-items:flex-end;justify-content:center";
   o.onclick = e => { if(e.target===o) o.remove(); };
   o.innerHTML = `<div style="background:var(--card);width:100%;max-width:440px;max-height:78vh;overflow-y:auto;border-radius:18px 18px 0 0;padding:16px">
-    <div class="row" style="margin-bottom:10px"><h3 style="margin:0">🏁 ${esc(t.name)} - Results</h3><button class="btn s sm" onclick="document.getElementById('rp').remove()">✕</button></div>
-    <div class="mut" style="margin-bottom:8px">Score targets: itna score karo to itne RP milte hain. Aapka best: <b>${my}</b></div>${rows}</div>`;
+    <div class="row" style="margin-bottom:10px"><h3 style="margin:0">🎯 ${esc(t.name)} - Score Milestones</h3><button class="btn s sm" onclick="document.getElementById('rp').remove()">✕</button></div>
+    <div class="mut" style="margin-bottom:8px">Fixed milestones: itna score karo to itne RP milte hain (kisi dusre player se muqabla nahi). Aapka best: <b>${my}</b></div>${rows}</div>`;
   document.body.appendChild(o);
 }
 function showPrizes(){
@@ -1496,7 +1497,7 @@ function showPrizes(){
   o.style.cssText = "position:fixed;inset:0;z-index:99;background:#00000080;display:flex;align-items:flex-end;justify-content:center";
   o.onclick = e => { if(e.target===o) o.remove(); };
   o.innerHTML = `<div style="background:var(--card);width:100%;max-width:440px;max-height:78vh;overflow-y:auto;border-radius:18px 18px 0 0;padding:16px">
-    <div class="row" style="margin-bottom:10px"><h3 style="margin:0">🏆 Top 50 Prize Split</h3><button class="btn s sm" onclick="document.getElementById('pz').remove()">✕</button></div>${rows}</div>`;
+    <div class="row" style="margin-bottom:10px"><h3 style="margin:0">🎯 Reward Milestones</h3><button class="btn s sm" onclick="document.getElementById('pz').remove()">✕</button></div>${rows}</div>`;
   document.body.appendChild(o);
 }
 applyRemoteToS();
@@ -1813,7 +1814,7 @@ function home(){
         <button class="btn sm" style="background:#ffd54a;color:#3a1f00;font-weight:800;white-space:nowrap" ${(claimed||waitingForWindow)?"disabled":""} onclick="claimBonus()">
           ${claimed?"✅ Claimed":waitingForWindow?"⏰ Band":"Claim"}</button>
       </div></div>
-    <h3>Game Categories</h3><div class="grid">${catCard("🏆","Tournaments","tab='play';render()")}${catCard("🎟️","Promo Code","tab='promo';render()")}${catCard("🕹️","Mini Games","tab='play';render()")}${catCard("📊","Leaderboard","tab='play';sub='board';render()")}</div>
+    <h3>Game Categories</h3><div class="grid">${catCard("🕹️","Mini Games","tab='play';render()")}${catCard("🎟️","Promo Code","tab='promo';render()")}</div>
     ${streakCard()}<div class="msg" id="msg"></div>`;
 }
 function streakRewards(){ return cfg().streakRewards || defaultConfig().streakRewards; }
@@ -1979,10 +1980,10 @@ function play(){
     <button class="btn play" style="margin:10px 14px 14px" onclick="window.open('${esc(cg.url)}','_blank')">Open Link ›</button></div>`).join("");
   v.innerHTML = adBox('matches') + noticeBanner('matches') + chips + (earnOk() ? rewardsCard() : `<div class="card mut" style="text-align:center;margin-bottom:12px">🌍 Rewards aapke region mein available nahi hain — game khelo aur maza lo!</div>`) + toursSorted.map(t=>`<div class="tc">
     <div class="tb" style="background:${TCONF[t.g].grad};height:auto;min-height:128px;flex-direction:column;gap:8px;padding:16px 10px 14px">${gLogo(t.g,60,0)}<span style="font-size:22px">${esc(t.name.toUpperCase())}</span></div>
-    <div style="padding:12px 14px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="font-size:15px;font-weight:800;color:#6d28d9;background:#ede9fe;padding:7px 14px;border-radius:14px;white-space:nowrap">⏱ 2:00</span>${!earnOk()?"":`<span style="font-size:18px;font-weight:900;color:#b45309;background:linear-gradient(135deg,#fff3c4,#ffe08a);padding:6px 16px;border-radius:14px;white-space:nowrap">💜 ${Math.max.apply(null, tourPrizes())} RP</span>`}</div>
+    <div style="padding:12px 14px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="font-size:15px;font-weight:800;color:#6d28d9;background:#ede9fe;padding:7px 14px;border-radius:14px;white-space:nowrap">⏱ 2:00</span>${!earnOk()?"":`<span style="font-size:18px;font-weight:900;color:#b45309;background:linear-gradient(135deg,#fff3c4,#ffe08a);padding:6px 16px;border-radius:14px;white-space:nowrap">Max 💜 ${Math.max.apply(null, tourPrizes())} RP</span>`}</div>
     <div style="margin:0 14px 12px;background:var(--in);border-radius:10px;padding:10px;display:flex;justify-content:space-between;align-items:center">
       <span style="font-size:13px;color:var(--muted)">🎯 Aapka Score</span><span style="font-size:20px;font-weight:800;color:var(--acc)">${S.best[t.id]||0}</span></div>
-    <button class="btn play" onclick="playT(${t.id})">Play Now! ›</button>${earnOk()?`<button class="btn s sm" style="margin:0 14px 14px" onclick="showReport(${t.id})">🏁 Winning Report</button>`:`<div style="height:14px"></div>`}</div>`).join("") + customLinks;
+    <button class="btn play" onclick="playT(${t.id})">Play Now! ›</button>${earnOk()?`<button class="btn s sm" style="margin:0 14px 14px" onclick="showReport(${t.id})">🎯 Score Milestones</button>`:`<div style="height:14px"></div>`}</div>`).join("") + customLinks + `<div class="mut" style="text-align:center;font-size:11.5px;line-height:1.5;margin:6px 6px 16px">✅ 100% free to play — koi deposit ya entry fee nahi. Rewards promotional hain aur ads se funded hain. Ye gambling ya betting app nahi hai. Rewards fixed score milestones par milte hain, kisi player ke against nahi.</div>`;
 }
 function nextLbPayoutTime(){
   const c = cfg(), d = new Date();
