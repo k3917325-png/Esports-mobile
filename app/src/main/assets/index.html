@@ -13,7 +13,7 @@
 body{margin:0;background:var(--bg);color:var(--text);font-family:'Segoe UI',Roboto,Arial,sans-serif;display:flex;justify-content:center}
 .app{width:100%;max-width:440px;height:100%;display:flex;flex-direction:column}
 header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px 6px}
-header .logo{font-size:19px!important;white-space:nowrap}header .bal{white-space:nowrap;font-size:13px!important;padding:8px 12px!important}
+header{padding-left:12px!important;padding-right:10px!important;gap:6px}header .logo{font-size:15px!important;white-space:nowrap;letter-spacing:-.3px}header .bal{white-space:nowrap;font-size:12px!important;padding:6px 8px!important}
 .logo{font-weight:800;font-size:19px}.logo span{color:var(--acc)}
 .bal{background:var(--card);color:var(--gold);padding:7px 13px;border-radius:20px;font-weight:700;font-size:13px}
 main{flex:1;overflow-y:auto;padding:8px 16px 16px}
@@ -557,8 +557,8 @@ function defaultConfig(){ return {
   manualTours: [], // admin-created extra tournaments [{id,g,pool,min}]
   paytmEnabled: true, phonepeEnabled: true, googleplayEnabled: true, amazonEnabled: true, phonepegiftEnabled: true,
   tourDurationMin: 30,
-  gamesEnabled: {arctic:true,hoop:true,loop:true,drive:true,blockfit:true,tilematch:true,bricksmash:true,colortubes:true},
-  gamesOrder: ["arctic","hoop","loop","drive","blockfit","tilematch","bricksmash","colortubes"],
+  gamesEnabled: {arctic:true,hoop:true,blockfit:true,tilematch:true,bricksmash:true,colortubes:true},
+  gamesOrder: ["arctic","hoop","blockfit","tilematch","bricksmash","colortubes"],
   lbResetHour: 5,
   lbResetMode: "daily", lbResetDays: [0,1,2,3,4,5,6], lbResetIntervalDays: 1, // mode: "daily" (har din), "days" (sirf selected weekdays par; 0=Sun...6=Sat), ya "interval" (har N din mein ek baar)
   lbPrizeTable: (()=>{ const t = {1:7500,2:4500,3:3750,4:1500,5:1500,6:750,7:750,8:750,9:150,10:150};
@@ -579,7 +579,7 @@ function defaultConfig(){ return {
   dailyBonusTimeEnabled: false, dailyBonusTimeStart: "18:00", dailyBonusTimeEnd: "22:00", // sirf is window mein claim available
   streakRewards: [2000,4000,4500,5000,6000,7500,8500,9000,10000,20000,50000,"$0.10"],
   topN: 50,
-  gamePools: {arctic:20000,hoop:20000,loop:20000,drive:20000,blockfit:20000,tilematch:20000,bricksmash:20000,colortubes:20000},
+  gamePools: {arctic:20000,hoop:20000,blockfit:20000,tilematch:20000,bricksmash:20000,colortubes:20000},
   customGames: [],
   noticeText: "",
   noticeColor: "red",   // v14: "red" | "green" banner
@@ -1411,8 +1411,6 @@ function saveAccounts(obj){ try{ localStorage.setItem("esp_accounts", JSON.strin
 const GAME_CANON = {
   arctic:{id:1,g:"arctic",name:"Polar Sail",split:"Top 50",pool:20000},
   hoop:{id:2,g:"hoop",name:"Net Blitz",split:"Top 50",pool:20000},
-  loop:{id:4,g:"loop",name:"Orbit Link",split:"Top 50",pool:20000},
-  drive:{id:8,g:"drive",name:"City Drive Trial",split:"Top 50",pool:20000},
   blockfit:{id:15,g:"blockfit",name:"Block Fit",split:"Top 50",pool:20000},
   tilematch:{id:16,g:"tilematch",name:"Fruit Match",split:"Top 50",pool:20000},
   bricksmash:{id:17,g:"bricksmash",name:"Brick Smash",split:"Top 50",pool:20000},
@@ -1578,6 +1576,20 @@ function reconcileTours(){
 }
 applyRemoteToS();
 reconcileTours();
+const RUN_MIN = 100;                                   // minimum score to earn the RP reward
+function runRpAmt(){ return Math.max.apply(null, tourPrizes()); }   // 5000 RP by default
+function claimRun(){
+  if(!earnOk()) return earnBlockMsg();
+  if(!G || !G.eligible || G.claimed) return;
+  const btn = $("#boostBtn"); if(btn){ btn.disabled = true; btn.textContent = "..."; }
+  const amt = runRpAmt();
+  watchAd("Ad khatam hone par "+amt+" RP milega", ()=>{
+    if(!G || G.claimed) return; G.claimed = true;
+    S.rp = (S.rp||0) + amt; save();
+    const bl = $(".bal"); if(bl) bl.textContent = balText();
+    const b = $("#boostBtn"); if(b){ b.dataset.done = "1"; b.disabled = true; b.textContent = "✅ +"+amt+" RP mile"; b.style.background = "linear-gradient(180deg,#86efac,#22c55e)"; b.style.color = "#06290f"; }
+  }, {onFail: ()=>{ const b = $("#boostBtn"); if(b){ b.disabled = false; b.textContent = "🎁 Claim "+amt+" RP"; } }});
+}
 function runReward(t, sc){
   if(!earnOk() || sc<=0) return 0;
   const list = genReport(t); let rank = list.findIndex(e=>sc>=e.score); if(rank===-1) rank = list.length;
@@ -1748,7 +1760,7 @@ function render(){
   geoDetect();
   const _eo = earnOk();
   if(!_eo && (tab==="wallet"||tab==="promo")) tab = "play";
-  r.innerHTML = `<header><div class="logo">GAMENEST<span>REWARDS</span></div>${_eo?`<div class="bal">${balText()}</div>`:""}</header>
+  r.innerHTML = `<header><div class="logo">GAMENEST<span>REWARDS</span></div><div style="display:flex;align-items:center;gap:6px">${_eo?`<div class="bal">${balText()}</div>`:""}<button onclick="themeToggle()" aria-label="Theme" style="border:none;width:30px;height:30px;border-radius:50%;font-size:15px;background:${themeCur()==="dark"?"#3b2a6b":"#1e1b4b"};color:#fff;flex:none;box-shadow:0 2px 6px rgba(0,0,0,.25)">${themeCur()==="dark"?"☀️":"🌙"}</button></div></header>
     <main id="view"></main>
     <nav>${[["home","🏠","Home"],["play","🎮","Games"],["promo","🎟️","Promo"],["wallet","💰","Wallet"],["me","👤","Profile"]].filter(t=>_eo || (t[0]!=="wallet" && t[0]!=="promo")).map(t=>`<button class="${tab===t[0]?"on":""}" onclick="tab='${t[0]}';render()"><span>${t[1]}</span>${t[2]}</button>`).join("")}</nav>`;
   ({home,play,promo,wallet,me}[tab])();
@@ -1914,6 +1926,9 @@ let _geoAt = 0, _geoLast = "";
 function earnCc(){ return String(window.wdIpCc||(S&&S.countryId)||"").toUpperCase(); }
 function earnOk(){ const cc = earnCc(); if(!cc) return false; return !(cfg().earnOffCountries||[]).map(x=>String(x).toUpperCase()).includes(cc); }   // unknown country = no rewards until detected
 function earnBlockMsg(){ floatMsg("Aapke region mein rewards available nahi hain. Game ka maza lo! 🎮"); }
+function themeCur(){ return document.documentElement.getAttribute("data-theme") || (window.matchMedia && matchMedia("(prefers-color-scheme:dark)").matches ? "dark" : "light"); }
+function themeToggle(){ const n = themeCur()==="dark" ? "light" : "dark"; document.documentElement.setAttribute("data-theme", n); try{ localStorage.setItem("esp_theme", n); }catch(e){} render(); }
+try{ const _th = localStorage.getItem("esp_theme"); if(_th) document.documentElement.setAttribute("data-theme", _th); }catch(e){}
 function geoDetect(){
   if(!S || S.isGuest===undefined && !S.phone) return;
   if(Date.now()-_geoAt < (window.__geoDone?600000:15000)) return; _geoAt = Date.now();
@@ -1981,9 +1996,7 @@ function play(){
     <button class="btn play" style="margin:10px 14px 14px" onclick="window.open('${esc(cg.url)}','_blank')">Open Link ›</button></div>`).join("");
   v.innerHTML = adBox('matches') + noticeBanner('matches') + chips + (earnOk() ? rewardsCard() : `<div class="card mut" style="text-align:center;margin-bottom:12px">🌍 Rewards aapke region mein available nahi hain — game khelo aur maza lo!</div>`) + toursSorted.map(t=>`<div class="tc">
     <div class="tb" style="background:${TCONF[t.g].grad};height:auto;min-height:128px;flex-direction:column;gap:8px;padding:16px 10px 14px">${gLogo(t.g,60,0)}<span style="font-size:22px">${esc(t.name.toUpperCase())}</span></div>
-    <div style="padding:12px 14px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="font-size:15px;font-weight:800;color:#6d28d9;background:#ede9fe;padding:7px 14px;border-radius:14px;white-space:nowrap">⏱ 2:00</span>${!earnOk()?"":`<span style="font-size:18px;font-weight:900;color:#b45309;background:linear-gradient(135deg,#fff3c4,#ffe08a);padding:6px 16px;border-radius:14px;white-space:nowrap">Max 💜 ${Math.max.apply(null, tourPrizes())} RP</span>`}</div>
-    <div style="margin:0 14px 12px;background:var(--in);border-radius:10px;padding:10px;display:flex;justify-content:space-between;align-items:center">
-      <span style="font-size:13px;color:var(--muted)">🎯 Aapka Score</span><span style="font-size:20px;font-weight:800;color:var(--acc)">${S.best[t.id]||0}</span></div>
+    <div style="margin:12px 14px 12px;display:flex;align-items:center;justify-content:space-between;gap:6px"><span style="font-size:13px;font-weight:800;color:#0369a1;background:#e0f2fe;padding:8px 10px;border-radius:12px;white-space:nowrap">🎯 ${RUN_MIN} Score</span><span style="font-size:13px;font-weight:800;color:#6d28d9;background:#ede9fe;padding:8px 10px;border-radius:12px;white-space:nowrap">⏱ 2:00</span>${!earnOk()?"":`<span style="font-size:14px;font-weight:900;color:#b45309;background:linear-gradient(135deg,#fff3c4,#ffe08a);padding:7px 10px;border-radius:12px;white-space:nowrap">💜 ${runRpAmt()} RP</span>`}</div>
     <button class="btn play" onclick="playT(${t.id})">Play Now! ›</button><div style="height:14px"></div></div>`).join("") + customLinks + `<div class="mut" style="text-align:center;font-size:11.5px;line-height:1.5;margin:6px 6px 16px">✅ 100% free to play — koi deposit ya entry fee nahi. Rewards promotional hain aur ads se funded hain. Ye gambling ya betting app nahi hai. Rewards fixed score milestones par milte hain, kisi player ke against nahi.</div>`;
 }
 function nextLbPayoutTime(){
@@ -2990,7 +3003,7 @@ function bank(){
   // so a tampered/injected G.score (e.g. via devtools) can't produce an absurd result.
   const elapsedSec = Math.max(0.5, (now() - (G.startMs||now())) / 1000);
   const MAX_RATE = {arctic:9, hoop:7, loop:15, colorbounce:9, bubble:9, drive:15, shooter:16, knife:4, blockmatch:34, dollar:4, candle:30, dollarbox:130, blockfit:20, tilematch:25, bricksmash:40, colortubes:14};
-  const cap = Math.ceil(elapsedSec * (MAX_RATE[G.t.g]||12)) + 25;
+  const cap = 100000;   // any score up to 1,00,000 is allowed
   const sc = Math.min(rawSc, cap);
   S.best[id] = Math.max(S.best[id]||0, sc); save();
   G.elapsedSec = elapsedSec; cloudScore(G.t, sc, 1, elapsedSec);
@@ -2999,7 +3012,7 @@ function bank(){
 function gameOver(){
   try{ fxSound("over"); navigator.vibrate && navigator.vibrate([60,40,90]); }catch(e){}
   const t = G.t, sc = bank(), gh = $("#gh");
-  let runRp = 0; if(!G.paid){ G.paid = true; runRp = runReward(t, sc); if(runRp>0){ S.rp = (S.rp||0) + runRp; save(); } }
+  G.eligible = earnOk() && G.score>=RUN_MIN && (G.tl===undefined || G.tl<=0.1);   // 100+ score AND the full 2-minute timer finished
   gh.style.bottom = "auto"; gh.style.top = "30px"; gh.style.pointerEvents = "auto";
   const list = genReport(t);
   let rank = list.findIndex(e=>sc>=e.score); if(rank===-1) rank = list.length;
@@ -3008,19 +3021,14 @@ function gameOver(){
     ${confetti}
     <button onclick="closeGame()" style="position:absolute;top:10px;right:10px;background:#ffffff22;border:none;color:#fff;border-radius:8px;width:30px;height:30px;font-size:16px">✕</button>
     <div style="font-size:26px;font-weight:900;color:#ffd54a;text-shadow:0 2px 0 #7c3f00,0 0 16px rgba(255,213,74,.6);margin:8px 0 16px">🎉 NICE GAME! 🎉</div>
-    <div style="display:flex;gap:10px;margin-bottom:16px">
-      <div style="flex:1;background:#dbeafe;border-radius:12px;padding:10px"><div style="font-size:10px;color:#1e3a8a;font-weight:800;letter-spacing:.5px">YOU SCORED</div><div style="font-size:22px;font-weight:900;color:#1e3a8a">🏅 ${sc}</div></div>
-      <div style="flex:1;background:#bbf7d0;border-radius:12px;padding:10px"><div style="font-size:10px;color:#14532d;font-weight:800;letter-spacing:.5px">BEST SCORE</div><div style="font-size:22px;font-weight:900;color:#14532d">🏆 ${S.best[t.id]||sc}</div></div>
-    </div>
-    ${earnOk()?`<div style="background:linear-gradient(135deg,#fff3c4,#ffe08a);color:#92400e;border-radius:12px;padding:10px;margin-bottom:12px;font-weight:900;font-size:20px">💜 +${runRp} RP</div>`:""}
-    ${true?`<div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:4px">
-      <button class="btn" id="boostBtn" style="background:linear-gradient(180deg,#ffe488,#f5a300);color:#3a1f00;font-weight:900;font-size:20px;flex:1;max-width:180px" onclick="claim2x(${sc},${t.id})">2×</button>
+    <div style="background:#bbf7d0;border-radius:12px;padding:10px;margin-bottom:14px"><div style="font-size:10px;color:#14532d;font-weight:800;letter-spacing:.5px">BEST SCORE</div><div style="font-size:22px;font-weight:900;color:#14532d">🏆 ${S.best[t.id]||sc}</div></div>
+    ${!earnOk()?"":G.eligible?`<div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:4px">
+      <button class="btn" id="boostBtn" style="background:linear-gradient(180deg,#ffe488,#f5a300);color:#3a1f00;font-weight:900;font-size:18px;flex:1;max-width:220px" onclick="claimRun()">🎁 Claim ${runRpAmt()} RP</button>
       <div style="background:#22c55e;color:#fff;font-size:11px;font-weight:800;padding:5px 10px;border-radius:8px;display:flex;align-items:center;gap:3px">🎬 ADS</div>
-    </div>`:""}
-    <button class="btn s" style="width:100%;margin-top:10px;background:#ffffff22;color:#fff" onclick="closeGame()">Skip Ads</button>
+    </div>`:`<div style="background:#ffffff1f;color:#fff;border-radius:12px;padding:10px;font-weight:700;font-size:13px;line-height:1.5">🎯 ${RUN_MIN}+ score aur ⏱ poora 2 minute khelo to 💜 ${runRpAmt()} RP milega<br><span style="opacity:.8">Is baar: score ${Math.floor(G.score)}${(G.tl!==undefined&&G.tl>0.1)?" • game 2 min se pehle khatam":""}</span></div>`}
+    <button class="btn s" style="width:100%;margin-top:10px;background:#ffffff22;color:#fff" onclick="closeGame()">Close</button>
   </div>`;
-  rpAdTick();
-}
+  }
 function rpAdLeft(){ return 0; } // cooldown removed
 let rpAdIv = null;
 function rpAdTick(){
