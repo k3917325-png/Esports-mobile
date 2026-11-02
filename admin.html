@@ -81,7 +81,8 @@ canvas{display:block;margin:0 auto 10px;border-radius:10px;max-width:100%}
 #adm{display:none;position:fixed;inset:0;z-index:2147483200;background:var(--bg);color:var(--text);overflow:hidden}
 #adm .aw{max-width:520px;margin:0 auto;height:100%;display:flex;flex-direction:column;padding:env(safe-area-inset-top,0px) 12px 0;position:relative}
 #adm .atop{display:flex;justify-content:space-between;align-items:center;padding:12px 2px;font-size:17px}
-#adm .atabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;flex:0 0 auto}
+#adm .atabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding-bottom:8px;flex:0 0 auto}
+#adm .atabs .ch{padding:9px 4px;font-size:12px;text-align:center;overflow:hidden;text-overflow:ellipsis}
 #adm .ch{white-space:nowrap;border:1px solid rgba(180,140,255,.25);background:var(--card);color:var(--muted);padding:8px 12px;border-radius:18px;font-size:13px;font-weight:700;cursor:pointer}
 #adm .ch.on{background:var(--acc);color:#fff;border-color:transparent}
 #adm .chips2{display:flex;gap:6px;overflow-x:auto;margin:6px 0}
@@ -3523,8 +3524,8 @@ const A = {sum:null, tk:{filter:"Open", items:[], loaded:false}, au:{items:[], l
   payout:{auto:false, providers:[], merchantId:"", webhookUrl:""}, sent:{}};
 const PAYOUT_LIST = [["paypal","PayPal Payouts (Mass Pay API)"],["bybit","Bybit Pay / Withdrawal API"]];
 try{ A.sent = JSON.parse(localStorage.getItem("adm_sent")||"{}") || {}; }catch(e){ A.sent = {}; }
-const CFG_TABS = ["games","lb","wal","bonus","ads","info","ctry","promo","ctl"];
-const TABS = [["wd","💸 Withdrawals"],["rep","📊 Reports"],["users","👥 Users"],["games","🎮 Games"],["wal","💰 Wallet"],["bonus","🎁 Bonus"],["ads","📺 Ads"],["info","📢 Notice & Links"],["ctry","🌍 Geo-Control"],["promo","🎟 Promo"],["ctl","🛠 App Control"],["sup","🆘 Support"],["aud","🧾 Audit Log"]];
+const CFG_TABS = ["games","lb","wal","prem","bonus","ads","info","ctry","promo","ctl"];
+const TABS = [["wd","💸 Withdrawals"],["rep","📊 Reports"],["users","👥 Users"],["games","🎮 Games"],["wal","💰 Wallet"],["prem","⭐ Premium"],["bonus","🎁 Bonus"],["ads","📺 Ads"],["info","📢 Notice & Links"],["ctry","🌍 Geo-Control"],["promo","🎟 Promo"],["ctl","🛠 App Control"],["sup","🆘 Support"],["aud","🧾 Audit Log"]];
 const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 const METHODS = ["PayPal","Bybit","GooglePlay","Amazon","PhonePeGift"];
 
@@ -3783,9 +3784,31 @@ function tLb(){
   <button class="b s wf" data-a="resetMyRp">Is device ka RP 0 karo</button>
   <div class="mut" style="margin-top:6px">Ban/Unban ab 👥 Users tab mein hai — sabhi users par lagu hota hai.</div>`;
 }
+function premCount(){ return (A.doc.config.premiumCountries||[]).length; }
+function premList(){
+  const c = A.doc.config, q = (A.pq||"").toLowerCase(), set = new Set(c.premiumCountries||[]);
+  const list = COUNTRIES.filter(cn=>!q || cn.name.toLowerCase().includes(q) || cn.id.toLowerCase()===q);
+  list.sort((a,b)=>(set.has(b.id)?1:0)-(set.has(a.id)?1:0));
+  return list.map(cn=>{ const on = set.has(cn.id);
+    return `<div class="ar lb2"><span>${cn.flag} ${E(cn.name)} <span class="mut">(${E(cn.id)})</span></span><button class="b ${on?"g":"s"} sm" data-a="ptg" data-id="${cn.id}">${on?"⭐ Premium":"Normal"}</button></div>`; }).join("") || `<div class="mut">Koi country match nahi hua.</div>`;
+}
+function tPrem(){
+  const c = A.doc.config, rate = Number(c.rate)||1500, per = Number(c.rpPerCent)||100000, usd = (c.rpPremiumUsd===undefined||c.rpPremiumUsd===""||c.rpPremiumUsd===null)?0.10:Number(c.rpPremiumUsd), co = (c.rpCoins===undefined||c.rpCoins===""||c.rpCoins===null)?15:Number(c.rpCoins);
+  return `<h3>⭐ Premium Countries & RP Value</h3>
+  <div class="mut" style="margin-bottom:10px">Yahan se tay hota hai ki <b>${per.toLocaleString("en-IN")} RP</b> ke badle user ko kitne coins milenge. Do group hain: <b>Normal</b> (sab countries) aur <b>Premium</b> (neeche chuni hui). Badalne ke baad <b>Save</b> dabao.</div>
+  <div class="card2" style="border-left:4px solid #6d2fe0"><b>1️⃣ Normal countries (default)</b><div class="mut" style="margin:2px 0 6px">Jo country Premium list mein nahi hai, wahan ka rate.</div>
+    ${inp("Itne RP (jaise 100000)","config.rpPerCent","n",{w:110})}${inp("= itne Coins (jaise 15)","config.rpCoins","n",{w:110})}
+    <div style="margin-top:6px"><b>👉 ${per.toLocaleString("en-IN")} RP = 🪙 ${co} coins</b> <span class="mut">(≈ $${(co/rate).toFixed(3)})</span></div></div>
+  <div class="card2" style="border-left:4px solid #f5a300;margin-top:10px"><b>2️⃣ ⭐ Premium countries</b><div class="mut" style="margin:2px 0 6px">Neeche list mein jin countries ko ⭐ Premium karoge, wahan ye rate lagega.</div>
+    ${inp("Itne dollar ($) — jaise 0.10","config.rpPremiumUsd","n",{w:110})}
+    <div style="margin-top:6px"><b>👉 ${per.toLocaleString("en-IN")} RP = $${usd} = 🪙 ${Math.round(usd*rate)} coins</b> <span class="mut">(coin rate ${rate} coins = $1)</span></div></div>
+  <h3 style="margin-top:16px;font-size:15px">Premium countries chuno <span id="premCount" class="mut">(${premCount()} selected)</span></h3>
+  <input id="pq" data-a2="pq" placeholder="Country search karo..." value="${E(A.pq||"")}">
+  <div id="premList" style="max-height:55vh;overflow-y:auto">${premList()}</div>`;
+}
 function tWal(){
   return `<h3>3️⃣ Wallet & Withdrawal Controls</h3>
-  ${inp("Coin Rate (coins = $1)","config.rate","n",{w:100})}${inp("RP value: itne RP (jaise 100000)","config.rpPerCent","n",{w:110})}${inp("= itne Coins (jaise 15) — baaki sab countries","config.rpCoins","n",{w:110})}${inp("Premium countries mein itne RP = $ (jaise 0.10)","config.rpPremiumUsd","n",{w:110})}${inp("Premium countries (ISO2, comma: US,CA,GB,AU,NZ,DE,CH,NO,SE)","config.premiumCountries","cc",{w:260})}${inp("Min Withdraw ($)","config.minWithdrawUsd","n",{w:100})}${inp("Max Withdraw ($)","config.maxWithdrawUsd","n",{w:100})}
+  ${inp("Coin Rate (coins = $1)","config.rate","n",{w:100})}<div class="mut" style="margin:6px 0 10px">💜 RP → Coin ki value aur ⭐ Premium countries ab alag tab <b>"⭐ Premium"</b> mein hain.</div>${inp("Min Withdraw ($)","config.minWithdrawUsd","n",{w:100})}${inp("Max Withdraw ($)","config.maxWithdrawUsd","n",{w:100})}
   ${inp("Max Withdrawals Per Day","config.wdMaxPerDay","i",{w:80})}
   ${tg("Withdrawal Timing Window","config.wdTimeEnabled","0")}
   ${A.doc.config.wdTimeEnabled?`${inp("Start","config.wdTimeStart","t",{type:"time"})}${inp("End","config.wdTimeEnd","t",{type:"time"})}`:""}
@@ -4036,7 +4059,7 @@ function tUsers(){
 function body(){
   switch(A.tab){
     case "wd": return tWd(); case "rep": return tRep(); case "users": return tUsers(); case "games": return tGames(); case "lb": return tLb();
-    case "wal": return tWal(); case "bonus": return tBonus(); case "ads": return tAds(); case "info": return tInfo(); case "ctry": return tCtry(); case "promo": return tPromo(); case "ctl": return tCtl(); case "sup": return tSup(); case "aud": return tAud();
+    case "wal": return tWal(); case "prem": return tPrem(); case "bonus": return tBonus(); case "ads": return tAds(); case "info": return tInfo(); case "ctry": return tCtry(); case "promo": return tPromo(); case "ctl": return tCtl(); case "sup": return tSup(); case "aud": return tAud();
   }
   return "";
 }
@@ -4085,6 +4108,7 @@ function onField(e, final){
 }
 $adm.addEventListener("input", e=>{
   const d = e.target.dataset || {};
+  if(d.a2 === "pq"){ A.pq = e.target.value; const l = $adm.querySelector("#premList"); if(l) l.innerHTML = premList(); return; }
   if(d.a2 === "cq"){ A.cq = e.target.value; const l = $adm.querySelector("#ctryList"); if(l) l.innerHTML = ctryList(); return; }
   if(d.a2 === "uq"){ A.us.q = e.target.value; return; }
   if(e.target.tagName === "SELECT") return;
@@ -4118,6 +4142,8 @@ const actions = {
     if(!/^https?:\/\/\S+$/i.test(u)) return flash("Valid https:// link daalo");
     (A.doc.config.supportLinks = A.doc.config.supportLinks||[]).push({id:"s"+Date.now(), platform:pl, url:u}); markDirty(); draw(); },
   delsp(el){ A.doc.config.supportLinks.splice(parseInt(el.dataset.i,10),1); markDirty(); draw(); },
+  ptg(el){ const id = el.dataset.id; let a = (A.doc.config.premiumCountries||[]).slice(); a = a.includes(id) ? a.filter(x=>x!==id) : a.concat(id); A.doc.config.premiumCountries = a; markDirty();
+    const l = $adm.querySelector("#premList"), st = l.scrollTop; l.innerHTML = premList(); l.scrollTop = st; const pc = $adm.querySelector("#premCount"); if(pc) pc.textContent = "("+a.length+" selected)"; },
   ctg(el){ const k = el.dataset.k, id = el.dataset.id; let a = (A.doc.config[k]||[]).slice(); a = a.includes(id) ? a.filter(x=>x!==id) : a.concat(id); A.doc.config[k] = a; markDirty();
     const l = $adm.querySelector("#ctryList"), st = l.scrollTop; l.innerHTML = ctryList(); l.scrollTop = st; },
   addpc(){ const c = $adm.querySelector("#pcCode").value.trim(), v = parseInt($adm.querySelector("#pcRp").value,10);
