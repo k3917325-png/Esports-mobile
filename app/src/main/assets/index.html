@@ -79,7 +79,9 @@ canvas{display:block;margin:0 auto 10px;border-radius:10px;max-width:100%}
 #adm{display:none;position:fixed;inset:0;z-index:2147483200;background:var(--bg);color:var(--text);overflow:hidden}
 #adm .aw{max-width:520px;margin:0 auto;height:100%;display:flex;flex-direction:column;padding:env(safe-area-inset-top,0px) 12px 0;position:relative}
 #adm .atop{display:flex;justify-content:space-between;align-items:center;padding:12px 2px;font-size:17px}
-#adm .atabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;flex:0 0 auto}
+#adm .atabs{display:flex;flex-direction:column;gap:5px;padding-bottom:8px;flex:0 0 auto;max-height:55vh;overflow-y:auto}
+#adm .atabs .ch{padding:11px 12px;font-size:14px;text-align:left;width:100%;white-space:nowrap}
+#adm .tmenu{width:100%;text-align:left;padding:11px 12px;font-weight:800;font-size:14px;display:flex;justify-content:space-between;margin-bottom:6px}
 #adm .ch{white-space:nowrap;border:1px solid rgba(180,140,255,.25);background:var(--card);color:var(--muted);padding:8px 12px;border-radius:18px;font-size:13px;font-weight:700;cursor:pointer}
 #adm .ch.on{background:var(--acc);color:#fff;border-color:transparent}
 #adm .chips2{display:flex;gap:6px;overflow-x:auto;margin:6px 0}
@@ -1416,9 +1418,10 @@ const GAME_CANON = {
   bricksmash:{id:17,g:"bricksmash",name:"Brick Smash",split:"Top 50",pool:20000},
   colortubes:{id:18,g:"colortubes",name:"Color Tubes",split:"Top 50",pool:20000}
 };
+function gamesOrderAll(c){ const o = ((c&&c.gamesOrder)||[]).filter(g=>GAME_CANON[g]); Object.keys(GAME_CANON).forEach(g=>{ if(!o.includes(g)) o.push(g); }); return o; }
 function seedT(){
   const t = now(), c = cfg(), dur = (c.tourDurationMin||30)*MIN;
-  const order = (c.gamesOrder && c.gamesOrder.length) ? c.gamesOrder : Object.keys(GAME_CANON);
+  const order = gamesOrderAll(c);
   return order.filter(g=>GAME_CANON[g] && c.gamesEnabled[g]!==false).map(g=>({...GAME_CANON[g], pool:(c.gamePools&&c.gamePools[g])||GAME_CANON[g].pool, end:t+dur}));
 }
 const TCONF = {
@@ -1987,7 +1990,7 @@ function play(){
       <div class="mut" style="margin-top:4px">${cfg().lbResetMode==="days" ? ((cfg().lbResetDays||[]).map(i=>["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][i]).join(", ")||"Koi din select nahi") : cfg().lbResetMode==="interval" ? `Every ${cfg().lbResetIntervalDays||1} Day(s)` : "Daily"} ${String(cfg().lbResetHour).padStart(2,"0")}:00 • Top rank ka prize account mein add hota hai</div>
     </div>`;
     v.innerHTML = adBox('matches') + noticeBanner('matches') + chips + payoutCard + `<div class="mut" style="margin:10px 0 8px">Real players • ${bd ? (rank>=0 ? `Your Rank: <b>#${rank+1}</b>` : `Top 50 mein aane ke liye <b>${bd.need} RP</b> chahiye`) : "…"}</div>` + rows + youRow + loadMore; return; }
-  const ord = ((cfg().gamesOrder&&cfg().gamesOrder.length)?cfg().gamesOrder:Object.keys(GAME_CANON)).filter(g=>GAME_CANON[g]);
+  const ord = gamesOrderAll(cfg());
   const toursSorted = S.tours.slice().sort((a,b)=>ord.indexOf(a.g)-ord.indexOf(b.g));
   const customLinks = (cfg().customGames||[]).map(cg=>`<div class="tc">
     <div class="tb" style="background:linear-gradient(135deg,#475569,#1e293b)">🔗 ${esc(cg.name.toUpperCase())}</div>
