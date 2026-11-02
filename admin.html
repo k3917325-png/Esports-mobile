@@ -81,8 +81,9 @@ canvas{display:block;margin:0 auto 10px;border-radius:10px;max-width:100%}
 #adm{display:none;position:fixed;inset:0;z-index:2147483200;background:var(--bg);color:var(--text);overflow:hidden}
 #adm .aw{max-width:520px;margin:0 auto;height:100%;display:flex;flex-direction:column;padding:env(safe-area-inset-top,0px) 12px 0;position:relative}
 #adm .atop{display:flex;justify-content:space-between;align-items:center;padding:12px 2px;font-size:17px}
-#adm .atabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding-bottom:8px;flex:0 0 auto}
-#adm .atabs .ch{padding:9px 4px;font-size:12px;text-align:center;overflow:hidden;text-overflow:ellipsis}
+#adm .atabs{display:flex;flex-direction:column;gap:5px;padding-bottom:8px;flex:0 0 auto;max-height:55vh;overflow-y:auto}
+#adm .atabs .ch{padding:11px 12px;font-size:14px;text-align:left;width:100%;white-space:nowrap}
+#adm .tmenu{width:100%;text-align:left;padding:11px 12px;font-weight:800;font-size:14px;display:flex;justify-content:space-between;margin-bottom:6px}
 #adm .ch{white-space:nowrap;border:1px solid rgba(180,140,255,.25);background:var(--card);color:var(--muted);padding:8px 12px;border-radius:18px;font-size:13px;font-weight:700;cursor:pointer}
 #adm .ch.on{background:var(--acc);color:#fff;border-color:transparent}
 #adm .chips2{display:flex;gap:6px;overflow-x:auto;margin:6px 0}
@@ -1420,9 +1421,10 @@ const GAME_CANON = {
   bricksmash:{id:17,g:"bricksmash",name:"Brick Smash",split:"Top 50",pool:20000},
   colortubes:{id:18,g:"colortubes",name:"Color Tubes",split:"Top 50",pool:20000}
 };
+function gamesOrderAll(c){ const o = ((c&&c.gamesOrder)||[]).filter(g=>GAME_CANON[g]); Object.keys(GAME_CANON).forEach(g=>{ if(!o.includes(g)) o.push(g); }); return o; }
 function seedT(){
   const t = now(), c = cfg(), dur = (c.tourDurationMin||30)*MIN;
-  const order = (c.gamesOrder && c.gamesOrder.length) ? c.gamesOrder : Object.keys(GAME_CANON);
+  const order = gamesOrderAll(c);
   return order.filter(g=>GAME_CANON[g] && c.gamesEnabled[g]!==false).map(g=>({...GAME_CANON[g], pool:(c.gamePools&&c.gamePools[g])||GAME_CANON[g].pool, end:t+dur}));
 }
 const TCONF = {
@@ -1991,7 +1993,7 @@ function play(){
       <div class="mut" style="margin-top:4px">${cfg().lbResetMode==="days" ? ((cfg().lbResetDays||[]).map(i=>["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][i]).join(", ")||"Koi din select nahi") : cfg().lbResetMode==="interval" ? `Every ${cfg().lbResetIntervalDays||1} Day(s)` : "Daily"} ${String(cfg().lbResetHour).padStart(2,"0")}:00 • Top rank ka prize account mein add hota hai</div>
     </div>`;
     v.innerHTML = adBox('matches') + noticeBanner('matches') + chips + payoutCard + `<div class="mut" style="margin:10px 0 8px">Real players • ${bd ? (rank>=0 ? `Your Rank: <b>#${rank+1}</b>` : `Top 50 mein aane ke liye <b>${bd.need} RP</b> chahiye`) : "…"}</div>` + rows + youRow + loadMore; return; }
-  const ord = ((cfg().gamesOrder&&cfg().gamesOrder.length)?cfg().gamesOrder:Object.keys(GAME_CANON)).filter(g=>GAME_CANON[g]);
+  const ord = gamesOrderAll(cfg());
   const toursSorted = S.tours.slice().sort((a,b)=>ord.indexOf(a.g)-ord.indexOf(b.g));
   const customLinks = (cfg().customGames||[]).map(cg=>`<div class="tc">
     <div class="tb" style="background:linear-gradient(135deg,#475569,#1e293b)">🔗 ${esc(cg.name.toUpperCase())}</div>
@@ -3749,7 +3751,7 @@ function table(prefix, n, label){
 
 /* ---------- tab bodies ---------- */
 function tGames(){
-  const c = A.doc.config, order = (c.gamesOrder||[]).filter(g=>GAME_CANON[g]);
+  const c = A.doc.config; c.gamesOrder = gamesOrderAll(c); const order = c.gamesOrder;
   return `<h3>1️⃣ Tournaments & Games</h3>
   <div class="mut" style="margin:10px 0 4px">Game Management — ON/OFF + Position</div>
   ${order.map((g,i)=>{ const on = (c.gamesEnabled||{})[g]!==false; return `<div class="ar"><span style="flex:1">${E(GAME_CANON[g].name)}</span>
@@ -4039,18 +4041,30 @@ function tRep(){
     ${btns("all")}</div>
   <div class="mut" style="margin-top:8px">Har file ke sabse niche Total Gross, Total Tax/Fee aur Total Net ki summary rows hoti hain (sabhi listed rows + sirf Success wali alag).</div>`;
 }
+function userIsPrem(x){ return (A.doc.config.premiumCountries||[]).map(v=>String(v).toUpperCase()).includes(String(x.country||"").toUpperCase()); }
+function userCard(x){
+  return `<div class="card2"><div class="ar"><b>${E(x.name||"-")}</b><span class="mut">${userIsPrem(x)?"⭐ ":""}${E(x.country)}</span></div>
+    <div class="g2"><div><div class="k">Gmail</div><div class="v">${E(x.email||"-")}</div></div><div><div class="k">Referral</div><div class="v">${E(x.code)}</div></div>
+    <div><div class="k">Coins</div><div class="v">${E(x.coins)}</div></div><div><div class="k">RP</div><div class="v">${E(x.rp)}</div></div>
+    <div><div class="k">Device</div><div class="v" style="font-size:12px">${E(x.device||"-")}</div></div>${x.flag?`<div style="grid-column:1/-1;color:#ffb020;font-size:12px">🚩 ${E(x.flag)}</div>`:""}<div><div class="k">First seen</div><div class="v" style="font-size:12px">${E(x.first)}</div></div><div><div class="k">Last seen</div><div class="v" style="font-size:12px">${E(x.last||"-")}</div></div></div>
+    <div class="ar" style="gap:4px;margin-top:6px"><input class="adjA" placeholder="coins" inputmode="numeric" style="margin:0;width:80px"><input class="adjR" placeholder="Reason (zaroori)" style="margin:0;flex:1"></div>
+    <div class="ar" style="justify-content:flex-start;gap:6px"><button class="b g sm" data-a="adj" data-m="${E(x.mobile)}" data-s="1">＋ Credit</button><button class="b s sm" data-a="adj" data-m="${E(x.mobile)}" data-s="-1">－ Debit</button>
+    <button class="b ${x.banned?"g":"bad"} sm" data-a="ban" data-m="${E(x.mobile)}" data-b="${x.banned?0:1}">${x.banned?"Unban karo":"🚫 Ban karo"}</button></div></div>`;
+}
 function tUsers(){
-  const u = A.us;
+  const u = A.us, grp = u.grp || "all";
+  const prem = u.loaded ? u.items.filter(userIsPrem) : [], norm = u.loaded ? u.items.filter(x=>!userIsPrem(x)) : [];
+  const sect = (title, arr) => `<div style="margin:14px 0 6px;font-weight:800">${title} <span class="mut">(${arr.length})</span></div>` + (arr.length ? arr.map(userCard).join("") : `<div class="mut">Koi user nahi.</div>`);
+  let list = "";
+  if(!u.loaded) list = `<div class="mut">Loading...</div>`;
+  else if(grp==="prem") list = sect("⭐ Premium country users", prem);
+  else if(grp==="norm") list = sect("🌍 Normal country users", norm);
+  else list = sect("⭐ Premium country users", prem) + sect("🌍 Normal country users", norm);
   return `<h3>👥 Users (Database)</h3>
   <div class="ar"><input id="uq" data-a2="uq" placeholder="Naam ya number search" value="${E(u.q)}" style="margin:0"><button class="b sm" data-a="usearch">Search</button></div>
   <div class="mut" style="margin:6px 0">Total synced users: ${u.total}. Coins/RP user ke app se aaye hain (sirf dekhne ke liye — payout hamesha withdrawal request se hota hai).</div>
-  ${u.loaded ? (u.items.length ? u.items.map(x=>`<div class="card2"><div class="ar"><b>${E(x.name||"-")}</b><span class="mut">${E(x.country)}</span></div>
-    <div class="g2"><div><div class="k">Gmail</div><div class="v">${E(x.email||"-")}</div></div><div><div class="k">Referral</div><div class="v">${E(x.code)}</div></div>
-    <div><div class="k">Coins</div><div class="v">${E(x.coins)}</div></div><div><div class="k">RP</div><div class="v">${E(x.rp)}</div></div>
-    <div><div class="k">Device</div><div class="v" style="font-size:12px">${E(x.device||"-")}</div></div>${x.flag?`<div style="grid-column:1/-1;color:#ffb020;font-size:12px">🚩 ${E(x.flag)}</div>`:""}<div><div class="k">First seen</div><div class="v" style="font-size:12px">${E(x.first)}</div></div><div><div class="k">Last seen</div><div class="v" style="font-size:12px">${E(x.seen)}</div></div></div>
-    <div class="ar" style="gap:4px;margin-top:6px"><input class="adjA" placeholder="coins" inputmode="numeric" style="margin:0;width:80px"><input class="adjR" placeholder="Reason (zaroori)" style="margin:0;flex:1"></div>
-    <div class="ar" style="justify-content:flex-start;gap:6px"><button class="b g sm" data-a="adj" data-m="${E(x.mobile)}" data-s="1">＋ Credit</button><button class="b s sm" data-a="adj" data-m="${E(x.mobile)}" data-s="-1">－ Debit</button>
-    <button class="b ${x.banned?"g":"bad"} sm" data-a="ban" data-m="${E(x.mobile)}" data-b="${x.banned?0:1}">${x.banned?"Unban karo":"🚫 Ban karo"}</button></div></div>`).join("") : `<div class="mut">Koi user nahi mila.</div>`) : `<div class="mut">Loading...</div>`}
+  <div class="chips2"><button class="ch ${grp==="all"?"on":""}" data-a="ugrp" data-v="all">Sab (${u.loaded?u.items.length:0})</button><button class="ch ${grp==="prem"?"on":""}" data-a="ugrp" data-v="prem">⭐ Premium (${prem.length})</button><button class="ch ${grp==="norm"?"on":""}" data-a="ugrp" data-v="norm">🌍 Normal (${norm.length})</button></div>
+  ${list}
   <div class="mut" style="margin:14px 0 4px">Number se seedha ban:</div>
   <div class="ar"><input id="banNum" placeholder="Gmail ya user ID" style="margin:0"><button class="b bad sm" data-a="banNum">Ban</button></div>`;
 }
@@ -4080,7 +4094,8 @@ function draw(){
   const un = A.doc.adConfig.unityOn !== false, cfgTab = CFG_TABS.includes(A.tab);
   $adm.innerHTML = `<div class="aw"><div class="atop"><b>🛡 Admin</b><span style="display:flex;gap:6px"><button class="b ${un?"g":"s"} sm" data-a="unity">Unity ${un?"ON":"OFF"}</button><button class="b s sm" data-a="close">Lock</button></span></div>
   ${sumCards()}
-  <div class="atabs">${TABS.map(([k,l])=>`<button class="ch ${A.tab===k?"on":""}" data-a="tab" data-v="${k}">${l}</button>`).join("")}</div>
+  <button class="ch on tmenu" data-a="tmenu"><span>${(TABS.find(t=>t[0]===A.tab)||TABS[0])[1]}</span><span>${A.menu?"▲":"▼"}</span></button>
+  ${A.menu?`<div class="atabs">${TABS.map(([k,l])=>`<button class="ch ${A.tab===k?"on":""}" data-a="tab" data-v="${k}">${l}</button>`).join("")}</div>`:""}
   <div id="admBody" class="abody">${body()}</div>
   ${cfgTab ? `<div class="asave"><span class="mut">${A.dirty?"● Unsaved changes":"✓ Saved"}</span><button class="b g" data-a="save" ${(!A.dirty||A.saving)?"disabled":""}>${A.saving?"Saving...":"💾 Save to Sheet"}</button></div>` : ""}</div>`;
   const nb = $adm.querySelector("#admBody"); if(nb) nb.scrollTop = st;
@@ -4123,7 +4138,8 @@ $adm.addEventListener("change", e=>{
 });
 const actions = {
   close(){ closeAdmin(); },
-  tab(el){ A.tab = el.dataset.v; draw(); if(A.tab==="users" && !A.us.loaded) loadUsers(); if(A.tab==="wd" && !A.wd.loaded) loadWd(); if(A.tab==="sup" && !A.tk.loaded) loadTk(); if(A.tab==="aud" && !A.au.loaded) loadAud(); loadSummary(); },
+  tmenu(){ A.menu = !A.menu; draw(); },
+  tab(el){ A.tab = el.dataset.v; A.menu = false; draw(); if(A.tab==="users" && !A.us.loaded) loadUsers(); if(A.tab==="wd" && !A.wd.loaded) loadWd(); if(A.tab==="sup" && !A.tk.loaded) loadTk(); if(A.tab==="aud" && !A.au.loaded) loadAud(); loadSummary(); },
   login(){ const pin = ($adm.querySelector("#admPin")||{}).value || ""; if(window.__ADMIN_ONLY && !(($adm.querySelector("#admEmail")||{}).value||"").trim()){ A.msg = "Email daalo"; draw(); return; } if(!pin) { A.msg = "Password daalo"; draw(); return; } login(pin); },
   save(){ saveCfg(); },
   unity(){ setUnity(); },
@@ -4142,6 +4158,7 @@ const actions = {
     if(!/^https?:\/\/\S+$/i.test(u)) return flash("Valid https:// link daalo");
     (A.doc.config.supportLinks = A.doc.config.supportLinks||[]).push({id:"s"+Date.now(), platform:pl, url:u}); markDirty(); draw(); },
   delsp(el){ A.doc.config.supportLinks.splice(parseInt(el.dataset.i,10),1); markDirty(); draw(); },
+  ugrp(el){ A.us.grp = el.dataset.v; draw(); },
   ptg(el){ const id = el.dataset.id; let a = (A.doc.config.premiumCountries||[]).slice(); a = a.includes(id) ? a.filter(x=>x!==id) : a.concat(id); A.doc.config.premiumCountries = a; markDirty();
     const l = $adm.querySelector("#premList"), st = l.scrollTop; l.innerHTML = premList(); l.scrollTop = st; const pc = $adm.querySelector("#premCount"); if(pc) pc.textContent = "("+a.length+" selected)"; },
   ctg(el){ const k = el.dataset.k, id = el.dataset.id; let a = (A.doc.config[k]||[]).slice(); a = a.includes(id) ? a.filter(x=>x!==id) : a.concat(id); A.doc.config[k] = a; markDirty();
