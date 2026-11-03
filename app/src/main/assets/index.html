@@ -79,6 +79,7 @@ canvas{display:block;margin:0 auto 10px;border-radius:10px;max-width:100%}
 #adm{display:none;position:fixed;inset:0;z-index:2147483200;background:var(--bg);color:var(--text);overflow:hidden}
 #adm .aw{max-width:520px;margin:0 auto;height:100%;display:flex;flex-direction:column;padding:env(safe-area-inset-top,0px) 12px 0;position:relative}
 #adm .atop{display:flex;justify-content:space-between;align-items:center;padding:12px 2px;font-size:17px}
+/*cards*/.rwg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}.rwc{display:flex;flex-direction:column;align-items:center;gap:4px;padding:14px 8px;border-radius:14px;border:2px solid #ffffff1f;background:var(--in);color:inherit;font:inherit;cursor:pointer;text-align:center}.rwc.on{border-color:#7c3aed;background:#7c3aed22}.rwi{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:22px}.rwm{font-size:11px;font-weight:700;color:var(--gold,#f5b301)}
 #adm .atabs{display:flex;flex-direction:column;gap:5px;padding-bottom:8px;flex:0 0 auto;max-height:55vh;overflow-y:auto}
 #adm .atabs .ch{padding:11px 12px;font-size:14px;text-align:left;width:100%;white-space:nowrap}
 #adm .tmenu{width:100%;text-align:left;padding:11px 12px;font-weight:800;font-size:14px;display:flex;justify-content:space-between;margin-bottom:6px}
@@ -527,8 +528,8 @@ function appliedPct(method, c){
 }
 function tdsPctFor(opt){ return appliedPct(WD_METHOD[opt]); }
 function tdsPctForMethod(method){ return appliedPct(method); }
-function isFeeOpt(opt){ return opt===2 || opt===5 || opt===6; } // fee-based (no TDS) methods: PayPal, Binance
-function isFeeMethod(method){ return method==="PayPal" || method==="Binance" || method==="Bybit"; }
+function isFeeOpt(opt){ return opt===2 || opt===5 || opt===6 || ((opt===7||opt===8||opt===9) && !!window.wdIpCc && window.wdIpCc!=="IN"); } // fee-based (no TDS) methods: PayPal, Binance
+function isFeeMethod(method, cc){ return method==="PayPal" || method==="Binance" || method==="Bybit" || (!!cc && cc!=="IN" && IN_METHODS.indexOf(method)>=0); }
 function isUsdtOpt(o){ return o===5 || o===6; }
 function isUsdtMethod(m){ return m==="Binance" || m==="Bybit"; }
 function feePctFor(opt){ return appliedPct(WD_METHOD[opt]); }
@@ -536,7 +537,7 @@ function feePctForMethod(method){ return appliedPct(method); }
 const now = () => Date.now(), MIN = 60000;
 function defaultConfig(){ return {
   rate: 1500, // coins per $1
-  minWithdrawUsd: 1.32, maxWithdrawUsd: 10,
+  minWithdrawUsd: 1.32, maxWithdrawUsd: 10, minWithdrawUsdPrem: 1.32, maxWithdrawUsdPrem: 10, // *Prem = premium countries ke liye alag limit
   wdMaxPerDay: 1, // din mein max kitni baar withdrawal kar sakta hai
   supportLinks: [], // Support Team / Social links: [{id,platform,url}] - admin panel se add/manage hote hain
   legalUrl: "https://astonishing-biscochitos-6e3bd9.netlify.app", // hosted T&C/Privacy Policy public page (Play Console submission ke liye)
@@ -593,8 +594,12 @@ function defaultConfig(){ return {
   payoutWebhookUrl: ""
 }; }
 function cfg(){ return RCFG || (S && S.config) || defaultConfig(); }
-function minCoins(){ return Math.round(cfg().minWithdrawUsd*cfg().rate); }
-function maxCoins(){ return Math.round(cfg().maxWithdrawUsd*cfg().rate); }
+function premList(c){ c = c || cfg(); return ((c.premiumCountries===undefined||c.premiumCountries===null) ? ["US","CA","GB","AU","NZ","DE","CH","NO","SE"] : c.premiumCountries).map(x=>String(x).toUpperCase()); }
+function wdIsPrem(){ const cc = String(window.wdIpCc||(S&&S.countryId)||"").toUpperCase(); return !!cc && premList().includes(cc); }
+function minUsd(){ const c = cfg(), v = Number(c.minWithdrawUsdPrem); return (wdIsPrem() && isFinite(v) && v>0) ? v : c.minWithdrawUsd; }
+function maxUsd(){ const c = cfg(), v = Number(c.maxWithdrawUsdPrem); return (wdIsPrem() && isFinite(v) && v>0) ? v : c.maxWithdrawUsd; }
+function minCoins(){ return Math.round(minUsd()*cfg().rate); }
+function maxCoins(){ return Math.round(maxUsd()*cfg().rate); }
 function wdInTimeWindow(){
   const c = cfg();
   if(!c.wdTimeEnabled) return true;
@@ -954,7 +959,7 @@ const FBA = {
     const blk = Array.from(new Set((wdOn ? (doc.config.blockedWithdrawCountries||[]).map(cleanCc).filter(Boolean) : []).concat(earnOff)));   // Earn OFF countries can never withdraw (enforced by Firestore rules via config/blocked)
     const lblk = loginOn ? Array.from(new Set((doc.config.blockedLoginCountries||[]).map(cleanCc).filter(Boolean))) : [];
     await commit("admin",[wUpdate("config","app",{json, unityAds: wantUnity?"ON":"OFF"},{now:["updated"]}), wUpdate("config","blocked",{list:blk, loginList:lblk},{now:["updated"]}), wUpdate("config","geo",{earnOff, is_earning_allowed_false:earnOff},{now:["updated"]}), wUpdate("config","fees",{pct:feeMap(doc.config)},{now:["updated"]}),
-      (()=>{ const c = doc.config, rate = Math.max(1, Math.round(Number(c.rate)||1500)); return wUpdate("config","wdlimits",{rate, minCoins:Math.max(1,Math.round((Number(c.minWithdrawUsd)||1.32)*rate)), maxCoins:Math.max(1,Math.round((Number(c.maxWithdrawUsd)||10)*rate)), usdToInr:Math.max(1,Number(c.usdToInr)||83)},{now:["updated"]}); })(),
+      (()=>{ const c = doc.config, rate = Math.max(1, Math.round(Number(c.rate)||1500)); return wUpdate("config","wdlimits",{rate, minCoins:Math.max(1,Math.round((Number(c.minWithdrawUsd)||1.32)*rate)), maxCoins:Math.max(1,Math.round((Number(c.maxWithdrawUsd)||10)*rate)), usdToInr:Math.max(1,Number(c.usdToInr)||83), pMinCoins:Math.max(1,Math.round((Number(c.minWithdrawUsdPrem)||Number(c.minWithdrawUsd)||1.32)*rate)), pMaxCoins:Math.max(1,Math.round((Number(c.maxWithdrawUsdPrem)||Number(c.maxWithdrawUsd)||10)*rate)), prem:premList(c).slice(0,60)},{now:["updated"]}); })(),
       wUpdate("config","flags",{maintenance:doc.config.maintenanceOn===true, vpnBlock: wdOn && doc.config.vpnBlock!==false, minVer: doc.config.forceUpdateOn===true ? Math.max(0,Math.floor(Number(doc.config.minVersion)||0)) : 0},{now:["updated"]}),
       auditW("settings saved","config","maintenance="+(doc.config.maintenanceOn===true?"ON":"off")+" • force-update="+(doc.config.forceUpdateOn===true?"ON(min v"+doc.config.minVersion+")":"off")+" • blocked countries="+blk.length)]);
     return {ok:true};
@@ -3106,7 +3111,7 @@ function wallet(){
   const isINR = !isFeeOpt(window.opt);
   $("#view").innerHTML = adBox('wallet') + noticeBanner('wallet')
     + (notify?`<div class="card" style="background:linear-gradient(135deg,#0f766e,#14532d);color:#fff;text-align:center"><b>✅ ${esc(notify)}</b></div>`:"")
-    + `<div class="card" style="text-align:center"><div class="mut">Balance</div><div style="font-size:30px;font-weight:800;color:var(--gold)">🪙 ${S.coins}</div><div class="mut">${c.rate.toLocaleString()} coins = $1 • Min $${c.minWithdrawUsd} • Max $${c.maxWithdrawUsd} per withdrawal</div></div>
+    + `<div class="card" style="text-align:center"><div class="mut">Balance</div><div style="font-size:30px;font-weight:800;color:var(--gold)">🪙 ${S.coins}</div><div class="mut">${c.rate.toLocaleString()} coins = $1 • Min $${minUsd()} • Max $${maxUsd()} per withdrawal</div></div>
     <div class="card"><h3>Redeem</h3>
     <div style="margin-bottom:10px">
       <div class="mut" style="margin-bottom:4px">🌍 Aapki country (IP se automatic — badal nahi sakte)</div>
@@ -3115,18 +3120,7 @@ function wallet(){
     </div>
 
     ${!selCc?`<div class="mut" style="margin:6px 0 10px">📡 IP se country detect ho rahi hai — us ke hisaab se payment options dikhenge. <button class="chip" onclick="wdIpHint(true)">🔄 Retry</button></div>`:""}
-    ${(selCc==="IN" && (gpOn||amzOn||ppgOn))?`<div class="mut" style="margin-bottom:6px">🇮🇳 India — Gift Card / Redeem Code</div>
-    <div class="chips" style="flex-wrap:wrap;margin-bottom:12px">
-      ${gpOn?`<button class="chip ${window.opt==7?"on":""}" id="o7" onclick="setOpt(7)" style="display:flex;align-items:center;gap:5px"><span style="background:#fff;color:#01875f;font-weight:900;font-size:12px;padding:1px 6px;border-radius:4px">▶ Google Play Code</span></button>`:""}
-      ${amzOn?`<button class="chip ${window.opt==8?"on":""}" id="o8" onclick="setOpt(8)" style="display:flex;align-items:center;gap:5px"><span style="background:#232f3e;color:#ff9900;font-weight:900;font-size:12px;padding:1px 6px;border-radius:4px">Amazon Gift Card</span></button>`:""}
-      ${ppgOn?`<button class="chip ${window.opt==9?"on":""}" id="o9" onclick="setOpt(9)" style="display:flex;align-items:center;gap:5px"><span style="background:#5f259f;color:#fff;font-weight:900;font-size:12px;padding:1px 6px;border-radius:4px">Phone<span style="color:#ffe082">Pe</span> Gift Card</span></button>`:""}
-    </div>
-    <div class="mut" style="margin:-6px 0 10px">Code aapke email par bheja jayega.</div>`:""}
-    ${(selCc && selCc!=="IN" && enabledOpts.length)?`<div class="mut" style="margin-bottom:6px">🌍 Global</div>
-    <div class="chips" style="flex-wrap:wrap">
-      ${paypalOn?`<button class="chip ${window.opt==2?"on":""}" id="o2" onclick="setOpt(2)" style="display:flex;align-items:center;gap:5px"><span style="background:#003087;color:#fff;font-weight:900;font-style:italic;font-size:12px;padding:1px 5px;border-radius:4px">Pay<span style="color:#009cde">Pal</span></span> (Processing Fee ${appliedPct('PayPal')}%)</button>`:""}
-      ${c.bybitEnabled!==false?`<button class="chip ${window.opt==6?"on":""}" id="o6" onclick="setOpt(6)" style="display:flex;align-items:center;gap:5px"><span style="background:#0B0E11;color:#F7A600;font-weight:900;font-size:12px;padding:1px 6px;border-radius:4px">Bybit</span> (Processing Fee ${appliedPct('Bybit')}%)</button>`:""}
-    </div>`:""}
+    ${selCc && enabledOpts.length ? wdCards(selCc, enabledOpts) : ""}
     ${selCc && !enabledOpts.length?`<div class="mut" style="margin:6px 0">Is country ke liye abhi koi payment method ON nahi hai.</div>`:""}
     <input id="wa" ${enabledOpts.length?"":"disabled"} placeholder="${({0:"—",1:"UPI ID (name@upi)",2:"PayPal Email",3:"Paytm Number / UPI ID",4:"PhonePe Number / UPI ID",5:"Binance Pay ID / Email",6:"Bybit UID / Email",7:"Email (Google Play code yahan milega)",8:"Email (Amazon gift card yahan milega)",9:"Email (PhonePe gift card yahan milega)"})[window.opt]}">
     <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">${presets.map(d=>{
@@ -3145,14 +3139,32 @@ function wallet(){
 function wdOptsFor(cc){
   const c = cfg(), on = {7:c.googleplayEnabled!==false, 8:c.amazonEnabled!==false, 9:c.phonepegiftEnabled!==false, 2:c.paypalEnabled!==false, 5:c.binanceEnabled!==false, 6:c.bybitEnabled!==false};
   if(!cc) return [];
-  return (cc==="IN" ? [7,8,9] : [2,6]).filter(o=>on[o]);
+  return (cc==="IN" ? [7,8,9] : [2,5,6,7,8]).filter(o=>on[o]);
 }
 
+const WD_CARD = {
+  7:{n:"Google Play", sub:"Gift Code", ico:"▶", bg:"#ffffff", fg:"#01875f"},
+  8:{n:"Amazon", sub:"Gift Card", ico:"a", bg:"#232f3e", fg:"#ff9900"},
+  9:{n:"PhonePe", sub:"Gift Card", ico:"₱", bg:"#5f259f", fg:"#ffffff"},
+  2:{n:"PayPal", sub:"USD", ico:"P", bg:"#003087", fg:"#009cde"},
+  5:{n:"Binance", sub:"USDT", ico:"◆", bg:"#1e2329", fg:"#f0b90b"},
+  6:{n:"Bybit", sub:"USDT", ico:"B", bg:"#0B0E11", fg:"#F7A600"}
+};
+function wdCards(cc, opts){
+  const c = cfg(), inr = cc==="IN", mn = minUsd();
+  const head = inr ? "🇮🇳 India — Gift Card / Redeem Code" : "🌍 Redeem Rewards";
+  const cards = opts.map(o=>{
+    const d = WD_CARD[o], m = WD_METHOD[o], fee = appliedPct(m);
+    const minTxt = (inr && IN_METHODS.indexOf(m)>=0) ? "Min ₹"+Math.round(mn*c.usdToInr).toLocaleString("en-IN") : ((o===5||o===6)?"Min USDT ":"Min $")+mn;
+    return `<button class="rwc ${window.opt==o?"on":""}" id="o${o}" onclick="setOpt(${o})"><span class="rwi" style="background:${d.bg};color:${d.fg}">${d.ico}</span><b>${d.n}</b><span class="mut">${d.sub}</span><span class="rwm">${minTxt}${fee>0?" • Fee "+fee+"%":""}</span></button>`;
+  }).join("");
+  return `<div class="mut" style="margin-bottom:6px">${head}</div><div class="rwg">${cards}</div>${inr?`<div class="mut" style="margin:-4px 0 10px">Code aapke email par bheja jayega.</div>`:""}`;
+}
 function wdHistory(){
   return S.wd.length?S.wd.slice().reverse().map(w=>{
       const badge = {PENDING:["⏳ Pending","#8a93a8"],APPROVED:["✔️ Approved","#38bdf8"],SUCCESS:["✅ Success","#1fa971"],REJECTED:["❌ Rejected","#ff5c5c"]}[w.status]||["",w.status];
       const inr = usd => Math.round(parseFloat(usd)*cfg().usdToInr).toLocaleString("en-IN");
-      const mainLine = !isFeeMethod(w.method)
+      const mainLine = !isFeeMethod(w.method, w.country)
         ? `${esc(w.method)} • ₹${inr(w.net)} net <span class="mut">(req ₹${inr(w.requested)}${parseFloat(w.tds)>0?`, Fee ${w.pct!=null?w.pct:tdsPctForMethod(w.method)}%: -₹${inr(w.tds)}`:""})</span>`
         : `${esc(w.method)} • ${isUsdtMethod(w.method)?"USDT ":"$"}${w.net} net <span class="mut">(req ${isUsdtMethod(w.method)?"USDT ":"$"}${w.requested}, Fee ${w.pct!=null?w.pct:feePctForMethod(w.method)}%: -${isUsdtMethod(w.method)?"USDT ":"$"}${(parseFloat(w.requested)-parseFloat(w.net)).toFixed(2)})</span>`;
       return `<div class="lb" style="flex-wrap:wrap"><span class="n">${mainLine}${w.country?`<br><span class="mut">🌍 ${esc(w.country)}${w.autoReject?" • "+esc(w.autoReject):""}</span>`:""}${w.utr?`<br><span class="mut">UTR: ${esc(w.utr)}</span>`:""}<br><span class="mut">📅 ${esc(new Date(w.created||Date.now()).toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}))} • ${w.status==="REJECTED"?"Coins wapas mil gaye":"🪙 "+esc(w.coins)+" coins"}</span></span><span style="color:${badge[1]};font-weight:700;font-size:12px">${badge[0]}</span></div>`;
@@ -3215,17 +3227,17 @@ function deviceId(){
     return v.length>=16 ? v : v+"0000000000000000";
   }catch(e){ return ""; }
 }
-function wdCurrency(m){ return m==="PayPal" ? "USD" : isUsdtMethod(m) ? "USDT" : "INR"; }
+function wdCurrency(m, cc){ return (m==="PayPal" || (!!cc && cc!=="IN" && IN_METHODS.indexOf(m)>=0)) ? "USD" : isUsdtMethod(m) ? "USDT" : "INR"; }
 async function sendWdToSheet(w){
   if(!SHEETS_URL || w.sheetSent || w.refunded || w.sending) return;
   w.sending = true;   // one submit in flight per request (a parallel retry would be rejected by the server as a duplicate and wrongly refund)
   try{
     // Sheet amounts are in the PAYOUT currency: INR for India gift cards (what the user saw), USD for PayPal, USDT for Binance/Bybit.
-    const mult = isFeeMethod(w.method) ? 1 : (w.inrRate || cfg().usdToInr || 83);
-    const fx = v => { const n = parseFloat(v)*mult; return isFeeMethod(w.method) ? +n.toFixed(2) : Math.round(n); };
+    const mult = isFeeMethod(w.method, w.country) ? 1 : (w.inrRate || cfg().usdToInr || 83);
+    const fx = v => { const n = parseFloat(v)*mult; return isFeeMethod(w.method, w.country) ? +n.toFixed(2) : Math.round(n); };
     await userSyncNow();   // server must know this account (and its balance) before a payout request
     const d = await sheetsCall({action:"submit", device:deviceId(), requestId:w.id, mobile:w.mobile, country:w.country||"", ipCountry:w.ipCountry||"", risk:w.risk||"", to:w.to, method:w.method,
-      coins:w.coins, appVer:APP_VER, pct:w.pct, net:fx(w.net), gross:fx(w.requested||w.net), currency:wdCurrency(w.method), name:S.name||""});
+      coins:w.coins, appVer:APP_VER, pct:w.pct, net:fx(w.net), gross:fx(w.requested||w.net), currency:wdCurrency(w.method, w.country), name:S.name||""});
     if(d && d.ok){ w.sheetSent = true; w.sheetError = ""; }
     else if(d && d.permanent && !w.sheetSent){ w.sheetError = d.error||"rejected"; w.status = "REJECTED"; wdRefund(w); }
     else w.sheetError = (d && d.error) || "server error";
@@ -3317,8 +3329,8 @@ async function withdraw(){
   if((S.wdCountToday||0) >= maxPerDay) return toast(`Din mein sirf ${maxPerDay} withdrawal${maxPerDay>1?"s":""} allowed hai${maxPerDay>1?"n":""}`, false);
   if(!wdDayOk()) return toast("Aaj ke din withdrawal allowed nahi hai", false);
   if(!wdInTimeWindow()) return toast(`Withdrawal sirf ${wdWindowFmt()} ke beech allowed hai`, false);
-  if(!c || c < minCoins()) return toast(`Minimum $${cfg().minWithdrawUsd} (${minCoins()} coins) chahiye`, false);
-  if(c > maxCoins()) return toast(`Maximum $${cfg().maxWithdrawUsd} (${maxCoins()} coins) ek baar mein`, false);
+  if(!c || c < minCoins()) return toast(`Minimum $${minUsd()} (${minCoins()} coins) chahiye`, false);
+  if(c > maxCoins()) return toast(`Maximum $${maxUsd()} (${maxCoins()} coins) ek baar mein`, false);
   if(c > S.coins) return toast("Itne coins nahi hain", false);
   // ---- 1) country is taken from the IP automatically (no manual selection) ----
   window.wdBusy = true; toast("Country (IP se) verify ho rahi hai...");
