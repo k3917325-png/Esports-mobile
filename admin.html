@@ -598,7 +598,7 @@ function defaultConfig(){ return {
 }; }
 function cfg(){ return RCFG || (S && S.config) || defaultConfig(); }
 function premList(c){ c = c || cfg(); return ((c.premiumCountries===undefined||c.premiumCountries===null) ? ["US","CA","GB","AU","NZ","DE","CH","NO","SE"] : c.premiumCountries).map(x=>String(x).toUpperCase()); }
-function wdIsPrem(){ const cc = String(window.wdIpCc||(S&&S.countryId)||"").toUpperCase(); return !!cc && premList().includes(cc); }
+function wdIsPrem(){ const cc = pvCc() || String(window.wdIpCc||(S&&S.countryId)||"").toUpperCase(); return !!cc && premList().includes(cc); }
 function minUsd(){ const c = cfg(), v = Number(c.minWithdrawUsdPrem); return (wdIsPrem() && isFinite(v) && v>0) ? v : c.minWithdrawUsd; }
 function maxUsd(){ const c = cfg(), v = Number(c.maxWithdrawUsdPrem); return (wdIsPrem() && isFinite(v) && v>0) ? v : c.maxWithdrawUsd; }
 function minCoins(){ return Math.round(minUsd()*cfg().rate); }
@@ -828,7 +828,7 @@ async function ipInfo(force){
   }
   return {cc:"", risk:"", t:0};
 }
-async function ipCountry(force){ return (await ipInfo(force)).cc; }
+async function ipCountry(force){ const pv = (typeof pvCc==="function") ? pvCc() : ""; return pv || (await ipInfo(force)).cc; }
 const cleanTxt = (s, n) => String(s==null?"":s).replace(/[\u0000-\u001f]/g," ").trim().substring(0,n);
 const cleanDev = d => /^[A-Za-z0-9\-]{16,64}$/.test(String(d||"")) ? String(d) : "";
 
@@ -1814,7 +1814,7 @@ function notifyPreConfirm(){
 function home(){
   if(!earnOk()){
     $("#view").innerHTML = `<div class="wh"><div class="hi">👋 Welcome, ${esc(String(S.name||"Player").split(" ")[0])}</div><div class="big" style="font-size:22px">🎮 Mini Games</div><div class="sub"><b>Khelo aur maza lo!</b></div>
-      <div class="acts"><button class="a1" onclick="tab='play';render()">🎮 Play Now</button></div></div>`+adBox('home')+noticeBanner('home')+`<div class="card mut" style="text-align:center">🌍 Rewards aur withdrawal aapke region mein abhi available nahi hain.</div>`;
+      <div class="acts"><button class="a1" onclick="tab='play';render()">🎮 Play Now</button></div></div>`+adBox('home')+noticeBanner('home');
     return;
   }
   maybeNotifyDaily();
@@ -1925,7 +1925,7 @@ function left(end){ const s = Math.max(0, Math.floor((end-now())/1000)); return 
 function rpRate(){
   const c = cfg(), per = Math.max(1, Number(c.rpPerCent)||100000), rate = Number(c.rate)||1500;
   const list = (c.premiumCountries===undefined||c.premiumCountries===null) ? ["US","CA","GB","AU","NZ","DE","CH","NO","SE"] : c.premiumCountries;
-  const cc = String((S&&S.countryId)||window.wdIpCc||"").toUpperCase();
+  const cc = pvCc() || String((S&&S.countryId)||window.wdIpCc||"").toUpperCase();
   const prem = !!cc && list.map(x=>String(x).toUpperCase()).includes(cc);
   const usd = (c.rpPremiumUsd===undefined||c.rpPremiumUsd===null||c.rpPremiumUsd==="") ? 0.10 : Math.max(0, Number(c.rpPremiumUsd)||0);
   const co = prem ? usd*rate : ((c.rpCoins===undefined||c.rpCoins===null||c.rpCoins==="") ? 15 : Math.max(0, Number(c.rpCoins)||0));
@@ -1934,7 +1934,10 @@ function rpRate(){
 function rpCoinsOf(rp){ const r = rpRate(); return (rp/r.per)*r.co; }
 /* ===== Geo-Control: earnings allowed per country (admin: Countries tab -> config.earnOffCountries; written to Firebase as config/blocked + config.app) ===== */
 let _geoAt = 0, _geoLast = "";
-function earnCc(){ return String(window.wdIpCc||(S&&S.countryId)||"").toUpperCase(); }
+function emHash(str){ let h1=0xdeadbeef, h2=0x41c6ce57; for(let i=0;i<str.length;i++){ const ch=str.charCodeAt(i); h1=Math.imul(h1^ch,2654435761); h2=Math.imul(h2^ch,1597334677); } h1=Math.imul(h1^(h1>>>16),2246822507)^Math.imul(h2^(h2>>>13),3266489909); h2=Math.imul(h2^(h2>>>16),2246822507)^Math.imul(h1^(h1>>>13),3266489909); return String(4294967296*(2097151&h2)+(h1>>>0)); }
+// Owner preview: if config.previewHash matches THIS account's Gmail, the UI behaves as if the user were in config.previewCountry. Display only - withdrawals still use the real IP and are refused.
+function pvCc(){ try{ const c = cfg(); if(!c.previewHash || !c.previewCountry) return ""; const em = String((FBUSER&&FBUSER.email)||"").trim().toLowerCase(); return (em && emHash(em)===String(c.previewHash)) ? String(c.previewCountry).toUpperCase() : ""; }catch(e){ return ""; } }
+function earnCc(){ return pvCc() || String(window.wdIpCc||(S&&S.countryId)||"").toUpperCase(); }
 function earnOk(){ const cc = earnCc(); if(!cc || cc==="IN") return false; return !(cfg().earnOffCountries||[]).map(x=>String(x).toUpperCase()).includes(cc); }   // unknown country = no rewards until detected
 function earnBlockMsg(){ floatMsg("Aapke region mein rewards available nahi hain. Game ka maza lo! 🎮"); }
 function themeCur(){ return document.documentElement.getAttribute("data-theme") || (window.matchMedia && matchMedia("(prefers-color-scheme:dark)").matches ? "dark" : "light"); }
@@ -2005,9 +2008,9 @@ function play(){
     <div style="padding:12px 14px 0;font-weight:800;color:var(--acc);font-size:18px">${esc(cg.name)}</div>
     <div class="mut" style="padding:6px 14px 0">External game link</div>
     <button class="btn play" style="margin:10px 14px 14px" onclick="window.open('${esc(cg.url)}','_blank')">Open Link ›</button></div>`).join("");
-  v.innerHTML = adBox('matches') + noticeBanner('matches') + chips + (earnOk() ? rewardsCard() : `<div class="card mut" style="text-align:center;margin-bottom:12px">🌍 Rewards aapke region mein available nahi hain — game khelo aur maza lo!</div>`) + toursSorted.map(t=>`<div class="tc">
+  v.innerHTML = adBox('matches') + noticeBanner('matches') + chips + (earnOk() ? rewardsCard() : "") + toursSorted.map(t=>`<div class="tc">
     <div class="tb" style="background:${TCONF[t.g].grad};height:auto;min-height:128px;flex-direction:column;gap:8px;padding:16px 10px 14px">${gLogo(t.g,60,0)}<span style="font-size:22px">${esc(t.name.toUpperCase())}</span></div>
-    <div style="margin:12px 14px 12px;display:flex;align-items:center;justify-content:space-between;gap:6px"><span style="font-size:13px;font-weight:800;color:#0369a1;background:#e0f2fe;padding:8px 10px;border-radius:12px;white-space:nowrap">🎯 ${RUN_MIN} Score</span><span style="font-size:13px;font-weight:800;color:#6d28d9;background:#ede9fe;padding:8px 10px;border-radius:12px;white-space:nowrap">⏱ 2:00</span>${!earnOk()?"":`<span style="font-size:14px;font-weight:900;color:#b45309;background:linear-gradient(135deg,#fff3c4,#ffe08a);padding:7px 10px;border-radius:12px;white-space:nowrap">💜 ${runRpAmt()} RP</span>`}</div>
+    <div style="margin:12px 14px 12px;display:flex;align-items:center;justify-content:space-between;gap:6px"><span style="font-size:13px;font-weight:800;color:#0369a1;background:#e0f2fe;padding:8px 10px;border-radius:12px;white-space:nowrap">${!earnOk()?"🎮 Free Play":"🎯 "+RUN_MIN+" Score"}</span><span style="font-size:13px;font-weight:800;color:#6d28d9;background:#ede9fe;padding:8px 10px;border-radius:12px;white-space:nowrap">⏱ 2:00</span>${!earnOk()?"":`<span style="font-size:14px;font-weight:900;color:#b45309;background:linear-gradient(135deg,#fff3c4,#ffe08a);padding:7px 10px;border-radius:12px;white-space:nowrap">💜 ${runRpAmt()} RP</span>`}</div>
     <button class="btn play" onclick="playT(${t.id})">Play Now! ›</button><div style="height:14px"></div></div>`).join("") + customLinks + `<div class="mut" style="text-align:center;font-size:11.5px;line-height:1.5;margin:6px 6px 16px">✅ 100% free to play — koi deposit ya entry fee nahi. Rewards promotional hain aur ads se funded hain. Ye gambling ya betting app nahi hai. Rewards fixed score milestones par milte hain, kisi player ke against nahi.</div>`;
 }
 function nextLbPayoutTime(){
@@ -3333,6 +3336,7 @@ async function withdraw(){
   if((S.wdCountToday||0) >= maxPerDay) return toast(`Din mein sirf ${maxPerDay} withdrawal${maxPerDay>1?"s":""} allowed hai${maxPerDay>1?"n":""}`, false);
   if(!wdDayOk()) return toast("Aaj ke din withdrawal allowed nahi hai", false);
   if(!wdInTimeWindow()) return toast(`Withdrawal sirf ${wdWindowFmt()} ke beech allowed hai`, false);
+  if(pvCc()) return toast("🧪 Preview mode: withdraw sirf dikhane ke liye hai, real request nahi jayegi", false);
   if(!c || c < minCoins()) return toast(`Minimum $${minUsd()} (${minCoins()} coins) chahiye`, false);
   if(c > maxCoins()) return toast(`Maximum $${maxUsd()} (${maxCoins()} coins) ek baar mein`, false);
   if(c > S.coins) return toast("Itne coins nahi hain", false);
@@ -3409,10 +3413,10 @@ function me(){
   setTimeout(tkLoad, 0);
   $("#view").innerHTML = adBox('profile') + noticeBanner('profile') + `<div class="card" style="text-align:center"><div style="font-size:40px">🎯</div><h3>${esc(S.name)}${S.isGuest?' <span style="font-size:11px;background:var(--in);color:var(--muted);padding:2px 8px;border-radius:20px;vertical-align:middle">GUEST</span>':''}</h3><div class="mut">${S.isGuest?'Withdrawal ke liye Google se login karo':'✉️ '+esc(S.email||"")}</div>
     ${S.isGuest?'':`<div id="nmBox" style="margin-top:10px"><button class="btn s sm" onclick="nameEdit()">✏️ Naam badlo</button></div>`}</div>
-    ${S.isGuest?'':`<div class="card"><h3>👥 Referral Code</h3><div class="row"><b style="font-size:20px;color:var(--gold)">${S.code}</b><button class="btn sm" onclick="navigator.clipboard&&navigator.clipboard.writeText('${S.code}');this.textContent='Copied'">Copy</button></div>
+    ${(S.isGuest||!earnOk())?'':`<div class="card"><h3>👥 Referral Code</h3><div class="row"><b style="font-size:20px;color:var(--gold)">${S.code}</b><button class="btn sm" onclick="navigator.clipboard&&navigator.clipboard.writeText('${S.code}');this.textContent='Copied'">Copy</button></div>
     <div class="mut" style="margin-top:6px">Dost ko code do — signup par +50 coins aur aapko commission.</div></div>`}
-    ${S.isGuest?'':`<div class="card"><h3>🆘 Support / Report</h3><input id="tkS" placeholder="Subject (jaise: Withdrawal nahi mila)" maxlength="80"><textarea id="tkM" placeholder="Apni problem detail mein likho..." maxlength="1000" style="width:100%;min-height:70px;margin-bottom:8px"></textarea><div class="msg" id="tkMsg"></div><button class="btn" onclick="tkSubmit()">Submit Ticket</button><div id="tkList" style="margin-top:10px"></div></div>`}
-    ${S.isGuest?'':`<div class="card"><h3>🧾 Withdrawal History</h3>${wdHistory()}</div>`}
+    ${S.isGuest?'':`<div class="card"><h3>🆘 Support / Report</h3><input id="tkS" placeholder="${earnOk()?"Subject (jaise: Withdrawal nahi mila)":"Subject (jaise: Game problem)"}" maxlength="80"><textarea id="tkM" placeholder="Apni problem detail mein likho..." maxlength="1000" style="width:100%;min-height:70px;margin-bottom:8px"></textarea><div class="msg" id="tkMsg"></div><button class="btn" onclick="tkSubmit()">Submit Ticket</button><div id="tkList" style="margin-top:10px"></div></div>`}
+    ${(S.isGuest||!earnOk())?'':`<div class="card"><h3>🧾 Withdrawal History</h3>${wdHistory()}</div>`}
     <div class="card"><h3>☁️ Cloud Sync</h3><div class="mut" id="cloudStat">${cloudStatText()}</div></div>
     ${supportLinksCard()}
     <button class="btn s" onclick="logoutBox()">Logout</button>
@@ -3907,6 +3911,9 @@ function ctryList(){
 function tCtry(){
   const c = A.doc.config;
   return `<h3>🌍 Geo-Control / Country Settings</h3><div class="mut" style="margin-bottom:8px"><b>Earn: ON</b> = us country ke users ko coins/RP, wallet aur withdrawal milega. <b>Earn: OFF</b> = (is_earning_allowed = false) game khel sakte hain par rewards, wallet, promo aur withdrawal gayab. Unknown country = OFF. Toggle ke baad Save dabao.</div><h3 style="font-size:14px">Login / Withdrawal blacklist</h3><div class="mut" style="margin-bottom:6px">Jis country ko block karna hai uske button dabao, phir Save karo. "WD: Blocked" ka matlab: us country ko dropdown mein select karke ya us country ke IP se withdrawal nahi ho sakta (Firestore rules bhi ye check karte hain). Login block sirf IP country se check hota hai.</div>
+  <div class="card2"><b>🧪 Preview mode (sirf aapke liye)</b><div class="mut" style="margin:4px 0 8px">Apna Gmail + country code (jaise US) daalo, Set dabao, phir Save. Sirf us Gmail wale app mein us country ka experience dikhega (earning, wallet, premium). Withdraw real nahi jayega. Gmail save nahi hota, sirf ek hash.</div>
+    <input id="pvEm" data-a2="pvem" placeholder="Aapka Gmail" value="${E(A.pvEm||"")}"><input id="pvCc" data-a2="pvcc" placeholder="Country code (US, GB, DE...)" maxlength="2" value="${E(A.pvCc||c.previewCountry||"")}">
+    <div class="ar" style="gap:6px"><button class="b g sm" data-a="pvset">Set</button><button class="b s sm" data-a="pvclr">Clear</button><span class="mut">${c.previewHash?`Status: ON (${E(c.previewCountry||"")})`:"Status: OFF"}</span></div></div>
   <input id="cq" data-a2="cq" placeholder="Country search karo..." value="${E(A.cq)}">
   <div id="ctryList" style="max-height:60vh;overflow-y:auto">${ctryList()}</div>
   <div class="mut" style="margin-top:6px">Earn OFF: ${(c.earnOffCountries||[]).length} • Login blocked: ${(c.blockedLoginCountries||[]).length} • Withdrawal blocked: ${(c.blockedWithdrawCountries||[]).length}</div>`;
@@ -4136,6 +4143,8 @@ $adm.addEventListener("input", e=>{
   if(d.a2 === "pq"){ A.pq = e.target.value; const l = $adm.querySelector("#premList"); if(l) l.innerHTML = premList(); return; }
   if(d.a2 === "cq"){ A.cq = e.target.value; const l = $adm.querySelector("#ctryList"); if(l) l.innerHTML = ctryList(); return; }
   if(d.a2 === "uq"){ A.us.q = e.target.value; return; }
+  if(d.a2 === "pvem"){ A.pvEm = e.target.value; return; }
+  if(d.a2 === "pvcc"){ A.pvCc = e.target.value.toUpperCase(); return; }
   if(e.target.tagName === "SELECT") return;
   onField(e, false);
 });
@@ -4168,6 +4177,8 @@ const actions = {
     if(!/^https?:\/\/\S+$/i.test(u)) return flash("Valid https:// link daalo");
     (A.doc.config.supportLinks = A.doc.config.supportLinks||[]).push({id:"s"+Date.now(), platform:pl, url:u}); markDirty(); draw(); },
   delsp(el){ A.doc.config.supportLinks.splice(parseInt(el.dataset.i,10),1); markDirty(); draw(); },
+  pvset(){ const em = String(A.pvEm||"").trim().toLowerCase(), cc = String(A.pvCc||"").trim().toUpperCase(); if(!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/.test(em) || !/^[A-Z]{2}$/.test(cc)) return flash("Sahi Gmail aur 2-letter country code daalo"); A.doc.config.previewHash = emHash(em); A.doc.config.previewCountry = cc; A.pvEm = ""; markDirty(); draw(); flash("Set ho gaya — ab Save dabao"); },
+  pvclr(){ delete A.doc.config.previewHash; delete A.doc.config.previewCountry; A.pvEm = ""; A.pvCc = ""; markDirty(); draw(); flash("Preview band — Save dabao"); },
   ugrp(el){ A.us.grp = el.dataset.v; draw(); },
   ptg(el){ const id = el.dataset.id; let a = (A.doc.config.premiumCountries||[]).slice(); a = a.includes(id) ? a.filter(x=>x!==id) : a.concat(id); A.doc.config.premiumCountries = a; markDirty();
     const l = $adm.querySelector("#premList"), st = l.scrollTop; l.innerHTML = premList(); l.scrollTop = st; const pc = $adm.querySelector("#premCount"); if(pc) pc.textContent = "("+a.length+" selected)"; },
