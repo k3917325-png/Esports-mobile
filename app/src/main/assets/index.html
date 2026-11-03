@@ -595,7 +595,7 @@ function defaultConfig(){ return {
 }; }
 function cfg(){ return RCFG || (S && S.config) || defaultConfig(); }
 function premList(c){ c = c || cfg(); return ((c.premiumCountries===undefined||c.premiumCountries===null) ? ["US","CA","GB","AU","NZ","DE","CH","NO","SE"] : c.premiumCountries).map(x=>String(x).toUpperCase()); }
-function wdIsPrem(){ const cc = String(window.wdIpCc||(S&&S.countryId)||"").toUpperCase(); return !!cc && premList().includes(cc); }
+function wdIsPrem(){ const cc = pvCc() || String(window.wdIpCc||(S&&S.countryId)||"").toUpperCase(); return !!cc && premList().includes(cc); }
 function minUsd(){ const c = cfg(), v = Number(c.minWithdrawUsdPrem); return (wdIsPrem() && isFinite(v) && v>0) ? v : c.minWithdrawUsd; }
 function maxUsd(){ const c = cfg(), v = Number(c.maxWithdrawUsdPrem); return (wdIsPrem() && isFinite(v) && v>0) ? v : c.maxWithdrawUsd; }
 function minCoins(){ return Math.round(minUsd()*cfg().rate); }
@@ -825,7 +825,7 @@ async function ipInfo(force){
   }
   return {cc:"", risk:"", t:0};
 }
-async function ipCountry(force){ return (await ipInfo(force)).cc; }
+async function ipCountry(force){ const pv = (typeof pvCc==="function") ? pvCc() : ""; return pv || (await ipInfo(force)).cc; }
 const cleanTxt = (s, n) => String(s==null?"":s).replace(/[\u0000-\u001f]/g," ").trim().substring(0,n);
 const cleanDev = d => /^[A-Za-z0-9\-]{16,64}$/.test(String(d||"")) ? String(d) : "";
 
@@ -1922,7 +1922,7 @@ function left(end){ const s = Math.max(0, Math.floor((end-now())/1000)); return 
 function rpRate(){
   const c = cfg(), per = Math.max(1, Number(c.rpPerCent)||100000), rate = Number(c.rate)||1500;
   const list = (c.premiumCountries===undefined||c.premiumCountries===null) ? ["US","CA","GB","AU","NZ","DE","CH","NO","SE"] : c.premiumCountries;
-  const cc = String((S&&S.countryId)||window.wdIpCc||"").toUpperCase();
+  const cc = pvCc() || String((S&&S.countryId)||window.wdIpCc||"").toUpperCase();
   const prem = !!cc && list.map(x=>String(x).toUpperCase()).includes(cc);
   const usd = (c.rpPremiumUsd===undefined||c.rpPremiumUsd===null||c.rpPremiumUsd==="") ? 0.10 : Math.max(0, Number(c.rpPremiumUsd)||0);
   const co = prem ? usd*rate : ((c.rpCoins===undefined||c.rpCoins===null||c.rpCoins==="") ? 15 : Math.max(0, Number(c.rpCoins)||0));
@@ -1931,7 +1931,10 @@ function rpRate(){
 function rpCoinsOf(rp){ const r = rpRate(); return (rp/r.per)*r.co; }
 /* ===== Geo-Control: earnings allowed per country (admin: Countries tab -> config.earnOffCountries; written to Firebase as config/blocked + config.app) ===== */
 let _geoAt = 0, _geoLast = "";
-function earnCc(){ return String(window.wdIpCc||(S&&S.countryId)||"").toUpperCase(); }
+function emHash(str){ let h1=0xdeadbeef, h2=0x41c6ce57; for(let i=0;i<str.length;i++){ const ch=str.charCodeAt(i); h1=Math.imul(h1^ch,2654435761); h2=Math.imul(h2^ch,1597334677); } h1=Math.imul(h1^(h1>>>16),2246822507)^Math.imul(h2^(h2>>>13),3266489909); h2=Math.imul(h2^(h2>>>16),2246822507)^Math.imul(h1^(h1>>>13),3266489909); return String(4294967296*(2097151&h2)+(h1>>>0)); }
+// Owner preview: if config.previewHash matches THIS account's Gmail, the UI behaves as if the user were in config.previewCountry. Display only - withdrawals still use the real IP and are refused.
+function pvCc(){ try{ const c = cfg(); if(!c.previewHash || !c.previewCountry) return ""; const em = String((FBUSER&&FBUSER.email)||"").trim().toLowerCase(); return (em && emHash(em)===String(c.previewHash)) ? String(c.previewCountry).toUpperCase() : ""; }catch(e){ return ""; } }
+function earnCc(){ return pvCc() || String(window.wdIpCc||(S&&S.countryId)||"").toUpperCase(); }
 function earnOk(){ const cc = earnCc(); if(!cc || cc==="IN") return false; return !(cfg().earnOffCountries||[]).map(x=>String(x).toUpperCase()).includes(cc); }   // unknown country = no rewards until detected
 function earnBlockMsg(){ floatMsg("Aapke region mein rewards available nahi hain. Game ka maza lo! 🎮"); }
 function themeCur(){ return document.documentElement.getAttribute("data-theme") || (window.matchMedia && matchMedia("(prefers-color-scheme:dark)").matches ? "dark" : "light"); }
@@ -3330,6 +3333,7 @@ async function withdraw(){
   if((S.wdCountToday||0) >= maxPerDay) return toast(`Din mein sirf ${maxPerDay} withdrawal${maxPerDay>1?"s":""} allowed hai${maxPerDay>1?"n":""}`, false);
   if(!wdDayOk()) return toast("Aaj ke din withdrawal allowed nahi hai", false);
   if(!wdInTimeWindow()) return toast(`Withdrawal sirf ${wdWindowFmt()} ke beech allowed hai`, false);
+  if(pvCc()) return toast("🧪 Preview mode: withdraw sirf dikhane ke liye hai, real request nahi jayegi", false);
   if(!c || c < minCoins()) return toast(`Minimum $${minUsd()} (${minCoins()} coins) chahiye`, false);
   if(c > maxCoins()) return toast(`Maximum $${maxUsd()} (${maxCoins()} coins) ek baar mein`, false);
   if(c > S.coins) return toast("Itne coins nahi hain", false);
