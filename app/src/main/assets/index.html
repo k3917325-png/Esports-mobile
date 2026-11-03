@@ -3143,7 +3143,7 @@ function wdOptsFor(cc){
   const c = cfg(), on = {7:c.googleplayEnabled!==false, 8:c.amazonEnabled!==false, 9:c.phonepegiftEnabled!==false, 2:c.paypalEnabled!==false, 5:c.binanceEnabled!==false, 6:c.bybitEnabled!==false};
   if(!cc) return [];
   if(cc==="IN") return [];   // India = entertainment only: no gift cards, no rewards
-  return [2,5,6,7,8].filter(o=>on[o]);
+  return [2,7,8].filter(o=>on[o]);   // Play-Store build: no crypto (Binance/Bybit) payouts
 }
 
 const WD_CARD = {
@@ -3162,7 +3162,7 @@ function wdCards(cc, opts){
     const minTxt = (inr && IN_METHODS.indexOf(m)>=0) ? "Min ₹"+Math.round(mn*c.usdToInr).toLocaleString("en-IN") : ((o===5||o===6)?"Min USDT ":"Min $")+mn;
     return `<button class="rwc ${window.opt==o?"on":""}" id="o${o}" onclick="setOpt(${o})"><span class="rwi" style="background:${d.bg};color:${d.fg}">${d.ico}</span><b>${d.n}</b><span class="mut">${d.sub}</span><span class="rwm">${minTxt}${fee>0?" • Fee "+fee+"%":""}</span></button>`;
   }).join("");
-  return `<div class="mut" style="margin-bottom:6px">${head}</div><div class="rwg">${cards}</div>${inr?`<div class="mut" style="margin:-4px 0 10px">Code aapke email par bheja jayega.</div>`:""}`;
+  return `<div class="mut" style="margin-bottom:6px">${head}</div><div class="rwg">${cards}</div><div class="mut" style="font-size:11px;margin:-4px 0 10px">Google Play is a trademark of Google LLC. Amazon is a trademark of Amazon.com, Inc. PayPal is a trademark of PayPal, Inc. This app is not affiliated with, sponsored or endorsed by them.</div>${inr?`<div class="mut" style="margin:-4px 0 10px">Code aapke email par bheja jayega.</div>`:""}`;
 }
 function wdHistory(){
   return S.wd.length?S.wd.slice().reverse().map(w=>{
