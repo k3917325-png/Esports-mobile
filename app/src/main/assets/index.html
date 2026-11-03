@@ -1811,7 +1811,7 @@ function notifyPreConfirm(){
 function home(){
   if(!earnOk()){
     $("#view").innerHTML = `<div class="wh"><div class="hi">👋 Welcome, ${esc(String(S.name||"Player").split(" ")[0])}</div><div class="big" style="font-size:22px">🎮 Mini Games</div><div class="sub"><b>Khelo aur maza lo!</b></div>
-      <div class="acts"><button class="a1" onclick="tab='play';render()">🎮 Play Now</button></div></div>`+adBox('home')+noticeBanner('home')+`<div class="card mut" style="text-align:center">🌍 Rewards aur withdrawal aapke region mein abhi available nahi hain.</div>`;
+      <div class="acts"><button class="a1" onclick="tab='play';render()">🎮 Play Now</button></div></div>`+adBox('home')+noticeBanner('home');
     return;
   }
   maybeNotifyDaily();
@@ -2002,9 +2002,9 @@ function play(){
     <div style="padding:12px 14px 0;font-weight:800;color:var(--acc);font-size:18px">${esc(cg.name)}</div>
     <div class="mut" style="padding:6px 14px 0">External game link</div>
     <button class="btn play" style="margin:10px 14px 14px" onclick="window.open('${esc(cg.url)}','_blank')">Open Link ›</button></div>`).join("");
-  v.innerHTML = adBox('matches') + noticeBanner('matches') + chips + (earnOk() ? rewardsCard() : `<div class="card mut" style="text-align:center;margin-bottom:12px">🌍 Rewards aapke region mein available nahi hain — game khelo aur maza lo!</div>`) + toursSorted.map(t=>`<div class="tc">
+  v.innerHTML = adBox('matches') + noticeBanner('matches') + chips + (earnOk() ? rewardsCard() : "") + toursSorted.map(t=>`<div class="tc">
     <div class="tb" style="background:${TCONF[t.g].grad};height:auto;min-height:128px;flex-direction:column;gap:8px;padding:16px 10px 14px">${gLogo(t.g,60,0)}<span style="font-size:22px">${esc(t.name.toUpperCase())}</span></div>
-    <div style="margin:12px 14px 12px;display:flex;align-items:center;justify-content:space-between;gap:6px"><span style="font-size:13px;font-weight:800;color:#0369a1;background:#e0f2fe;padding:8px 10px;border-radius:12px;white-space:nowrap">🎯 ${RUN_MIN} Score</span><span style="font-size:13px;font-weight:800;color:#6d28d9;background:#ede9fe;padding:8px 10px;border-radius:12px;white-space:nowrap">⏱ 2:00</span>${!earnOk()?"":`<span style="font-size:14px;font-weight:900;color:#b45309;background:linear-gradient(135deg,#fff3c4,#ffe08a);padding:7px 10px;border-radius:12px;white-space:nowrap">💜 ${runRpAmt()} RP</span>`}</div>
+    <div style="margin:12px 14px 12px;display:flex;align-items:center;justify-content:space-between;gap:6px"><span style="font-size:13px;font-weight:800;color:#0369a1;background:#e0f2fe;padding:8px 10px;border-radius:12px;white-space:nowrap">${!earnOk()?"🎮 Free Play":"🎯 "+RUN_MIN+" Score"}</span><span style="font-size:13px;font-weight:800;color:#6d28d9;background:#ede9fe;padding:8px 10px;border-radius:12px;white-space:nowrap">⏱ 2:00</span>${!earnOk()?"":`<span style="font-size:14px;font-weight:900;color:#b45309;background:linear-gradient(135deg,#fff3c4,#ffe08a);padding:7px 10px;border-radius:12px;white-space:nowrap">💜 ${runRpAmt()} RP</span>`}</div>
     <button class="btn play" onclick="playT(${t.id})">Play Now! ›</button><div style="height:14px"></div></div>`).join("") + customLinks + `<div class="mut" style="text-align:center;font-size:11.5px;line-height:1.5;margin:6px 6px 16px">✅ 100% free to play — koi deposit ya entry fee nahi. Rewards promotional hain aur ads se funded hain. Ye gambling ya betting app nahi hai. Rewards fixed score milestones par milte hain, kisi player ke against nahi.</div>`;
 }
 function nextLbPayoutTime(){
@@ -3406,10 +3406,10 @@ function me(){
   setTimeout(tkLoad, 0);
   $("#view").innerHTML = adBox('profile') + noticeBanner('profile') + `<div class="card" style="text-align:center"><div style="font-size:40px">🎯</div><h3>${esc(S.name)}${S.isGuest?' <span style="font-size:11px;background:var(--in);color:var(--muted);padding:2px 8px;border-radius:20px;vertical-align:middle">GUEST</span>':''}</h3><div class="mut">${S.isGuest?'Withdrawal ke liye Google se login karo':'✉️ '+esc(S.email||"")}</div>
     ${S.isGuest?'':`<div id="nmBox" style="margin-top:10px"><button class="btn s sm" onclick="nameEdit()">✏️ Naam badlo</button></div>`}</div>
-    ${S.isGuest?'':`<div class="card"><h3>👥 Referral Code</h3><div class="row"><b style="font-size:20px;color:var(--gold)">${S.code}</b><button class="btn sm" onclick="navigator.clipboard&&navigator.clipboard.writeText('${S.code}');this.textContent='Copied'">Copy</button></div>
+    ${(S.isGuest||!earnOk())?'':`<div class="card"><h3>👥 Referral Code</h3><div class="row"><b style="font-size:20px;color:var(--gold)">${S.code}</b><button class="btn sm" onclick="navigator.clipboard&&navigator.clipboard.writeText('${S.code}');this.textContent='Copied'">Copy</button></div>
     <div class="mut" style="margin-top:6px">Dost ko code do — signup par +50 coins aur aapko commission.</div></div>`}
-    ${S.isGuest?'':`<div class="card"><h3>🆘 Support / Report</h3><input id="tkS" placeholder="Subject (jaise: Withdrawal nahi mila)" maxlength="80"><textarea id="tkM" placeholder="Apni problem detail mein likho..." maxlength="1000" style="width:100%;min-height:70px;margin-bottom:8px"></textarea><div class="msg" id="tkMsg"></div><button class="btn" onclick="tkSubmit()">Submit Ticket</button><div id="tkList" style="margin-top:10px"></div></div>`}
-    ${S.isGuest?'':`<div class="card"><h3>🧾 Withdrawal History</h3>${wdHistory()}</div>`}
+    ${S.isGuest?'':`<div class="card"><h3>🆘 Support / Report</h3><input id="tkS" placeholder="${earnOk()?"Subject (jaise: Withdrawal nahi mila)":"Subject (jaise: Game problem)"}" maxlength="80"><textarea id="tkM" placeholder="Apni problem detail mein likho..." maxlength="1000" style="width:100%;min-height:70px;margin-bottom:8px"></textarea><div class="msg" id="tkMsg"></div><button class="btn" onclick="tkSubmit()">Submit Ticket</button><div id="tkList" style="margin-top:10px"></div></div>`}
+    ${(S.isGuest||!earnOk())?'':`<div class="card"><h3>🧾 Withdrawal History</h3>${wdHistory()}</div>`}
     <div class="card"><h3>☁️ Cloud Sync</h3><div class="mut" id="cloudStat">${cloudStatText()}</div></div>
     ${supportLinksCard()}
     <button class="btn s" onclick="logoutBox()">Logout</button>
