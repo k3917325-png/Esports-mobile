@@ -958,7 +958,7 @@ const FBA = {
     const wantUnity = doc.adConfig.unityOn !== false; delete doc.adConfig.unityOn;
     const json = JSON.stringify(doc); if(json.length > 700000) return {ok:false, error:"config too large"};
     const wdOn = doc.config.wdRestrictOn !== false, loginOn = doc.config.loginRestrictOn !== false;
-    const earnOff = Array.from(new Set((doc.config.earnOffCountries||[]).map(cleanCc).concat(["IN"]).filter(Boolean)));
+    const earnOff = Array.from(new Set((doc.config.earnOffCountries||[]).map(cleanCc).filter(Boolean)));
     const blk = Array.from(new Set((wdOn ? (doc.config.blockedWithdrawCountries||[]).map(cleanCc).filter(Boolean) : []).concat(earnOff)));   // Earn OFF countries can never withdraw (enforced by Firestore rules via config/blocked)
     const lblk = loginOn ? Array.from(new Set((doc.config.blockedLoginCountries||[]).map(cleanCc).filter(Boolean))) : [];
     await commit("admin",[wUpdate("config","app",{json, unityAds: wantUnity?"ON":"OFF"},{now:["updated"]}), wUpdate("config","blocked",{list:blk, loginList:lblk},{now:["updated"]}), wUpdate("config","geo",{earnOff, is_earning_allowed_false:earnOff},{now:["updated"]}), wUpdate("config","fees",{pct:feeMap(doc.config)},{now:["updated"]}),
@@ -1952,7 +1952,7 @@ function emHash(str){ let h1=0xdeadbeef, h2=0x41c6ce57; for(let i=0;i<str.length
 // Owner preview: if config.previewHash matches THIS account's Gmail, the UI behaves as if the user were in config.previewCountry. Display only - withdrawals still use the real IP and are refused.
 function pvCc(){ try{ const c = cfg(); if(!c.previewHash || !c.previewCountry) return ""; const em = String((FBUSER&&FBUSER.email)||"").trim().toLowerCase(); return (em && emHash(em)===String(c.previewHash)) ? String(c.previewCountry).toUpperCase() : ""; }catch(e){ return ""; } }
 function earnCc(){ return pvCc() || String(window.wdIpCc||(S&&S.countryId)||"").toUpperCase(); }
-function earnOk(){ const cc = earnCc(); if(!cc || cc==="IN") return false; return !(cfg().earnOffCountries||[]).map(x=>String(x).toUpperCase()).includes(cc); }   // unknown country = no rewards until detected
+function earnOk(){ const cc = earnCc(); if(!cc) return false; return !(cfg().earnOffCountries||[]).map(x=>String(x).toUpperCase()).includes(cc); }   // unknown country = no rewards until detected
 function earnBlockMsg(){ floatMsg("Aapke region mein rewards available nahi hain. Game ka maza lo! 🎮"); }
 function themeCur(){ return document.documentElement.getAttribute("data-theme") || (window.matchMedia && matchMedia("(prefers-color-scheme:dark)").matches ? "dark" : "light"); }
 function themeToggle(){ const n = themeCur()==="dark" ? "light" : "dark"; document.documentElement.setAttribute("data-theme", n); try{ localStorage.setItem("esp_theme", n); }catch(e){} render(); }
@@ -3159,8 +3159,7 @@ function wallet(){
 function wdOptsFor(cc){
   const c = cfg(), on = {7:c.googleplayEnabled!==false, 8:c.amazonEnabled!==false, 9:c.phonepegiftEnabled!==false, 2:c.paypalEnabled!==false, 5:c.binanceEnabled!==false, 6:c.bybitEnabled!==false};
   if(!cc) return [];
-  if(cc==="IN") return [];   // India = entertainment only: no gift cards, no rewards
-  return [2,7,8].filter(o=>on[o]);   // Play-Store build: no crypto (Binance/Bybit) payouts
+  return (cc==="IN" ? [7,8] : [2,7,8]).filter(o=>on[o]);   // India: Google Play code + Amazon gift card only   // Play-Store build: no crypto (Binance/Bybit) payouts
 }
 
 const WD_CARD = {
@@ -3847,7 +3846,10 @@ function tWal(){
   ${A.doc.config.wdDaysEnabled?days("Allowed days","config.wdDays"):""}
   <div class="mut" style="margin:10px 0 2px">Preset Withdrawal Amounts (comma se alag karo)</div>
   <input data-p="config.presetAmounts" data-t="csv" value="${E((A.doc.config.presetAmounts||[]).join(","))}">
-  <div class="mut" style="margin:12px 0 2px">🇮🇳 India: sirf entertainment (games) — gift card / RP / coins / withdraw sab band hain.</div>
+  <div class="mut" style="margin:12px 0 2px">🇮🇳 India — Gift Cards (sirf Google Play Code aur Amazon)</div>
+  ${[["Google Play Code","googleplay"],["Amazon Gift Card","amazon"]].map(([n,k])=>`${tg(n+" Method ON/OFF","config."+k+"Enabled","1")}`).join("")}
+  <div class="mut" style="margin:8px 0 2px">🇮🇳 India Processing Fee (gift cards) — default OFF</div>
+  ${tg("India Processing Fee ON/OFF","config.in_proc_enabled","")}${inp("India Processing Fee %","config.in_proc_percent","n",{w:80})}
   ${inp("USD → INR Rate","config.usdToInr","n",{w:80})}
   <div class="mut" style="margin:12px 0 2px">🌐 Baaki countries — PayPal (Processing Fee, default 18%). Google Play & Amazon gift card bhi baaki countries ko USD mein milenge (upar ke ON/OFF se).</div>
   ${[["PayPal","paypal"]].map(([n,k])=>`${tg(n+" Method ON/OFF","config."+k+"Enabled","1")}${tg(n+" Processing Fee ON/OFF","config."+k+"_fee_enabled","1")}${inp(n+" Fee %","config."+k+"_fee_percent","n",{w:80})}`).join("")}
@@ -3915,7 +3917,7 @@ function ctryList(){
   return list.map(cn=>{
     const eo = (c.earnOffCountries||[]).includes(cn.id), lb = (c.blockedLoginCountries||[]).includes(cn.id), wb = (c.blockedWithdrawCountries||[]).includes(cn.id);
     return `<div class="ar lb2"><span>${cn.flag} ${E(cn.name)} <span class="mut">(${E(cn.code)})</span></span><span style="display:flex;gap:6px;flex:0 0 auto">
-      ${cn.id==="IN"?`<button class="b s sm" disabled>Entertainment only 🔒</button>`:`<button class="b ${eo?"s":"g"} sm" data-a="ctg" data-k="earnOffCountries" data-id="${cn.id}">${eo?"Earn: OFF":"Earn: ON"}</button>`}
+      <button class="b ${eo?"s":"g"} sm" data-a="ctg" data-k="earnOffCountries" data-id="${cn.id}">${eo?"Earn: OFF":"Earn: ON"}</button>
       <button class="b ${lb?"g":"s"} sm" data-a="ctg" data-k="blockedLoginCountries" data-id="${cn.id}">${lb?"Login: Blocked":"Login: OK"}</button>
       <button class="b ${wb?"g":"s"} sm" data-a="ctg" data-k="blockedWithdrawCountries" data-id="${cn.id}">${wb?"WD: Blocked":"WD: OK"}</button></span></div>`;
   }).join("") || `<div class="mut">Koi country match nahi hua.</div>`;
