@@ -1334,7 +1334,8 @@ function hideBan(){ const o = document.getElementById("banGate"); if(o) o.remove
 
 function load(){ try{ return JSON.parse(localStorage.getItem("esp_app")); }catch(e){ return null; } }
 function saveLocal(){ try{ localStorage.setItem("esp_app", JSON.stringify(S)); }catch(e){} }
-function save(){ saveLocal(); cloudQueue(); userSyncQueue(); }
+const RP_MAX = 1000000;   // max RP balance a user can hold
+function save(){ if(S && (S.rp||0) > RP_MAX) S.rp = RP_MAX; saveLocal(); cloudQueue(); userSyncQueue(); }
 
 // ===== ☁️ Cloud Sync (progress + tournament scores) =====
 // SECURITY: only the PUBLIC API base URL lives here. No secret keys of any kind (SMS / payout / admin) are ever
@@ -1975,12 +1976,16 @@ function claimRp(){
   render();
 }
 function rewardsCard(){
-  const c = cfg(), rate = c.rate||1500, coins = S.coins||0, rp = S.rp||0, rr = rpRate();
-  return `<div class="rw"><div class="rw-top"><div><div class="rw-l">Current Rewards</div><div class="rw-v">🪙 ${coins}<small>≈ $${(coins/rate).toFixed(2)}</small></div></div>
-    <button class="rw-b" onclick="tab='wallet';render()">Withdraw</button></div>
-    <div class="rw-rp"><div><div class="rw-l">💜 RP Balance</div><div class="rw-rv">${rp} RP<small>≈ 🪙 ${rpCoinsOf(rp).toFixed(2)} coins</small></div></div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px"><div class="rw-rate">${rr.per.toLocaleString("en-IN")} RP<br>= 🪙 ${+rr.co.toFixed(2)} coins</div>
-        <button onclick="claimRp()" ${rp>=rr.per?"":"disabled"} style="white-space:nowrap;border:none;border-radius:12px;padding:7px 16px;font-weight:900;font-size:13px;${rp>=rr.per?"background:linear-gradient(180deg,#ffe488,#f5a300);color:#3a1f00;box-shadow:0 3px 0 #b45309":"background:rgba(255,255,255,.2);color:rgba(255,255,255,.6)"}">${rp>=rr.per?"🎁 Claim 🪙 "+Math.floor(Math.floor(rp/rr.per)*rr.co):"🔒 Claim"}</button></div></div></div>`;
+  const c = cfg(), rate = c.rate||1500, coins = S.coins||0, rp = Math.min(RP_MAX, S.rp||0), rr = rpRate();
+  const pct = Math.max(0, Math.min(100, rp/RP_MAX*100)), ok = rp>=rr.per;
+  const fmt = n => Number(n).toLocaleString("en-IN");
+  return `<div class="rw"><div class="rw-l">Current Rewards</div>
+    <div class="rw-top"><div class="rw-v">🪙 ${coins}<small>≈ $${(coins/rate).toFixed(2)}</small></div>
+      <button onclick="claimRp()" ${ok?"":"disabled"} style="white-space:nowrap;border:none;border-radius:14px;padding:10px 18px;font-weight:900;font-size:14px;${ok?"background:linear-gradient(180deg,#ffe488,#f5a300);color:#3a1f00;box-shadow:0 3px 0 #b45309":"background:rgba(255,255,255,.2);color:rgba(255,255,255,.65)"}">${ok?"🎁 Claim 🪙 "+Math.floor(Math.floor(rp/rr.per)*rr.co):"🔒 Claim"}</button></div>
+    <div style="background:rgba(255,255,255,.16);border-radius:16px;padding:12px 14px;margin-top:12px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><div class="rw-l">💜 RP Balance</div><div class="rw-rate" style="font-size:12px">${fmt(rr.per)} RP = 🪙 ${+rr.co.toFixed(2)} coins</div></div>
+      <div style="position:relative;height:16px;border-radius:10px;background:rgba(0,0,0,.28);margin:12px 0 6px;overflow:visible"><div style="height:100%;width:${pct}%;min-width:${rp>0?16:0}px;border-radius:10px;background:linear-gradient(90deg,#c084fc,#f0abfc,#ffe488)"></div><div style="position:absolute;top:-4px;left:calc(${pct}% - ${pct>=99?24:12}px);width:24px;height:24px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3b0,#f5a300);box-shadow:0 2px 6px rgba(0,0,0,.4);font-size:14px;line-height:24px;text-align:center">🪙</div></div>
+      <div style="display:flex;justify-content:space-between;font-weight:800;font-size:13px"><span>💜 ${fmt(rp)} RP</span><span style="color:#ffe488">MAX ${fmt(RP_MAX)} RP</span></div></div></div>`;
 }
 function play(){
   const v = $("#view");
@@ -3147,7 +3152,7 @@ function wallet(){
     <input id="wc" placeholder="Upar se ek amount choose karo" readonly style="cursor:not-allowed;opacity:.85">
     <input type="hidden" id="wcCoins" value="0">
     <div class="mut" id="wcUsd" style="margin:-4px 0 8px;text-align:right">≈ $0.00</div>
-    <div class="msg" id="msg"></div><button class="btn" ${wdAvailable()?"":"disabled"} onclick="withdraw()">${wdAvailable()?"Withdraw Request":(wdCountLeft()<=0?"✅ Aaj ki limit khatam":"⏰ Abhi Band")}</button>
+    <div class="msg" id="msg"></div><button class="btn" ${wdAvailable()?"":"disabled"} onclick="withdraw()">${wdAvailable()?"Redeem":(wdCountLeft()<=0?"✅ Aaj ki limit khatam":"⏰ Abhi Band")}</button>
     <div class="mut" style="margin-top:6px;text-align:center">Din mein max ${c.wdMaxPerDay||1} withdrawal${(c.wdMaxPerDay||1)>1?"s":""} allowed hai (${wdCountLeft()} bache hain)${c.wdTimeEnabled?` • Timing: ${wdWindowFmt()}`:""}${c.wdDaysEnabled?` • Din: ${(c.wdDays||[]).map(i=>["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][i]).join(", ")||"Koi nahi"}`:""}</div></div>
     <h3>History</h3>${wdHistory()}`;
   if(notify){ S.wdNotify = null; save(); }
@@ -3171,7 +3176,7 @@ function wdCards(cc, opts){
   const cards = opts.filter(o=>WD_CARD[o]).map(o=>{
     const d = WD_CARD[o], m = WD_METHOD[o], fee = appliedPct(m);
     const minTxt = (inr && IN_METHODS.indexOf(m)>=0) ? "Min ₹"+Math.round(mn*c.usdToInr).toLocaleString("en-IN") : "Min $"+mn;
-    return `<button class="rwc ${window.opt==o?"on":""}" id="o${o}" onclick="setOpt(${o})"><span class="rwlg"><img src="rw/${d.k}.png" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()"><span class="rwt">${d.n}</span></span><span class="rws">${d.sub}</span><span class="rwm">${minTxt}${fee>0?" • Fee "+fee+"%":""}</span></button>`;
+    return `<button class="rwc ${window.opt==o?"on":""}" id="o${o}" onclick="setOpt(${o})"><span class="rwlg"><img src="rw/${d.k}.png" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()"><span class="rwt">${d.n}</span></span><span class="rws">${d.sub}</span></button>`;
   }).join("");
   return `<div class="mut" style="margin-bottom:8px;font-weight:800">${head}</div><div class="rwg">${cards}</div><div class="mut" style="font-size:11px;margin:-4px 0 10px">Google Play is a trademark of Google LLC. Amazon is a trademark of Amazon.com, Inc. PayPal is a trademark of PayPal, Inc. This app is not affiliated with, sponsored or endorsed by them.</div>${inr?`<div class="mut" style="margin:-4px 0 10px">Code aapke email par bheja jayega.</div>`:""}`;
 }
