@@ -81,6 +81,7 @@ canvas{display:block;margin:0 auto 10px;border-radius:10px;max-width:100%}
 #adm{display:none;position:fixed;inset:0;z-index:2147483200;background:var(--bg);color:var(--text);overflow:hidden}
 #adm .aw{max-width:520px;margin:0 auto;height:100%;display:flex;flex-direction:column;padding:env(safe-area-inset-top,0px) 12px 0;position:relative}
 #adm .atop{display:flex;justify-content:space-between;align-items:center;padding:12px 2px;font-size:17px}
+/*gamelist*/.gl{background:var(--card);border-radius:20px;padding:4px 14px;margin-bottom:14px;box-shadow:0 4px 14px rgba(80,40,160,.14)}.gr{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line,#8882)}.gr:last-child{border-bottom:none}.gri{flex:none;display:flex}.grt{flex:1;min-width:0}.grt b{display:block;font-size:16px;line-height:1.25}.grs{font-size:11.5px;font-weight:700;color:var(--mut,#7a7699);margin-top:3px}.grb{flex:none;border:none;border-radius:12px;padding:10px 20px;font-weight:900;font-size:14px;color:#fff;background:linear-gradient(180deg,#6d8bff,#4a63e6);box-shadow:0 3px 0 #2f44b8;cursor:pointer}
 /*cards*/.rwg{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}.rwc{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:10px 8px 12px;min-height:118px;border-radius:18px;border:2.5px solid transparent;background:#fff;color:#1b1340;font:inherit;cursor:pointer;text-align:center;box-shadow:0 4px 14px rgba(40,20,90,.16)}.rwc.on{border-color:#7c3aed;box-shadow:0 0 0 3px #7c3aed33,0 6px 18px rgba(124,58,237,.3)}.rwlg{height:58px;display:flex;align-items:center;justify-content:center;width:100%}.rwlg img{max-height:54px;max-width:86%;object-fit:contain}.rwt{font-weight:900;font-size:21px;letter-spacing:-.3px;color:#1b1340}.rws{font-size:12px;color:#6b6890;font-weight:600}.rwm{font-size:11px;font-weight:800;color:#b45309}
 #adm .atabs{display:flex;flex-direction:column;gap:5px;padding-bottom:8px;flex:0 0 auto;max-height:55vh;overflow-y:auto}
 #adm .atabs .ch{padding:11px 12px;font-size:14px;text-align:left;width:100%;white-space:nowrap}
@@ -1784,10 +1785,10 @@ function render(){
     <p class="mut" style="text-align:center;margin-top:14px">Sirf Gmail se login (mail verify hota hai). Koi OTP ya phone number nahi.</div>`; return; }
   geoDetect();
   const _eo = earnOk();
-  if(!_eo && (tab==="wallet"||tab==="promo")) tab = "play";
+  if(tab==="promo" || (!_eo && tab==="wallet")) tab = "play";
   r.innerHTML = `<header><div class="logo">GAMENEST<span>REWARDS</span></div><div style="display:flex;align-items:center;gap:6px">${_eo?`<div class="bal">${balText()}</div>`:""}<button onclick="themeToggle()" aria-label="Theme" style="border:none;width:30px;height:30px;border-radius:50%;font-size:15px;background:${themeCur()==="dark"?"#3b2a6b":"#1e1b4b"};color:#fff;flex:none;box-shadow:0 2px 6px rgba(0,0,0,.25)">${themeCur()==="dark"?"☀️":"🌙"}</button></div></header>
     <main id="view"></main>
-    <nav>${[["home","🏠","Home"],["play","🎮","Games"],["promo","🎟️","Promo"],["wallet","💰","Wallet"],["me","👤","Profile"]].filter(t=>_eo || (t[0]!=="wallet" && t[0]!=="promo")).map(t=>`<button class="${tab===t[0]?"on":""}" onclick="tab='${t[0]}';render()"><span>${t[1]}</span>${t[2]}</button>`).join("")}</nav>`;
+    <nav>${[["home","🏠","Home"],["play","🎮","Games"],["wallet","💰","Wallet"],["me","👤","Profile"]].filter(t=>_eo || t[0]!=="wallet").map(t=>`<button class="${tab===t[0]?"on":""}" onclick="tab='${t[0]}';render()"><span>${t[1]}</span>${t[2]}</button>`).join("")}</nav>`;
   ({home,play,promo,wallet,me}[tab])();
 }
 
@@ -1853,7 +1854,7 @@ function home(){
         <button class="btn sm" style="background:#ffd54a;color:#3a1f00;font-weight:800;white-space:nowrap" ${(claimed||waitingForWindow)?"disabled":""} onclick="claimBonus()">
           ${claimed?"✅ Claimed":waitingForWindow?"⏰ Band":"Claim"}</button>
       </div></div>
-    <h3>Game Categories</h3><div class="grid">${catCard("🕹️","Mini Games","tab='play';render()")}${catCard("🎟️","Promo Code","tab='promo';render()")}</div>
+    <h3>Game Categories</h3><div class="grid" style="grid-template-columns:1fr">${catCard("🕹️","Mini Games","tab='play';render()")}</div>
     ${streakCard()}<div class="msg" id="msg"></div>`;
 }
 function streakRewards(){ return cfg().streakRewards || defaultConfig().streakRewards; }
@@ -2021,10 +2022,7 @@ function play(){
     <div style="padding:12px 14px 0;font-weight:800;color:var(--acc);font-size:18px">${esc(cg.name)}</div>
     <div class="mut" style="padding:6px 14px 0">External game link</div>
     <button class="btn play" style="margin:10px 14px 14px" onclick="window.open('${esc(cg.url)}','_blank')">Open Link ›</button></div>`).join("");
-  v.innerHTML = adBox('matches') + noticeBanner('matches') + chips + (earnOk() ? rewardsCard() : "") + toursSorted.map(t=>`<div class="tc">
-    <div class="tb" style="background:${TCONF[t.g].grad};height:auto;min-height:170px;flex-direction:column;gap:10px;padding:20px 10px 16px">${gLogo(t.g,96,0)}<span style="font-size:24px;letter-spacing:.5px;text-shadow:0 2px 8px rgba(0,0,0,.35)">${esc(t.name.toUpperCase())}</span></div>
-    <div style="margin:12px 14px 12px;display:flex;align-items:center;justify-content:space-between;gap:6px"><span style="font-size:13px;font-weight:800;color:#0369a1;background:#e0f2fe;padding:8px 10px;border-radius:12px;white-space:nowrap">${!earnOk()?"🎮 Free Play":"🎯 "+RUN_MIN+" Score"}</span><span style="font-size:13px;font-weight:800;color:#6d28d9;background:#ede9fe;padding:8px 10px;border-radius:12px;white-space:nowrap">⏱ 2:00</span>${!earnOk()?"":`<span style="font-size:14px;font-weight:900;color:#b45309;background:linear-gradient(135deg,#fff3c4,#ffe08a);padding:7px 10px;border-radius:12px;white-space:nowrap">💜 ${runRpAmt()} RP</span>`}</div>
-    <button class="btn play" onclick="playT(${t.id})">Play Now! ›</button><div style="height:14px"></div></div>`).join("") + customLinks + `<div class="mut" style="text-align:center;font-size:11.5px;line-height:1.5;margin:6px 6px 16px">✅ 100% free to play — koi deposit ya entry fee nahi. Rewards promotional hain aur ads se funded hain. Ye gambling ya betting app nahi hai. Rewards fixed score milestones par milte hain, kisi player ke against nahi.</div>`;
+  v.innerHTML = adBox('matches') + noticeBanner('matches') + chips + (earnOk() ? rewardsCard() : "") + `<div class="gl">` + toursSorted.map(t=>`<div class="gr"><div class="gri">${gLogo(t.g,64,0)}</div><div class="grt"><b>${esc(t.name)}</b><div class="grs">${earnOk() ? "🎯 "+RUN_MIN+" Score • ⏱ 2:00 • 💜 "+runRpAmt()+" RP" : "🎮 Free Play • ⏱ 2:00"}</div></div><button class="grb" onclick="playT(${t.id})">Play</button></div>`).join("") + `</div>` + customLinks + `<div class="mut" style="text-align:center;font-size:11.5px;line-height:1.5;margin:6px 6px 16px">✅ 100% free to play — koi deposit ya entry fee nahi. Rewards promotional hain aur ads se funded hain. Ye gambling ya betting app nahi hai. Rewards fixed score milestones par milte hain, kisi player ke against nahi.</div>`;
 }
 function nextLbPayoutTime(){
   const c = cfg(), d = new Date();
@@ -3554,7 +3552,7 @@ const A = {sum:null, tk:{filter:"Open", items:[], loaded:false}, au:{items:[], l
 const PAYOUT_LIST = [["paypal","PayPal Payouts (Mass Pay API)"],["bybit","Bybit Pay / Withdrawal API"]];
 try{ A.sent = JSON.parse(localStorage.getItem("adm_sent")||"{}") || {}; }catch(e){ A.sent = {}; }
 const CFG_TABS = ["games","lb","wal","prem","bonus","ads","info","ctry","promo","ctl"];
-const TABS = [["wd","💸 Withdrawals"],["rep","📊 Reports"],["users","👥 Users"],["games","🎮 Games"],["wal","💰 Wallet"],["prem","⭐ Premium"],["bonus","🎁 Bonus"],["ads","📺 Ads"],["info","📢 Notice & Links"],["ctry","🌍 Geo-Control"],["promo","🎟 Promo"],["ctl","🛠 App Control"],["sup","🆘 Support"],["aud","🧾 Audit Log"]];
+const TABS = [["wd","💸 Withdrawals"],["rep","📊 Reports"],["users","👥 Users"],["games","🎮 Games"],["wal","💰 Wallet"],["prem","⭐ Premium"],["bonus","🎁 Bonus"],["ads","📺 Ads"],["info","📢 Notice & Links"],["ctry","🌍 Geo-Control"],["ctl","🛠 App Control"],["sup","🆘 Support"],["aud","🧾 Audit Log"]];
 const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 const METHODS = ["PayPal","Bybit","GooglePlay","Amazon","PhonePeGift"];
 
