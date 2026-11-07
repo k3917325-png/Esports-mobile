@@ -80,6 +80,7 @@ canvas{display:block;margin:0 auto 10px;border-radius:10px;max-width:100%}
 #adm .aw{max-width:520px;margin:0 auto;height:100%;display:flex;flex-direction:column;padding:env(safe-area-inset-top,0px) 12px 0;position:relative}
 #adm .atop{display:flex;justify-content:space-between;align-items:center;padding:12px 2px;font-size:17px}
 /*gamelist*/.gl{padding:0;margin-bottom:14px}.gr{position:relative;display:flex;align-items:center;gap:12px;padding:10px 12px 10px 10px;margin-bottom:10px;border-radius:24px;background:linear-gradient(135deg,var(--card),var(--card));border:1.5px solid rgba(124,92,255,.16);box-shadow:0 8px 22px rgba(80,40,160,.14);transition:transform .12s}.gr:active{transform:scale(.985)}.gri{flex:none;display:flex;filter:drop-shadow(0 6px 10px rgba(60,20,140,.35))}.grt{flex:1;min-width:0}.grt b{display:block;font-size:16px;font-weight:900;line-height:1.2;letter-spacing:.1px}.grs{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}.grs i{font-style:normal;font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:20px;background:rgba(124,92,255,.12);color:var(--text);white-space:nowrap}.grs i.rp{background:linear-gradient(90deg,#ffe488,#ffc233);color:#4a2b00}.grn{position:absolute;top:-7px;left:12px;font-size:9.5px;font-weight:900;letter-spacing:.6px;color:#fff;background:linear-gradient(90deg,#ff4d6d,#ff8a00);padding:2px 9px;border-radius:20px;box-shadow:0 3px 8px rgba(255,77,109,.45)}.grb{flex:none;border:none;border-radius:16px;padding:10px 16px;font-weight:900;font-size:14px;letter-spacing:.3px;color:#fff;background:linear-gradient(180deg,#34d58a,#12a35f);box-shadow:0 4px 0 #0b7a47,0 8px 16px rgba(18,163,95,.35);cursor:pointer;text-shadow:0 1px 0 rgba(0,0,0,.2)}.grb:active{transform:translateY(3px);box-shadow:0 1px 0 #0b7a47}
+/*redeem*/#rdm{position:fixed;inset:0;z-index:97;background:#000;color:#fff;overflow-y:auto;font-family:'Segoe UI',Roboto,Arial,sans-serif;padding:env(safe-area-inset-top,0px) 0 0}.rdw{max-width:480px;margin:0 auto;padding:10px 14px 40px}.rdback{background:none;border:0;color:#fff;font-size:28px;padding:6px 4px;cursor:pointer}.rdbrand{display:flex;align-items:center;gap:14px;margin:6px 0 -4px;position:relative;z-index:2}.rdbrand b{font-size:22px;font-weight:800}.rdlogo{width:74px;height:74px;border-radius:50%;background:radial-gradient(circle,#fff,#d9dadf);border:5px solid #14141c;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}.rdlogo img{width:70%;height:70%;object-fit:contain}.rdmk{font-size:34px;font-weight:900;color:#14141c}.rdcard{border-radius:22px;padding:18px 18px 14px;min-height:210px;display:flex;flex-direction:column;position:relative;margin-top:-10px;box-shadow:0 14px 34px rgba(0,0,0,.5)}.rdcw{font-size:19px;font-weight:700;color:rgba(255,255,255,.9);margin-top:26px}.rdamt{font-size:60px;font-weight:900;text-align:center;margin:auto 0;text-shadow:0 3px 12px rgba(0,0,0,.25)}.rdfoot{display:flex;justify-content:space-between;align-items:flex-end}.rdwordmark{font-size:17px;font-weight:900;white-space:nowrap;color:rgba(255,255,255,.95)}.rdwm{font-weight:800;font-size:10.5px;letter-spacing:.4px;white-space:nowrap}.rdh{font-size:19px;font-weight:800;margin:22px 0 10px}.rdchips{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.rdchip{background:#3a3a3f;color:#fff;border:1px solid #55555c;border-radius:22px;padding:12px 4px;font-size:16px;font-weight:600;cursor:pointer}.rdchip.on{background:linear-gradient(180deg,#fff,#cfd0d6);color:#111;border-color:#fff}.rdchip[data-low]{opacity:.45}.rdrow{display:flex;justify-content:space-between;align-items:center;margin-top:26px}.rdqty{display:flex;align-items:center;gap:14px;border:1px solid #55555c;background:#2a2a30;border-radius:12px;padding:6px 12px}.rdqty button{background:none;border:0;color:#fff;font-size:24px;width:30px;cursor:pointer}.rdqty button:disabled{opacity:.3}.rdqty b{font-size:20px;min-width:18px;text-align:center}.rdbal{font-size:14px;margin-top:2px;opacity:.95}.rdcoin{font-size:15px}.rdtog{width:62px;height:34px;border-radius:20px;background:#ffc107;position:relative;display:block;flex:none}.rdtog i{position:absolute;right:4px;top:4px;width:26px;height:26px;border-radius:50%;background:#fff}.rdin{width:100%;margin-top:22px;padding:14px;border-radius:14px;border:1px solid #55555c;background:#1a1a20;color:#fff;font-size:15px;outline:none}.rdsum{margin-top:14px;background:#14141c;border-radius:14px;padding:12px;font-size:14px;line-height:1.8}#rdm .msg{min-height:18px;margin-top:8px}.rdsl{position:relative;margin-top:18px;height:64px;border-radius:18px;background:linear-gradient(90deg,#d8d9de,#f3f3f6 50%,#d8d9de);display:flex;align-items:center;justify-content:center;border:1px solid #fff;overflow:hidden}.rdsl.off{opacity:.55}.rdknob{position:absolute;left:4px;top:4px;width:62px;height:54px;border-radius:14px;background:#5b5bd6;color:#fff;font-size:26px;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:grab;z-index:2}.rdsl.off .rdknob{pointer-events:none;background:#8a8a99}.rdsltxt{font-size:20px;font-weight:800;color:#5b5bd6;padding-left:40px}.rdhow{margin-top:26px;background:#14161f;border-radius:22px;padding:18px}.rdhow h3{margin:0 0 12px;font-size:21px}.rdstep{display:flex;gap:12px;margin:10px 0;font-size:14.5px;line-height:1.5;color:#c9cbd6}.rdstep b{flex:none;width:24px;height:24px;border-radius:50%;background:#5b5bd6;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px}.rdfine{margin-top:14px;font-size:11px;color:#8a8c99;text-align:center}
 /*cards*/.rwg{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}.rwc{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:10px 8px 12px;min-height:118px;border-radius:18px;border:2.5px solid transparent;background:#fff;color:#1b1340;font:inherit;cursor:pointer;text-align:center;box-shadow:0 4px 14px rgba(40,20,90,.16)}.rwc.on{border-color:#7c3aed;box-shadow:0 0 0 3px #7c3aed33,0 6px 18px rgba(124,58,237,.3)}.rwlg{height:58px;display:flex;align-items:center;justify-content:center;width:100%}.rwlg img{max-height:54px;max-width:86%;object-fit:contain}.rwt{font-weight:900;font-size:21px;letter-spacing:-.3px;color:#1b1340}.rws{font-size:12px;color:#6b6890;font-weight:600}.rwm{font-size:11px;font-weight:800;color:#b45309}
 #adm .atabs{display:flex;flex-direction:column;gap:5px;padding-bottom:8px;flex:0 0 auto;max-height:55vh;overflow-y:auto}
 #adm .atabs .ch{padding:11px 12px;font-size:14px;text-align:left;width:100%;white-space:nowrap}
@@ -225,6 +226,16 @@ main{padding-bottom:12px}
 })();
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* ===== Country currency (withdraw amounts show in the user's own currency) ===== */
+const CUR_OF = (()=>{ const m = {IN:"INR",US:"USD",GB:"GBP",CA:"CAD",AU:"AUD",CH:"CHF",AE:"AED",SA:"SAR",QA:"QAR",SG:"SGD",MY:"MYR",KW:"KWD",BH:"BHD",OM:"OMR",BR:"BRL"};
+  "DE FR IT ES NL BE AT IE PT FI GR LU SK SI EE LV LT MT CY HR".split(" ").forEach(c=>{ m[c] = "EUR"; }); return m; })();
+const CUR_SYM = {INR:"₹",USD:"$",GBP:"£",EUR:"€",CAD:"C$",AUD:"A$",CHF:"CHF ",AED:"AED ",SAR:"SAR ",QAR:"QAR ",SGD:"S$",MYR:"RM ",KWD:"KD ",BHD:"BD ",OMR:"OMR ",BRL:"R$",USDT:"USDT "};
+const FX_DEF = {GBP:0.78,EUR:0.92,CAD:1.38,AUD:1.55,CHF:0.88,AED:3.673,SAR:3.75,QAR:3.64,SGD:1.34,MYR:4.4,KWD:0.31,BHD:0.377,OMR:0.385,BRL:5.5};
+function curOf(cc){ return CUR_OF[cc] || "USD"; }
+function fxRate(cur){ if(cur==="INR") return Number(cfg().usdToInr)||83; if(cur==="USD"||cur==="USDT") return 1; const v = Number((cfg().fx||{})[cur]); return (isFinite(v) && v>0) ? v : (FX_DEF[cur]||1); }
+function curFmt(cur, v){ const n = Number(v)||0, dec = ["KWD","BHD","OMR"].indexOf(cur)>=0 ? 3 : 2; return (CUR_SYM[cur]||(cur+" ")) + (cur==="INR" ? Math.round(n).toLocaleString("en-IN") : (Math.abs(n-Math.round(n))<0.005 ? String(Math.round(n)) : n.toFixed(dec))); }
+function userCur(){ return curOf(window.wdIpCc || ""); }
 const COUNTRIES = [
   {id:"AF", flag:"🇦🇫", name:'Afghanistan', code:"+93"},
   {id:"AL", flag:"🇦🇱", name:'Albania', code:"+355"},
@@ -550,6 +561,7 @@ function defaultConfig(){ return {
   wdTimeEnabled: false, wdTimeStart: "18:00", wdTimeEnd: "22:00", // sirf is window mein withdrawal allowed
   wdDaysEnabled: false, wdDays: [0,1,2,3,4,5,6], // sirf in weekdays par withdrawal allowed (0=Sun...6=Sat)
   presetAmounts: [1.32,2.50,3.50,5.50,7,10],
+  fx: {GBP:0.78,EUR:0.92,CAD:1.38,AUD:1.55,CHF:0.88,AED:3.673,SAR:3.75,QAR:3.64,SGD:1.34,MYR:4.4,KWD:0.31,BHD:0.377,OMR:0.385,BRL:5.5},
   lbServerPayout: false,
   loginRestrictOn: true, wdRestrictOn: true, vpnBlock: true, gpsRequired: true, extAppOn: false, extAppName: "", extAppPkg: "", extAppUrl: "",
   maintenanceOn: false, maintenanceMsg: "App abhi maintenance par hai. Thodi der baad dobara aao.", forceUpdateOn: false, minVersion: 1, updateUrl: "", updateMsg: "App ka naya version aa gaya hai. Aage use karne ke liye update karo.",
@@ -881,7 +893,7 @@ const FBA = {
     if(!country || !ipc) return bad("country check missing");
     if(country !== ipc) return bad("Your location does not match the selected country. Please select your actual country of residence.");
     if(["UPI","PayPal","Paytm","PhonePe","Binance","Bybit","GooglePlay","Amazon","PhonePeGift"].indexOf(method)<0) return bad("invalid method");
-    if(["INR","USD","USDT"].indexOf(cur)<0) return bad("invalid currency");
+    if(Object.keys(CUR_SYM).indexOf(cur)<0) return bad("invalid currency");
     if(!(coins>=1) || coins!==Math.floor(coins) || coins>1000000) return bad("invalid coins");
     if(!(net>=0) || net>1000000) return bad("invalid amount");
     if(!(gross>=net) || gross>1000000) gross = net;
@@ -1035,7 +1047,7 @@ const FBA = {
     const rows = raw.filter(r=>{
       const isIn = r.country==="IN", m = r.method;
       if(kind==="in" && !(isIn && ["UPI","Paytm","PhonePe","GooglePlay","Amazon","PhonePeGift"].indexOf(m)>=0)) return false;
-      if(kind==="gl" && !(!isIn && ["PayPal","Binance","Bybit"].indexOf(m)>=0)) return false;
+      if(kind==="gl" && !(!isIn && ["PayPal","Binance","Bybit","GooglePlay","Amazon"].indexOf(m)>=0)) return false;
       if(st && r.status!==st) return false;
       if(mth && m!==mth) return false;
       if(cc && r.country!==cc) return false;
@@ -1759,7 +1771,7 @@ function loginAsGuest(){
   applyRemoteToS(); reconcileTours();
   save(); tab="home"; render();
 }
-function toast(t,ok=true){ const m=$("#msg"); if(m){ m.textContent=t; m.className="msg "+(ok?"ok":"err"); } }
+function toast(t,ok=true){ const m=$("#rdm #msg")||$("#msg"); if(m){ m.textContent=t; m.className="msg "+(ok?"ok":"err"); } }
 
 function render(){
   const r = $("#root");
@@ -3310,7 +3322,7 @@ function wallet(){
   const isINR = !isFeeOpt(window.opt);
   $("#view").innerHTML = adBox('wallet') + noticeBanner('wallet')
     + (notify?`<div class="card" style="background:linear-gradient(135deg,#0f766e,#14532d);color:#fff;text-align:center"><b>✅ ${esc(notify)}</b></div>`:"")
-    + `<div class="card" style="text-align:center"><div class="mut">Balance</div><div style="font-size:30px;font-weight:800;color:var(--gold)">🪙 ${S.coins}</div><div class="mut">${c.rate.toLocaleString()} coins = $1 • Min $${minUsd()} • Max $${maxUsd()} per withdrawal</div></div>
+    + `<div class="card" style="text-align:center"><div class="mut">Balance</div><div style="font-size:30px;font-weight:800;color:var(--gold)">🪙 ${S.coins}</div><div class="mut">≈ ${curFmt(userCur(), S.coins/c.rate*fxRate(userCur()))}</div><div class="mut">${c.rate.toLocaleString()} coins = ${curFmt(userCur(), fxRate(userCur()))} • Min ${curFmt(userCur(), Math.ceil(minUsd()*fxRate(userCur())))} • Max ${curFmt(userCur(), Math.floor(maxUsd()*fxRate(userCur())))} per withdrawal</div></div>
     <div class="card"><h3>Redeem</h3>
     <div style="margin-bottom:10px">
       <div class="mut" style="margin-bottom:4px">🌍 Aapki country (IP se automatic — badal nahi sakte)</div>
@@ -3321,15 +3333,7 @@ function wallet(){
     ${!selCc?`<div class="mut" style="margin:6px 0 10px">📡 IP se country detect ho rahi hai — us ke hisaab se payment options dikhenge. <button class="chip" onclick="wdIpHint(true)">🔄 Retry</button></div>`:""}
     ${selCc && enabledOpts.length ? wdCards(selCc, enabledOpts) : ""}
     ${selCc && !enabledOpts.length?`<div class="mut" style="margin:6px 0">Is country ke liye abhi koi payment method ON nahi hai.</div>`:""}
-    <input id="wa" ${enabledOpts.length?"":"disabled"} placeholder="${({0:"—",1:"UPI ID (name@upi)",2:"PayPal Email",3:"Paytm Number / UPI ID",4:"PhonePe Number / UPI ID",5:"Binance Pay ID / Email",6:"Bybit UID / Email",7:"Email (Google Play code yahan milega)",8:"Email (Amazon gift card yahan milega)",9:"Email (PhonePe gift card yahan milega)"})[window.opt]}">
-    <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">${presets.map(d=>{
-      const label = isINR ? `₹${Math.round(d*c.usdToInr).toLocaleString("en-IN")}` : (isUsdtOpt(window.opt)?`USDT ${d}`:`$${d}`);
-      return `<button class="chip" style="flex:1 1 auto;min-width:56px;text-align:center" onclick="setAmt(${d})">${label}</button>`;
-    }).join("")}</div>
-    <input id="wc" placeholder="Upar se ek amount choose karo" readonly style="cursor:not-allowed;opacity:.85">
-    <input type="hidden" id="wcCoins" value="0">
-    <div class="mut" id="wcUsd" style="margin:-4px 0 8px;text-align:right">≈ $0.00</div>
-    <div class="msg" id="msg"></div><button class="btn" ${wdAvailable()?"":"disabled"} onclick="withdraw()">${wdAvailable()?"Redeem":(wdCountLeft()<=0?"✅ Aaj ki limit khatam":"⏰ Abhi Band")}</button>
+    ${enabledOpts.length ? `<div class="mut" style="margin:2px 0 8px;text-align:center">👆 Card par tap karo — amount choose karke slide karo</div>` : ""}
     <div class="mut" style="margin-top:6px;text-align:center">Din mein max ${c.wdMaxPerDay||1} withdrawal${(c.wdMaxPerDay||1)>1?"s":""} allowed hai (${wdCountLeft()} bache hain)${c.wdTimeEnabled?` • Timing: ${wdWindowFmt()}`:""}${c.wdDaysEnabled?` • Din: ${(c.wdDays||[]).map(i=>["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][i]).join(", ")||"Koi nahi"}`:""}</div></div>
     <h3>History</h3>${wdHistory()}`;
   if(notify){ S.wdNotify = null; save(); }
@@ -3338,32 +3342,29 @@ function wallet(){
 function wdOptsFor(cc){
   const c = cfg(), on = {7:c.googleplayEnabled!==false, 8:c.amazonEnabled!==false, 9:c.phonepegiftEnabled!==false, 2:c.paypalEnabled!==false, 5:c.binanceEnabled!==false, 6:c.bybitEnabled!==false};
   if(!cc) return [];
-  return (cc==="IN" ? [7,8] : [2,7,8]).filter(o=>on[o]);   // India: Google Play code + Amazon gift card only   // Play-Store build: no crypto (Binance/Bybit) payouts
+  return [8].filter(o=>on[o]);   // Amazon Gift Card only, for every country (no PayPal / Google Play / crypto)
 }
 
 const WD_CARD = {
-  7:{n:"Google Play", sub:"Gift Code", k:"googleplay"},
   8:{n:"Amazon", sub:"Gift Card", k:"amazon"},
-  9:{n:"PhonePe", sub:"Gift Card", k:"phonepe"},
-  2:{n:"PayPal", sub:"USD", k:"paypal"}
+  9:{n:"PhonePe", sub:"Gift Card", k:"phonepe"}
 };
 function wdCards(cc, opts){
   const c = cfg(), inr = cc==="IN", mn = minUsd();
-  const head = inr ? "🇮🇳 India — Gift Card / Redeem Code" : "🎁 Popular rewards";
+  const head = inr ? "🇮🇳 India — Amazon Gift Card" : "🎁 Amazon Gift Card";
   const cards = opts.filter(o=>WD_CARD[o]).map(o=>{
     const d = WD_CARD[o], m = WD_METHOD[o], fee = appliedPct(m);
     const minTxt = (inr && IN_METHODS.indexOf(m)>=0) ? "Min ₹"+Math.round(mn*c.usdToInr).toLocaleString("en-IN") : "Min $"+mn;
-    return `<button class="rwc ${window.opt==o?"on":""}" id="o${o}" onclick="setOpt(${o})"><span class="rwlg"><img src="rw/${d.k}.png" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()"><span class="rwt">${d.n}</span></span><span class="rws">${d.sub}</span></button>`;
+    return `<button class="rwc ${window.opt==o?"on":""}" id="o${o}" onclick="openRedeem(${o})"><span class="rwlg"><img src="rw/${d.k}.png" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()"><span class="rwt">${d.n}</span></span><span class="rws">${d.sub}</span></button>`;
   }).join("");
-  return `<div class="mut" style="margin-bottom:8px;font-weight:800">${head}</div><div class="rwg">${cards}</div><div class="mut" style="font-size:11px;margin:-4px 0 10px">Google Play is a trademark of Google LLC. Amazon is a trademark of Amazon.com, Inc. PayPal is a trademark of PayPal, Inc. This app is not affiliated with, sponsored or endorsed by them.</div>${inr?`<div class="mut" style="margin:-4px 0 10px">Code aapke email par bheja jayega.</div>`:""}`;
+  return `<div class="mut" style="margin-bottom:8px;font-weight:800">${head}</div><div class="rwg">${cards}</div><div class="mut" style="font-size:11px;margin:-4px 0 10px">Amazon is a trademark of Amazon.com, Inc. This app is not affiliated with, sponsored or endorsed by Amazon.</div>${inr?`<div class="mut" style="margin:-4px 0 10px">Code aapke email par bheja jayega.</div>`:""}`;
 }
 function wdHistory(){
   return S.wd.length?S.wd.slice().reverse().map(w=>{
       const badge = {PENDING:["⏳ Pending","#8a93a8"],APPROVED:["✔️ Approved","#38bdf8"],SUCCESS:["✅ Success","#1fa971"],REJECTED:["❌ Rejected","#ff5c5c"]}[w.status]||["",w.status];
-      const inr = usd => Math.round(parseFloat(usd)*cfg().usdToInr).toLocaleString("en-IN");
-      const mainLine = !isFeeMethod(w.method, w.country)
-        ? `${esc(w.method)} • ₹${inr(w.net)} net <span class="mut">(req ₹${inr(w.requested)}${parseFloat(w.tds)>0?`, Fee ${w.pct!=null?w.pct:tdsPctForMethod(w.method)}%: -₹${inr(w.tds)}`:""})</span>`
-        : `${esc(w.method)} • ${isUsdtMethod(w.method)?"USDT ":"$"}${w.net} net <span class="mut">(req ${isUsdtMethod(w.method)?"USDT ":"$"}${w.requested}, Fee ${w.pct!=null?w.pct:feePctForMethod(w.method)}%: -${isUsdtMethod(w.method)?"USDT ":"$"}${(parseFloat(w.requested)-parseFloat(w.net)).toFixed(2)})</span>`;
+      const hc = w.cur || (isFeeMethod(w.method, w.country) ? (isUsdtMethod(w.method) ? "USDT" : "USD") : "INR");
+      const hm = w.cur ? (w.fx || fxRate(hc)) : (hc==="INR" ? (w.inrRate || cfg().usdToInr) : 1), L = v => curFmt(hc, parseFloat(v)*hm);
+      const mainLine = `${esc(w.method)} • ${L(w.net)} net <span class="mut">(req ${L(w.requested)}${(parseFloat(w.requested)-parseFloat(w.net))>0.004?`, Fee ${w.pct!=null?w.pct:tdsPctForMethod(w.method)}%: -${L(parseFloat(w.requested)-parseFloat(w.net))}`:""})</span>`;
       return `<div class="lb" style="flex-wrap:wrap"><span class="n">${mainLine}${w.country?`<br><span class="mut">🌍 ${esc(w.country)}${w.autoReject?" • "+esc(w.autoReject):""}</span>`:""}${w.utr?`<br><span class="mut">UTR: ${esc(w.utr)}</span>`:""}<br><span class="mut">📅 ${esc(new Date(w.created||Date.now()).toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}))} • ${w.status==="REJECTED"?"Coins wapas mil gaye":"🪙 "+esc(w.coins)+" coins"}</span></span><span style="color:${badge[1]};font-weight:700;font-size:12px">${badge[0]}</span></div>`;
     }).join(""):`<div class="mut">Abhi koi request nahi.</div>`;
 }
@@ -3375,34 +3376,86 @@ function wdIpHint(force){
     if(window.wdIpCc !== cc){ window.wdIpCc = cc; wallet(); }
   });
 }
-function setOpt(n){
-  window.opt = n;
-  wallet(); // full re-render: preset amounts & calculator switch currency (₹ for UPI/Paytm/PhonePe, $ for PayPal, USDT for Binance)
-}
-function setAmt(d){
-  const coins = Math.round(d*cfg().rate), isINR = !isFeeOpt(window.opt);
-  $("#wcCoins").value = coins;
-  $("#wc").value = isINR ? `₹${Math.round(d*cfg().usdToInr).toLocaleString("en-IN")} (${coins} coins)` : `${isUsdtOpt(window.opt)?"USDT "+d:"$"+d} (${coins} coins)`;
-  updateWcUsd();
-}
 function wdBreakup(coins, opt){
-  const m = WD_METHOD[opt] || "UPI", gross = coins/cfg().rate, pct = appliedPct(m), fee = isFeeOpt(opt);
-  const inr = !fee, mul = inr ? cfg().usdToInr : 1, sy = inr ? "₹" : (isUsdtOpt(opt) ? "USDT " : "$");
-  const f = v => inr ? Math.round(v).toLocaleString("en-IN") : v.toFixed(2);
-  const g = gross*mul, cut = g*pct/100, net = g-cut;
-  const tp = fee ? 0 : taxPct(m), pp = fee ? 0 : procPct(m);
-  const line = (n, pc) => `<div style="display:flex;justify-content:space-between;color:#ff9b5c"><span>${n} (${pc}%)</span><b>-${sy}${f(g*pc/100)}</b></div>`;
-  const cutLines = fee ? line("Processing Fee", pct) : (tp>0 ? line("Tax", tp) : "") + (pp>0 ? line("Processing Fee", pp) : "");
-  return {m, pct, sy, g, cut, net, label: "Processing Fee", html:
-    `<div style="display:flex;justify-content:space-between"><span>Requested Amount</span><b>${sy}${f(g)}</b></div>
-     ${cutLines}
-     <div style="display:flex;justify-content:space-between;border-top:1px solid #ffffff22;margin-top:4px;padding-top:4px"><span>Net Payable Amount</span><b style="color:var(--ok)">${sy}${f(net)}</b></div>`};
+  const m = WD_METHOD[opt] || "UPI", cur = userCur(), mul = fxRate(cur), gross = coins/cfg().rate, pct = appliedPct(m);
+  const g = gross*mul, cut = g*pct/100, net = g-cut, f = v => curFmt(cur, v);
+  const cutLine = pct>0 ? `<div style="display:flex;justify-content:space-between;color:#ff9b5c"><span>Processing Fee (${pct}%)</span><b>-${f(cut)}</b></div>` : "";
+  return {m, pct, sy:CUR_SYM[cur]||"", cur, mul, g, cut, net, label:"Processing Fee", html:
+    `<div style="display:flex;justify-content:space-between"><span>Requested Amount</span><b>${f(g)}</b></div>
+     ${cutLine}
+     <div style="display:flex;justify-content:space-between;border-top:1px solid #ffffff22;margin-top:4px;padding-top:4px"><span>Net Payable Amount</span><b style="color:var(--ok)">${f(net)}</b></div>`};
 }
-function updateWcUsd(){
-  const c = parseInt($("#wcCoins").value,10)||0, el = $("#wcUsd");
-  if(!el) return;
-  if(!c){ el.innerHTML = ""; return; }
-  el.style.textAlign = "left"; el.innerHTML = wdBreakup(c, window.opt).html;
+/* ===== Redeem screen (Google Play / Amazon gift card) ===== */
+let RD = null;
+const RD_BRAND = {
+  8:{n:"Amazon", k:"amazon", card:"linear-gradient(135deg,#0d141d 0%,#1f2d3d 58%,#3b2a10 100%)", wm:"rgba(255,153,0,.9)", mark:"a",
+     how:["Gift card code aapke email par 24-48 ghante mein bheja jayega.","Amazon app/website kholo → Account → Gift Cards → Redeem a Gift Card.","Code daalo — balance aapki country ke Amazon store mein add ho jayega."]}
+};
+function rdCoins(local){ return Math.round(local/fxRate(userCur())*cfg().rate); }
+function rdList(){
+  const cur = userCur(), mnC = minCoins(), mxC = maxCoins();
+  const base = cur==="INR" ? [100,150,200,250,300,500,750,1000] : [1,2,3,4,5,6,7,8,9,10,15,20,25,30,40,50,75,100,150,200,250,300,500,1000];
+  let out = base.filter(v=>{ const c = rdCoins(v); return c>=mnC && c<=mxC; });
+  if(!out.length) out = (cfg().presetAmounts||[]).map(d=>Math.round(d*fxRate(cur)*100)/100).filter(v=>{ const c = rdCoins(v); return c>=mnC && c<=mxC; });
+  if(out.length>9) out = Array.from(new Set(Array.from({length:9},(_,i)=>out[Math.round(i*(out.length-1)/8)])));
+  return out;
+}
+function openRedeem(o){
+  if(S.isGuest) return;
+  if(!window.wdIpCc) return wdIpHint(true);
+  if(wdBlockedCc(window.wdIpCc)) return blockPopup("Access restricted in your region.", "Aapki country se withdrawal allowed nahi hai.");
+  window.opt = o; RD = {o, amt:0, qty:1, email:(typeof FBUSER!=="undefined" && FBUSER && FBUSER.email) || ""};
+  let el = $("#rdm"); if(el) el.remove();
+  el = document.createElement("div"); el.id = "rdm"; document.body.appendChild(el); rdDraw();
+}
+function closeRedeem(){ const e = $("#rdm"); if(e) e.remove(); RD = null; }
+function rdTotal(){ return RD.amt * RD.qty; }
+function rdDraw(){
+  const el = $("#rdm"); if(!el || !RD) return;
+  const st = el.scrollTop, B = RD_BRAND[RD.o], cur = userCur(), list = rdList(), avail = S.coins/cfg().rate*fxRate(cur);
+  if(!list.includes(RD.amt)) RD.amt = list[0] || 0;
+  const tot = rdTotal(), coins = rdCoins(tot), maxQ = RD.amt ? Math.max(1, Math.floor(maxCoins()/Math.max(1,rdCoins(RD.amt)))) : 1;
+  if(RD.qty>maxQ) RD.qty = maxQ;
+  const can = wdAvailable(), ready = can && RD.amt>0;
+  el.innerHTML = `<div class="rdw">
+    <button class="rdback" onclick="closeRedeem()" aria-label="Back">←</button>
+    <div class="rdbrand"><span class="rdlogo"><img src="rw/${B.k}.png" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()"><span class="rdmk">${B.mark}</span></span><b>${B.n}</b></div>
+    <div class="rdcard" style="background:${B.card}"><div class="rdcw">Card Worth</div><div class="rdamt">${RD.amt?curFmt(cur,tot):"—"}</div>
+      <div class="rdfoot"><span class="rdwordmark">${B.n}${RD.o===8?" Gift Card":""}</span><span class="rdwm" style="color:${B.wm}">GAMENEST ⚡ REWARDS</span></div></div>
+    <div class="rdh">Select amount</div>
+    <div class="rdchips">${list.map(v=>`<button class="rdchip ${RD.amt===v?"on":""}" ${rdCoins(v)>S.coins?"data-low=1":""} onclick="rdPick(${v})">${curFmt(cur,v).replace(/\s+/g,"")}</button>`).join("") || `<div class="mut">Abhi koi amount available nahi.</div>`}</div>
+    <div class="rdrow"><div class="rdh" style="margin:0">Add Quantity</div><div class="rdqty"><button onclick="rdQty(-1)" ${RD.qty<=1?"disabled":""}>−</button><b>${RD.qty}</b><button onclick="rdQty(1)" ${RD.qty>=maxQ?"disabled":""}>+</button></div></div>
+    <div class="rdrow"><div><div class="rdh" style="margin:0">Use Rewards</div><div class="rdbal">Available Balance ${curFmt(cur, avail)} <span class="rdcoin">🪙</span></div></div><span class="rdtog"><i></i></span></div>
+    <input id="wa" type="email" inputmode="email" autocomplete="email" placeholder="Email (code yahan milega)" value="${esc(RD.email)}" oninput="RD.email=this.value" class="rdin">
+    <input type="hidden" id="wcCoins" value="${ready?coins:0}">
+    ${RD.amt?`<div class="rdsum">${wdBreakup(coins, RD.o).html}<div style="text-align:right;opacity:.7;font-size:11px;margin-top:3px">🪙 ${coins} coins</div></div>`:""}
+    <div class="msg" id="msg"></div>
+    <div class="rdsl ${ready?"":"off"}" id="rdTr"><span class="rdknob" id="rdKn">➜</span><span class="rdsltxt">${ready?"Slide to redeem card":(can?"Amount choose karo":(wdCountLeft()<=0?"✅ Aaj ki limit khatam":"⏰ Abhi Band"))}</span></div>
+    <div class="rdhow"><h3>How to use this card?</h3>${B.how.map((t,i)=>`<div class="rdstep"><b>${i+1}</b><span>${t}</span></div>`).join("")}</div>
+    <div class="rdfine">${B.n} is a trademark of its owner. This app is not affiliated with, sponsored or endorsed by ${B.n}.</div>
+  </div>`;
+  el.scrollTop = st; if(ready) rdSlide();
+}
+function rdPick(v){ if(!RD) return; RD.amt = v; RD.qty = 1; rdDraw(); }
+function rdQty(d){ if(!RD) return; RD.qty = Math.max(1, RD.qty+d); rdDraw(); }
+function rdSlide(){
+  const tr = $("#rdTr"), kn = $("#rdKn"); if(!tr || !kn) return;
+  let drag = false, x0 = 0, dx = 0; const max = ()=>tr.clientWidth - kn.offsetWidth - 8;
+  kn.onpointerdown = e=>{ drag = true; x0 = e.clientX; dx = 0; kn.style.transition = ""; try{ kn.setPointerCapture(e.pointerId); }catch(_){} };
+  kn.onpointermove = e=>{ if(!drag) return; dx = Math.max(0, Math.min(max(), e.clientX - x0)); kn.style.transform = `translateX(${dx}px)`; };
+  const end = ()=>{ if(!drag) return; drag = false;
+    if(dx >= max()*0.88){ kn.style.transform = `translateX(${max()}px)`; rdGo(); }
+    else { kn.style.transition = "transform .2s"; kn.style.transform = "translateX(0)"; } };
+  kn.onpointerup = end; kn.onpointercancel = end;
+}
+async function rdGo(){
+  const reset = ()=>{ const kn = $("#rdKn"); if(kn){ kn.style.transition = "transform .25s"; kn.style.transform = "translateX(0)"; } };
+  if(!RD || !RD.amt) return reset();
+  const mail = String(RD.email||"").trim();
+  if(!/^[^\s@]{1,64}@[^\s@]{1,128}\.[A-Za-z]{2,}$/.test(mail)){ toast("Sahi email daalo (code wahin aayega)", false); return reset(); }
+  const n0 = (S.wd||[]).length;
+  try{ await withdraw(); }catch(e){}
+  if((S.wd||[]).length > n0){ closeRedeem(); } else reset();
 }
 function wdConfirmBox(html){
   return new Promise(res=>{
@@ -3430,11 +3483,12 @@ async function sendWdToSheet(w){
   w.sending = true;   // one submit in flight per request (a parallel retry would be rejected by the server as a duplicate and wrongly refund)
   try{
     // Sheet amounts are in the PAYOUT currency: INR for India gift cards (what the user saw), USD for PayPal, USDT for Binance/Bybit.
-    const mult = isFeeMethod(w.method, w.country) ? 1 : (w.inrRate || cfg().usdToInr || 83);
-    const fx = v => { const n = parseFloat(v)*mult; return isFeeMethod(w.method, w.country) ? +n.toFixed(2) : Math.round(n); };
+    const cur = w.cur || (isFeeMethod(w.method, w.country) ? (isUsdtMethod(w.method) ? "USDT" : "USD") : "INR");
+    const mult = w.cur ? (w.fx || fxRate(cur)) : (cur==="INR" ? (w.inrRate || cfg().usdToInr || 83) : 1);
+    const fx = v => { const n = parseFloat(v)*mult; return cur==="INR" ? Math.round(n) : +n.toFixed(2); };
     await userSyncNow();   // server must know this account (and its balance) before a payout request
     const d = await sheetsCall({action:"submit", device:deviceId(), requestId:w.id, mobile:w.mobile, country:w.country||"", ipCountry:w.ipCountry||"", risk:w.risk||"", to:w.to, method:w.method,
-      coins:w.coins, appVer:APP_VER, pct:w.pct, net:fx(w.net), gross:fx(w.requested||w.net), currency:wdCurrency(w.method, w.country), name:S.name||""});
+      coins:w.coins, appVer:APP_VER, pct:w.pct, net:fx(w.net), gross:fx(w.requested||w.net), currency:cur, name:S.name||""});
     if(d && d.ok){ w.sheetSent = true; w.sheetError = ""; }
     else if(d && d.permanent && !w.sheetSent){ w.sheetError = d.error||"rejected"; w.status = "REJECTED"; wdRefund(w); }
     else w.sheetError = (d && d.error) || "server error";
@@ -3561,7 +3615,7 @@ async function withdraw(){
   S.coins -= c; S.lastWithdraw = todayStr; S.wdCountDate = todayStr; S.wdCountToday = (S.wdCountToday||0)+1; // requested amount freezes instantly so user can't double-withdraw
   S.wdSeq = (S.wdSeq||1000)+1;
   const wdRec = {id:"WD"+S.wdSeq, user_id:S.phone, method, to:a, mobile:S.phone, country, ipCountry:ipc, risk, coins:c,
-    requested:gross.toFixed(2), pct, tds:tds.toFixed(2), net:net.toFixed(2), inrRate:cfg().usdToInr, status:"PENDING", utr:"", created:now()};
+    requested:gross.toFixed(2), pct, tds:tds.toFixed(2), net:net.toFixed(2), inrRate:cfg().usdToInr, cur:curOf(country), fx:fxRate(curOf(country)), status:"PENDING", utr:"", created:now()};
   S.wd.push(wdRec);
   save(); render();
   sendWdToSheet(wdRec);
