@@ -177,6 +177,25 @@ main{padding-bottom:12px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 <style>#splash{display:none!important}#adm .aw{max-width:1100px}#adm .abody{padding-bottom:110px}#adm .card2{max-width:100%}@media(min-width:900px){#adm input,#adm select,#adm textarea{max-width:720px}}</style>
+<style>html[data-adm="dark"] #adm{--bg:#000;--card:#111115;--text:#f4f4f6;--muted:#9b9ba8;--in:#1c1c23;--acc:#6366f1;--ok:#22c55e;--ln:#26262f;color-scheme:dark}
+html[data-adm="light"] #adm{--bg:#fff;--card:#f5f6f8;--text:#0b0b10;--muted:#6b7280;--in:#e9ebef;--acc:#4f46e5;--ok:#16a34a;--ln:#e1e4ea;color-scheme:light}
+#adm{background:var(--bg);color:var(--text);font-family:Inter,'Segoe UI',Roboto,Arial,sans-serif}
+#adm .atop{position:sticky;top:0;z-index:4;background:var(--bg);border-bottom:1px solid var(--ln);margin:0 -12px 8px;padding:12px 14px;font-size:16px;font-weight:800;letter-spacing:.2px}
+#adm .card2,#adm .lb2,#adm .abox{background:var(--card);border:1px solid var(--ln);border-radius:16px}
+#adm .sum{background:var(--in);border:1px solid var(--ln)}
+#adm .ch{border:1px solid var(--ln);background:var(--card);color:var(--muted);border-radius:12px}
+#adm .ch.on{background:var(--acc);color:#fff;border-color:transparent}
+#adm .tmenu{background:var(--card);color:var(--text);border-radius:14px}
+#adm .asave{background:var(--bg);border-top:1px solid var(--ln)}
+#adm .b{border-radius:12px;box-shadow:none}
+#adm .b.s{background:var(--in);color:var(--text);border:1px solid var(--ln)}
+#adm input,#adm select,#adm textarea{background:var(--in);color:var(--text);border:1px solid var(--ln);border-radius:12px}
+#adm input:focus,#adm select:focus,#adm textarea:focus{border-color:var(--acc);outline:none}
+#adm h3{font-size:17px;font-weight:800;margin:16px 0 10px}
+#adm .mut,#adm .k{color:var(--muted)}
+#adm .badge{border:1px solid var(--ln)}
+#adm .amod{background:rgba(0,0,0,.6)}
+</style>
 </head>
 <body>
 <div class="app" id="root"></div>
@@ -2119,9 +2138,10 @@ function adFailToast(){
   document.body.appendChild(d); setTimeout(()=>d.remove(), 3500);
 }
 function noAd(done){ done(); }
+function adOffToast(){ gToast ? gToast('📺 Ads abhi available nahi — thodi der baad try karo') : 0; const b = $('#boostBtn'); if(b){ b.disabled = false; b.textContent = '🎁 Claim '+runRpAmt()+' RP'; } }
 function watchAd(subtext, onDone, opts){
   opts = opts || {};
-  if(S && S.adConfig && (S.adConfig.on===false || S.adConfig.rewardedOn===false)) return onDone();   // admin turned rewarded ads off
+  if(S && S.adConfig && (S.adConfig.on===false || S.adConfig.rewardedOn===false)){ adOffToast(); if(opts.onFail) opts.onFail(); return; }   // ads switched off by admin: NO reward without a real ad
   if(window.AndroidAds){
     pushAdCfg();
     const id = ++adSeq;
@@ -2132,6 +2152,7 @@ function watchAd(subtext, onDone, opts){
     try{ window.AndroidAds.showRewarded(String(id)); }catch(e){ adCbs[id](false); }
     return;
   }
+  if(!window.__DEV_ADS){ adOffToast(); return; }   // no native ad bridge = no reward (the simulated ad is for local testing only)
   const o = document.createElement("div"); o.id = "rad";
   o.style.cssText = "position:fixed;inset:0;z-index:100;background:#000;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:20px;text-align:center";
   o.innerHTML = `<div style="font-size:13px;letter-spacing:1px;color:#aaa">📺 AD CHAL RAHA HAI</div>
@@ -3732,12 +3753,12 @@ const A = {sum:null, tk:{filter:"Open", items:[], loaded:false}, au:{items:[], l
   wd:{filter:"Pending", method:"all", items:[], counts:{}, loaded:false},
   us:{q:"", items:[], total:0, loaded:false}, cq:"", hiddenAt:0, msg:"",
   payout:{auto:false, providers:[], merchantId:"", webhookUrl:""}, sent:{}};
-const PAYOUT_LIST = [["paypal","PayPal Payouts (Mass Pay API)"],["bybit","Bybit Pay / Withdrawal API"]];
+const PAYOUT_LIST = [["paypal","PayPal Payouts (Mass Pay API)"]];
 try{ A.sent = JSON.parse(localStorage.getItem("adm_sent")||"{}") || {}; }catch(e){ A.sent = {}; }
 const CFG_TABS = ["games","lb","wal","prem","bonus","ads","info","ctry","promo","ctl"];
 const TABS = [["wd","💸 Withdrawals"],["rep","📊 Reports"],["users","👥 Users"],["games","🎮 Games"],["wal","💰 Wallet"],["prem","⭐ Premium"],["bonus","🎁 Bonus"],["ads","📺 Ads"],["info","📢 Notice & Links"],["ctry","🌍 Geo-Control"],["ctl","🛠 App Control"],["sup","🆘 Support"],["aud","🧾 Audit Log"]];
 const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-const METHODS = ["PayPal","Bybit","GooglePlay","Amazon","PhonePeGift"];
+const METHODS = ["GooglePlay","Amazon","PayPal"];
 
 /* ---------- small helpers ---------- */
 function flash(t){
@@ -4069,7 +4090,7 @@ function tAds(){
   ${tg("🎬 Rewarded Video (Claim RP par) ON/OFF","adConfig.rewardedOn","1")}
   ${tg("🔲 Banner (upar) ON/OFF","adConfig.bannerOn","1")}
   ${tg("🐞 Ad Debug Messages (test ke liye — publish se pehle OFF)","adConfig.adDebug","")}
-  <div class="mut" style="font-size:11px;margin:2px 0 6px">Rewarded OFF ho to Claim par ad ke bina RP mil jayega. Khali ID = build wala default. Har switch seedha app mein lagu hota hai, naya build nahi chahiye.</div>
+  <div class="mut" style="font-size:11px;margin:2px 0 6px">Rewarded ya All Ads OFF ho to Claim band ho jata hai (ad ke bina RP kabhi nahi milta). Khali ID = build wala default. Har switch seedha app mein lagu hota hai, naya build nahi chahiye.</div>
   <div class="mut" style="margin:8px 0 4px">Unity LevelPlay — App Key & Ad Unit IDs (LevelPlay dashboard se; baaki networks LevelPlay ke andar set hote hain)</div>${net("levelplay","appKey","LevelPlay App Key",20)}${net("levelplay","rewardedId","LevelPlay Rewarded Ad Unit ID",20)}${net("levelplay","bannerId","LevelPlay Banner Ad Unit ID",20)}`;
 }
 function tInfo(){
@@ -4243,7 +4264,7 @@ function tRep(){
   <div class="ar" style="gap:6px;flex-wrap:wrap">${[["tm","Is mahina"],["lm","Pichla mahina"]].map(([k,l])=>`<button class="b s sm" data-a="rpre" data-p="${k}">${l}</button>`).join("")}</div>
   <div class="mut" style="margin:4px 0 10px">Dates IST mein hain (Start se End tak, dono din shaamil).</div>
   
-  <div class="card2"><b>🌐 Global Processing Fee Report</b><div class="mut" style="margin:4px 0 8px">India ke alawa sab countries • PayPal, Binance, Bybit • amounts $ / USDT</div>${btns("gl")}</div>
+  <div class="card2"><b>🌐 Global Processing Fee Report</b><div class="mut" style="margin:4px 0 8px">India ke alawa sab countries • PayPal, Google Play, Amazon • amounts in $</div>${btns("gl")}</div>
   <div class="card2"><b>📋 All Transactions — Master Export</b><div class="mut" style="margin:4px 0 8px">Poora database, extra filters:</div>
     <div class="ar"><span class="mut">Method</span><select data-a2="rp" data-k="method"><option value="">All methods</option>${METHODS.map(m=>`<option value="${m}" ${r.method===m?"selected":""}>${m}</option>`).join("")}</select></div>
     <div class="ar"><span class="mut">Country</span><select data-a2="rp" data-k="country"><option value="">All countries</option>${COUNTRIES.map(c=>`<option value="${c.id}" ${r.country===c.id?"selected":""}>${E(c.flag+" "+c.name)}</option>`).join("")}</select></div>
@@ -4286,11 +4307,13 @@ function body(){
   }
   return "";
 }
+function admTheme(){ try{ return localStorage.getItem("adm_theme")==="light" ? "light" : "dark"; }catch(e){ return "dark"; } }
 function draw(){
   if(!A.open) return;
+  document.documentElement.setAttribute("data-adm", admTheme());
   const prev = $adm.querySelector("#admBody"), st = prev ? prev.scrollTop : 0;
   if(!A.doc){
-    $adm.innerHTML = `<div class="aw"><div class="atop"><b>🛡 GameNest Rewards Admin</b>${window.__ADMIN_ONLY?"":`<button class="b s sm" data-a="close">Close</button>`}</div>
+    $adm.innerHTML = `<div class="aw"><div class="atop"><b>🛡 GameNest Rewards Admin</b><span style="display:flex;gap:6px"><button class="b s sm" data-a="theme">${admTheme()==="light"?"🌙 Black":"☀️ White"}</button>${window.__ADMIN_ONLY?"":`<button class="b s sm" data-a="close">Close</button>`}</span></div>
     <div class="card2"><div class="mut">Admin email aur password daalo (Firebase server par check hota hai).</div>
     ${window.__ADMIN_ONLY?`<input id="admEmail" type="email" placeholder="Admin email" autocomplete="username" value="${E(A.email||"")}" ${A.loading?"disabled":""}>`:""}
     <input id="admPin" type="password" placeholder="Admin PIN / password" autocomplete="current-password" ${A.loading?"disabled":""}>
@@ -4301,12 +4324,12 @@ function draw(){
     return;
   }
   const un = A.doc.adConfig.unityOn !== false, cfgTab = CFG_TABS.includes(A.tab);
-  $adm.innerHTML = `<div class="aw"><div class="atop"><b>🛡 Admin</b><span style="display:flex;gap:6px"><button class="b ${un?"g":"s"} sm" data-a="unity">Unity ${un?"ON":"OFF"}</button><button class="b s sm" data-a="close">Lock</button></span></div>
+  $adm.innerHTML = `<div class="aw"><div class="atop"><b>🛡 Admin</b><span style="display:flex;gap:6px"><button class="b s sm" data-a="theme">${admTheme()==="light"?"🌙 Black":"☀️ White"}</button><button class="b s sm" data-a="close">Lock</button></span></div>
   ${sumCards()}
   <button class="ch on tmenu" data-a="tmenu"><span>${(TABS.find(t=>t[0]===A.tab)||TABS[0])[1]}</span><span>${A.menu?"▲":"▼"}</span></button>
   ${A.menu?`<div class="atabs">${TABS.map(([k,l])=>`<button class="ch ${A.tab===k?"on":""}" data-a="tab" data-v="${k}">${l}</button>`).join("")}</div>`:""}
   <div id="admBody" class="abody">${body()}</div>
-  ${cfgTab ? `<div class="asave"><span class="mut">${A.dirty?"● Unsaved changes":"✓ Saved"}</span><button class="b g" data-a="save" ${(!A.dirty||A.saving)?"disabled":""}>${A.saving?"Saving...":"💾 Save to Sheet"}</button></div>` : ""}</div>`;
+  ${cfgTab ? `<div class="asave"><span class="mut">${A.dirty?"● Unsaved changes":"✓ Saved"}</span><button class="b g" data-a="save" ${(!A.dirty||A.saving)?"disabled":""}>${A.saving?"Saving...":"💾 Save"}</button></div>` : ""}</div>`;
   const nb = $adm.querySelector("#admBody"); if(nb) nb.scrollTop = st;
 }
 function markDirty(){
@@ -4354,6 +4377,7 @@ const actions = {
   login(){ const pin = ($adm.querySelector("#admPin")||{}).value || ""; if(window.__ADMIN_ONLY && !(($adm.querySelector("#admEmail")||{}).value||"").trim()){ A.msg = "Email daalo"; draw(); return; } if(!pin) { A.msg = "Password daalo"; draw(); return; } login(pin); },
   save(){ saveCfg(); },
   unity(){ setUnity(); },
+  theme(){ try{ localStorage.setItem("adm_theme", admTheme()==="light" ? "dark" : "light"); }catch(e){} draw(); },
   tg(el){ const p = el.dataset.p, v = gp(A.doc,p), cur = el.dataset.d==="1" ? v!==false : v===true; sp(A.doc,p,!cur); markDirty(); draw(); },
   day(el){ const p = el.dataset.p, i = parseInt(el.dataset.i,10); let a = (gp(A.doc,p)||[]).slice(); a = a.includes(i) ? a.filter(x=>x!==i) : a.concat(i).sort((x,y)=>x-y); sp(A.doc,p,a); markDirty(); draw(); },
   mv(el){ const o = A.doc.config.gamesOrder, g = el.dataset.g, d = parseInt(el.dataset.d,10), i = o.indexOf(g), j = i + d; if(j<0||j>=o.length) return; o.splice(i,1); o.splice(j,0,g); markDirty(); draw(); },
