@@ -139,6 +139,11 @@ nav button{border-radius:16px;padding:7px 2px;font-weight:700;transition:backgro
 nav button.on{background:linear-gradient(180deg,rgba(139,77,255,.22),rgba(139,77,255,.08));color:var(--acc)}
 nav span{font-size:20px;margin-bottom:1px}
 .lb{border:1px solid var(--line);border-radius:14px}
+.gcbox{flex:1 1 100%;margin-top:8px;padding:10px 12px;border-radius:12px;background:linear-gradient(135deg,#ff990022,#ffb02011);border:1px solid #ff990066}
+.gcbox .gch{font-size:12px;font-weight:800;color:#ffb020;margin-bottom:6px}
+.gcbox .gcr{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0}
+.gcbox .gcr b{flex:1 1 auto;min-width:0;width:auto;font-size:15px;letter-spacing:.6px;overflow-wrap:anywhere;user-select:all;color:#ffb020}
+.gcbox .gcr .btn{padding:6px 12px;font-size:12px}
 .lb:nth-child(1){background:linear-gradient(90deg,rgba(255,213,74,.22),var(--card))}
 .lb:nth-child(2){background:linear-gradient(90deg,rgba(203,213,225,.2),var(--card))}
 .lb:nth-child(3){background:linear-gradient(90deg,rgba(217,119,6,.2),var(--card))}
@@ -865,6 +870,22 @@ const cleanTxt = (s, n) => String(s==null?"":s).replace(/[\u0000-\u001f]/g," ").
 const cleanDev = d => /^[A-Za-z0-9\-]{16,64}$/.test(String(d||"")) ? String(d) : "";
 
 /* ---- actions (same names/replies the app and admin panel already use) ---- */
+/* picks stock cards whose face values add up EXACTLY to target (same-value single card first, else a small combination) */
+function gcPick(stock, target){
+  target = Math.round(Number(target)*100); if(!(target>0)) return null;
+  const by = {}; stock.forEach(c=>{ const k = Math.round(Number(c.denom)*100); (by[k] = by[k]||[]).push(c); });
+  if(by[target]) return [by[target][0]];
+  const ds = Object.keys(by).map(Number).sort((a,b)=>b-a).filter(d=>d<target);
+  let best = null;
+  (function go(i, left, chosen){
+    if(best) return;
+    if(left===0){ best = chosen.slice(); return; }
+    if(i>=ds.length || chosen.length>=12) return;
+    const d = ds[i], pool = by[d];
+    for(let n=Math.min(pool.length, Math.floor(left/d)); n>=0 && !best; n--) go(i+1, left-n*d, chosen.concat(pool.slice(0,n)));
+  })(0, target, []);
+  return best;
+}
 const FBA = {
   async config(){
     const c = await getDoc("none","config","app").catch(()=>null);
@@ -957,7 +978,7 @@ const FBA = {
     const digits = acctOf(b.mobile), ids = (Array.isArray(b.ids)?b.ids:[]).slice(0,50).map(String).filter(x=>/^WD\d{3,9}$/.test(x));
     if(!digits || !ids.length) return {ok:false, error:"bad request"};
     const rows = await Promise.all(ids.map(i=>getDoc("user","withdrawals",i).catch(()=>null)));
-    return {ok:true, items: rows.filter(r=>r && r.mobile===digits).map(r=>({id:r.id, status:r.status, txn:r.txn||""}))};
+    return {ok:true, items: rows.filter(r=>r && r.mobile===digits).map(r=>({id:r.id, status:r.status, txn:r.txn||"", giftCode:r.giftCode||""}))};
   },
 
   /* ---------- admin ---------- */
@@ -1186,6 +1207,55 @@ const FBA = {
         first:istTime(u.first), seen:istTime(u.seen), device:String(u.device||"").substring(0,8), flag:u.flag||""}));
     return {ok:true, items, total, bans:Array.from(bans)};
   },
+  /* ---------- Gift card stock (admin only; codes never reach normal users) ---------- */
+  async adminGcList(){
+    const rows = await runQuery("admin",{from:[{collectionId:"giftcards"}], limit:5000});
+    return {ok:true, items: rows.map(r=>({id:r.id, country:r.country||"", cur:r.cur||"", denom:Number(r.denom)||0, code:r.code||"", status:r.status||"available", wd:r.wd||"", added:istTime(r.added), sold:r.soldAt?istTime(r.soldAt):""}))};
+  },
+  async adminGcAdd(b){
+    const cc = cleanCc(b.country), denom = Math.round(Number(b.denom)*100)/100;
+    if(!cc) return {ok:false, error:"country chuno"};
+    if(!(denom>0 && denom<=100000)) return {ok:false, error:"card ki value (amount) sahi daalo"};
+    const seen = new Set(), codes = [];
+    String(b.codes||"").split(/[\n,;]+/).map(x=>x.trim()).filter(Boolean).forEach(c=>{ if(!seen.has(c)){ seen.add(c); codes.push(c); } });
+    if(!codes.length) return {ok:false, error:"koi code nahi mila"};
+    if(codes.length>300) return {ok:false, error:"ek baar mein max 300 codes"};
+    const badC = codes.find(c=>!/^[A-Za-z0-9\- ]{4,60}$/.test(c));
+    if(badC) return {ok:false, error:"galat code format: "+badC.slice(0,24)};
+    const ex = new Set((await runQuery("admin",{from:[{collectionId:"giftcards"}], limit:5000})).map(r=>String(r.code||"")));
+    const fresh = codes.filter(c=>!ex.has(c)), dup = codes.length-fresh.length;
+    const cur = curOf(cc), stamp = Date.now().toString(36).toUpperCase();
+    for(let i=0;i<fresh.length;i+=100){
+      const w = fresh.slice(i,i+100).map((c,k)=>{ const gid = "G"+stamp+(i+k).toString(36).toUpperCase()+Math.random().toString(36).slice(2,5).toUpperCase(); return wUpdate("giftcards", gid, {id:gid, country:cc, cur, denom, code:c, status:"available", wd:""}, {exists:false, now:["added"]}); });
+      await commit("admin", w);
+    }
+    try{ await commit("admin",[auditW("gift cards added", cc+" "+cur+" "+denom, fresh.length+" codes")]); }catch(e){}
+    return {ok:true, added:fresh.length, dup};
+  },
+  async adminGcDel(b){
+    const id = String(b.id||""); if(!/^G[A-Z0-9]{5,30}$/.test(id)) return {ok:false, error:"bad id"};
+    const c = await getDoc("admin","giftcards",id); if(!c) return {ok:false, error:"nahi mila"};
+    if(c.status!=="available") return {ok:false, error:"sold card delete nahi hota"};
+    await commit("admin",[wDelete("giftcards",id)]); return {ok:true};
+  },
+  async adminGcAssign(b){
+    const id = String(b.id||""); if(!/^WD\d{3,9}$/.test(id)) return {ok:false, error:"bad id"};
+    const w = await getDoc("admin","withdrawals",id);
+    if(!w) return {ok:false, error:"withdrawal nahi mila"};
+    if(w.status!=="Pending") return {ok:false, error:"already "+w.status};
+    if(w.method!=="Amazon") return {ok:false, error:"sirf Amazon request"};
+    const cc = cleanCc(w.country);
+    const stock = (await runQuery("admin",{from:[{collectionId:"giftcards"}], where:andF([fEq("country",cc), fEq("status","available")]), limit:2000})).filter(x=>x.cur===w.currency);
+    const net = Number(w.net_payable_amount), gross = Number(w.gross_amount);
+    const pick = gcPick(stock, net) || gcPick(stock, gross);
+    if(!pick) return {ok:false, error:"stock mein "+(CUR_SYM[w.currency]||w.currency+" ")+net+" ka "+cc+" card nahi hai — Gift Cards tab mein add karo"};
+    const codes = pick.map(c=>c.code).join("\n");
+    const ws = pick.map(c=>wUpdate("giftcards", c.id, {status:"sold", wd:id}, {mask:["status","wd","soldAt"], exists:true, now:["soldAt"]}));
+    ws.push(wUpdate("withdrawals", id, {status:"Paid", txn:"GC-"+id, giftCode:codes}, {mask:["status","txn","giftCode"], exists:true, now:["decidedAt"]}));
+    ws.push(auditW("gift card sent", id, (w.email||w.mobile)+" • "+cc+" • "+pick.length+" card"));
+    try{ await commit("admin", ws); }catch(e){ if(e.auth) throw e; return {ok:false, error:"update fail"}; }
+    return {ok:true, cards:pick.length};
+  },
   async adminBan(b){
     let m = acctOf(b.mobile);
     if(!m){   // admin typed an e-mail: find the account
@@ -1199,7 +1269,7 @@ const FBA = {
     return {ok:true};
   }
 };
-const FB_ADMIN = new Set(["adminSummary","adminAudit","adminAdjust","adminBroadcast","adminTickets","adminTicketReply","adminReport","adminLogin","adminConfigGet","adminConfigSet","adminUnitySet","adminPayoutSet","adminList","adminSet","adminUsers","adminBan"]);
+const FB_ADMIN = new Set(["adminSummary","adminAudit","adminAdjust","adminBroadcast","adminTickets","adminTicketReply","adminReport","adminLogin","adminConfigGet","adminConfigSet","adminUnitySet","adminPayoutSet","adminList","adminSet","adminUsers","adminBan","adminGcList","adminGcAdd","adminGcDel","adminGcAssign"]);
 async function sheetsCall(body){   // legacy name kept: now talks to Firestore
   const f = FBA[body && body.action];
   if(!FB_READY) return {ok:false, error:"Firebase config set nahi hai"};
@@ -1830,10 +1900,10 @@ function maybeNotifyDaily(){
   if(!("Notification" in window) || Notification.permission!=="granted") return;
   const today = dailyPeriodKey();
   if(S.lastNotifyDate===today) return;
-  const bonusLeft = bonusAvailable(), streakLeft = S.lastStreakClaim!==today;
-  if(bonusLeft || streakLeft){
+  const bonusLeft = bonusAvailable();
+  if(bonusLeft){
     S.lastNotifyDate = today; save();
-    try{ new Notification("🎁 GameNest Rewards", {body:"Aaj ka Daily Bonus aur Login Streak claim karna na bhoolo!"}); }catch(e){}
+    try{ new Notification("🎁 GameNest Rewards", {body:"Aaj ka Daily Bonus claim karna na bhoolo!"}); }catch(e){}
   }
 }
 function enableNotifications(){
@@ -1848,7 +1918,7 @@ function notifyPreBox(){
   o.innerHTML = `<div style="background:var(--card);border-radius:16px;padding:20px;max-width:320px;width:100%;text-align:center">
     <div style="font-size:34px;margin-bottom:6px">🔔</div>
     <h3 style="margin:0 0 10px">Notifications On karein?</h3>
-    <div class="mut" style="margin-bottom:16px;text-align:left;line-height:1.5">Isse aapko milega:<br>• 🎁 Daily Bonus reminder<br>• 🔥 Login Streak chhoote nahi<br>• 💰 Withdrawal status update<br><br>Agar aap "Not Now" choose karte ho, app bilkul normal chalta rahega — kuch block nahi hoga.</div>
+    <div class="mut" style="margin-bottom:16px;text-align:left;line-height:1.5">Isse aapko milega:<br>• 🎁 Daily Bonus reminder<br>• 💰 Withdrawal status update<br><br>Agar aap "Not Now" choose karte ho, app bilkul normal chalta rahega — kuch block nahi hoga.</div>
     <div class="row" style="gap:8px"><button class="btn s" onclick="document.getElementById('notifypre').remove()">Not Now</button><button class="btn" onclick="notifyPreConfirm()">Allow</button></div></div>`;
   document.body.appendChild(o);
 }
@@ -1856,7 +1926,7 @@ function notifyPreConfirm(){
   const o = $("#notifypre"); if(o) o.remove();
   Notification.requestPermission().then(p=>{
     S.notifyEnabled = p==="granted"; save(); me();
-    if(p==="granted") try{ new Notification("GameNest Rewards", {body:"Notifications ON! Daily streak aur bonus reminders milenge."}); }catch(e){}
+    if(p==="granted") try{ new Notification("GameNest Rewards", {body:"Notifications ON! Daily bonus reminders milenge."}); }catch(e){}
     else if(p==="denied") alert("Notifications block ho gaye — browser/app settings se allow karo. App waise hi chalta rahega.");
   });
 }
@@ -1877,7 +1947,7 @@ function home(){
   const extCard = (c.extAppOn===true && (c.extAppPkg||c.extAppUrl)) ? `<div class="card" style="display:flex;justify-content:space-between;align-items:center"><div><h3 style="margin:0 0 2px">🎮 ${esc(c.extAppName||"Partner Game")}</h3><div class="mut">Game / app kholo</div></div><button class="btn sm" onclick="openExternalApp(cfg().extAppPkg, cfg().extAppUrl)">Open</button></div>` : "";
   const _usd = ((S.coins||0)/(c.rate||1500)).toFixed(2), _nm = esc(String(S.name||"Player").split(" ")[0]);
   const walletHero = `<div class="wh"><div class="hi">👋 Welcome, ${_nm}</div><div class="big">🪙 ${S.coins||0}<small>coins ≈ $${_usd}</small></div>
-      <div class="sub"><b>💜 ${S.rp||0} RP</b><b>🔥 Streak day ${S.streakDay||1}</b></div>
+      <div class="sub"><b>💜 ${S.rp||0} RP</b></div>
       <div class="acts"><button class="a1" onclick="tab='play';render()">🎮 Play</button><button class="a2" onclick="tab='wallet';render()">💰 Redeem</button></div></div>`;
   $("#view").innerHTML = walletHero + adBox('home') + noticeBanner('home') + extCard
     + (("Notification" in window) ? `<div class="row" style="margin-bottom:8px"><span class="mut">🔔 Reminders ${(S.notifyEnabled && Notification.permission==="granted")?"ON ✅":"OFF"}</span>${(S.notifyEnabled && Notification.permission==="granted")?"":`<button class="btn s sm" onclick="enableNotifications()">Enable</button>`}</div>` : "")
@@ -3382,13 +3452,15 @@ function wdCards(cc, opts){
   }).join("");
   return `<div class="mut" style="margin-bottom:8px;font-weight:800">${head}</div><div class="rwg">${cards}</div><div class="mut" style="font-size:11px;margin:-4px 0 10px">Amazon is a trademark of Amazon.com, Inc. This app is not affiliated with, sponsored or endorsed by Amazon.</div>${inr?`<div class="mut" style="margin:-4px 0 10px">Code aapke email par bheja jayega.</div>`:""}`;
 }
+function gcCopy(c, b){ b = b || (event && event.target); const done = ok=>{ if(b){ const o = b.textContent; b.textContent = ok?"Copied ✓":"Hold & copy"; setTimeout(()=>{ b.textContent = o; }, 1600); } };
+  try{ navigator.clipboard.writeText(c).then(()=>done(true), ()=>done(false)); }catch(e){ done(false); } }
 function wdHistory(){
   return S.wd.length?S.wd.slice().reverse().map(w=>{
       const badge = {PENDING:["⏳ Pending","#8a93a8"],APPROVED:["✔️ Approved","#38bdf8"],SUCCESS:["✅ Success","#1fa971"],REJECTED:["❌ Rejected","#ff5c5c"]}[w.status]||["",w.status];
       const hc = w.cur || (isFeeMethod(w.method, w.country) ? (isUsdtMethod(w.method) ? "USDT" : "USD") : "INR");
       const hm = w.cur ? (w.fx || fxRate(hc)) : (hc==="INR" ? (w.inrRate || cfg().usdToInr) : 1), L = v => curFmt(hc, parseFloat(v)*hm);
       const mainLine = `${esc(w.method)} • ${L(w.net)} net <span class="mut">(req ${L(w.requested)}${(parseFloat(w.requested)-parseFloat(w.net))>0.004?`, Fee ${w.pct!=null?w.pct:tdsPctForMethod(w.method)}%: -${L(parseFloat(w.requested)-parseFloat(w.net))}`:""})</span>`;
-      return `<div class="lb" style="flex-wrap:wrap"><span class="n">${mainLine}${w.country?`<br><span class="mut">🌍 ${esc(w.country)}${w.autoReject?" • "+esc(w.autoReject):""}</span>`:""}${w.utr?`<br><span class="mut">UTR: ${esc(w.utr)}</span>`:""}<br><span class="mut">📅 ${esc(new Date(w.created||Date.now()).toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}))} • ${w.status==="REJECTED"?"Coins wapas mil gaye":"🪙 "+esc(w.coins)+" coins"}</span></span><span style="color:${badge[1]};font-weight:700;font-size:12px">${badge[0]}</span></div>`;
+      return `<div class="lb" style="flex-wrap:wrap"><span class="n">${mainLine}${w.country?`<br><span class="mut">🌍 ${esc(w.country)}${w.autoReject?" • "+esc(w.autoReject):""}</span>`:""}${!w.giftCode&&w.utr?`<br><span class="mut">UTR: ${esc(w.utr)}</span>`:""}<br><span class="mut">📅 ${esc(new Date(w.created||Date.now()).toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}))} • ${w.status==="REJECTED"?"Coins wapas mil gaye":"🪙 "+esc(w.coins)+" coins"}</span></span><span style="color:${badge[1]};font-weight:700;font-size:12px">${badge[0]}</span>${w.giftCode?`<div class="gcbox"><div class="gch">🎁 Your Amazon Gift Card code${w.giftCode.indexOf("\n")>=0?"s":""}</div>${w.giftCode.split("\n").map(c=>`<div class="gcr"><b>${esc(c)}</b><button class="btn sm" onclick="gcCopy('${esc(c)}',this)">Copy</button></div>`).join("")}</div>`:""}</div>`;
     }).join(""):`<div class="mut">Abhi koi request nahi.</div>`;
 }
 function wdIpHint(force){
@@ -3539,6 +3611,7 @@ async function syncWdStatuses(){
         const ns = SHEET_STATUS[it.status] || w.status;
         if(ns !== w.status){ w.status = ns; changed = true; }
         if(it.txn && w.utr !== it.txn){ w.utr = it.txn; changed = true; }
+        if(it.giftCode && w.giftCode !== it.giftCode){ w.giftCode = it.giftCode; changed = true; }
         if(ns === "REJECTED" && !w.refunded){ wdRefund(w); changed = true; }
       });
     }
@@ -3804,14 +3877,14 @@ function sp(o,p,v){
   for(let i=0;i<ks.length-1;i++){ const k = ks[i]; if(a[k]==null || typeof a[k]!=="object") a[k] = /^\d+$/.test(ks[i+1]) ? [] : {}; a = a[k]; }
   a[ks[ks.length-1]] = v;
 }
-const A = {sum:null, tk:{filter:"Open", items:[], loaded:false}, au:{items:[], loaded:false}, open:false, tok:"", doc:null, dirty:false, tab:"wd", saving:false, loading:false,
+const A = {gc:{items:[], loaded:false, country:"US", denom:"", codes:"", showSold:false}, sum:null, tk:{filter:"Open", items:[], loaded:false}, au:{items:[], loaded:false}, open:false, tok:"", doc:null, dirty:false, tab:"wd", saving:false, loading:false,
   wd:{filter:"Pending", method:"all", items:[], counts:{}, loaded:false},
   us:{q:"", items:[], total:0, loaded:false}, cq:"", hiddenAt:0, msg:"",
   payout:{auto:false, providers:[], merchantId:"", webhookUrl:""}, sent:{}};
 const PAYOUT_LIST = [["custom","Custom backend (gift card API / webhook)"]];
 try{ A.sent = JSON.parse(localStorage.getItem("adm_sent")||"{}") || {}; }catch(e){ A.sent = {}; }
 const CFG_TABS = ["games","lb","wal","prem","bonus","ads","info","ctry","promo","ctl"];
-const TABS = [["wd","💸 Withdrawals"],["rep","📊 Reports"],["users","👥 Users"],["games","🎮 Games"],["wal","💰 Wallet"],["prem","⭐ Premium"],["bonus","🎁 Bonus"],["ads","📺 Ads"],["info","📢 Notice & Links"],["ctry","🌍 Geo-Control"],["ctl","🛠 App Control"],["sup","🆘 Support"],["aud","🧾 Audit Log"]];
+const TABS = [["wd","💸 Withdrawals"],["gc","🎁 Gift Cards"],["rep","📊 Reports"],["users","👥 Users"],["games","🎮 Games"],["wal","💰 Wallet"],["prem","⭐ Premium"],["bonus","🎁 Bonus"],["ads","📺 Ads"],["info","📢 Notice & Links"],["ctry","🌍 Geo-Control"],["ctl","🛠 App Control"],["sup","🆘 Support"],["aud","🧾 Audit Log"]];
 const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 const METHODS = ["GooglePlay","Amazon"];
 
@@ -3966,7 +4039,7 @@ async function login(pin){
     const r = await call("adminConfigGet");
     if(!r.ok){ A.loading = false; A.msg = r.error || "Config load fail"; draw(); return; }
     A.doc = buildDoc(r); A.msg = ""; if(r.payout) A.payout = {auto:r.payout.auto===true, providers:r.payout.providers||[], merchantId:r.payout.merchantId||"", webhookUrl:r.payout.webhookUrl||""};
-    await loadWd(true); loadSummary();
+    await loadWd(true); loadSummary(); loadGc(true).then(draw);
   }catch(e){ if(String(e&&e.message)!=="rules") A.msg = "Network error"; }
   A.loading = false; draw();
 }
@@ -3976,6 +4049,11 @@ async function loadWd(quiet){
     if(d.ok){ A.wd.items = d.items || []; A.wd.counts = d.counts || {}; A.wd.loaded = true; }
     else flash(d.error || "Load error");
   }catch(e){ if(e.message !== "auth") flash("Network error"); }
+  if(!quiet) draw();
+}
+async function loadGc(quiet){
+  try{ const d = await call("adminGcList", {}); if(d.ok){ A.gc.items = d.items||[]; A.gc.loaded = true; } else flash(d.error||"Stock load error"); }
+  catch(e){ if(e.message!=="auth") flash("Network error"); }
   if(!quiet) draw();
 }
 async function loadTk(){ try{ const d = await call("adminTickets",{filter:A.tk.filter}); if(d.ok){ A.tk.items = d.items; A.tk.loaded = true; draw(); } }catch(e){} }
@@ -4128,13 +4206,12 @@ function tPayout(){
 }
 function tBonus(){
   const c = A.doc.config;
-  return `<h3>4️⃣ Daily Bonus & Login Streak</h3>
+  return `<h3>4️⃣ Daily Bonus</h3>
   ${inp("Daily Bonus (RP)","config.dailyBonusRp","n",{w:100})}
   ${sel("Bonus Video Frequency","config.dailyBonusIntervalDays",[1,2,3,4,5,6,7].map(n=>[n,n===1?"Har Din":`Har ${n} din`]),"i")}
   ${tg("Timing Window (sirf is time par video)","config.dailyBonusTimeEnabled","0")}
   ${c.dailyBonusTimeEnabled?`${inp("Start","config.dailyBonusTimeStart","t",{type:"time"})}${inp("End","config.dailyBonusTimeEnd","t",{type:"time"})}`:""}
-  <div class="mut" style="margin:10px 0 4px">Login Streak Rewards (Day 1-${(c.streakRewards||[]).length}) — number ya "$0.10" jaisa text</div>
-  ${(c.streakRewards||[]).map((r,i)=>`<div class="ar"><span class="mut" style="width:54px">Day ${i+1}</span><input data-p="config.streakRewards.${i}" data-t="a" value="${E(r)}" style="margin:0"></div>`).join("")}`;
+  <div class="mut" style="margin-top:10px">Daily Bonus RP user ko video dekhne ke baad milta hai. (Login Streak feature app se hata diya gaya hai.)</div>`;
 }
 function tAds(){
   const ad = A.doc.adConfig, un = ad.unityOn !== false;
@@ -4230,7 +4307,7 @@ function wdCard(w){
   const g = parseFloat(w.gross), n = parseFloat(w.net), cut = (g>0 && g>=n) ? (g-n) : 0;
   return `<div class="card2"><div class="ar"><b>${E(w.id)} · ${E(w.method)}</b><span class="badge b-${E(w.status)}">${E(w.status)}</span></div>
   <div class="g2">
-    <div><div class="k">Name</div><div class="v">${E(w.name||"-")}</div></div><div><div class="k">Gmail</div><div class="v">${E(w.email||"-")}</div></div><div><div class="k">Country (selected / IP)</div><div class="v">${E(w.country||"-")} / ${E(w.ipCountry||"-")}</div></div>
+    <div><div class="k">Name</div><div class="v">${E(w.name||"-")}</div></div><div><div class="k">Gmail</div><div class="v">${E(w.email||"-")}</div></div><div><div class="k">Country (selected / IP)</div><div class="v">${ctryTag(w.country)} / ${E(w.ipCountry||"-")}</div></div>
     <div><div class="k">${upi?"UPI ID":"Payout ID"}</div><div class="v">${E(w.to)}</div></div><div><div class="k">Coins</div><div class="v">${E(w.coins)}</div></div>
     <div><div class="k">Pay amount</div><div class="v">${sym(w.currency)}${E(w.net)}</div></div><div><div class="k">Time</div><div class="v" style="font-size:12px">${E(w.time)}</div></div>
     ${cut>0?`<div><div class="k">Requested</div><div class="v">${sym(w.currency)}${E(w.gross)}</div></div><div><div class="k">Fee (${E(w.pct!=null?w.pct:"?")}%)</div><div class="v">${sym(w.currency)}${cut.toFixed(2)}</div></div>`:""}
@@ -4239,12 +4316,15 @@ function wdCard(w){
   ${w.sus?`<div style="background:#ff3b3022;border:2px solid #ff3b30;color:#ff6b61;font-weight:700;font-size:12px;padding:6px 8px;border-radius:8px;margin-bottom:6px">⚠️ SUSPICIOUS — Paid karne se pehle check karo: ${E(w.sus)}</div>`:""}
   ${w.flag?`<div style="color:#ff7a45;font-size:12px;margin-bottom:6px">🚩 ${E(w.flag)}</div>`:""}
   ${fraudFlag(w)?`<div style="color:#ffb020;font-size:12px;margin-bottom:6px">${E(fraudFlag(w))}</div>`:""}
+  ${w.status==="Pending" && w.method==="Amazon" ? gcLine(w) : ""}
+  ${w.status==="Paid" && w.method==="Amazon" && /^GC-/.test(w.txn||"") ? `<div style="color:#3ddc97;font-size:12px;font-weight:700;margin-bottom:6px">🎁 Gift card app mein bhej diya gaya</div>` : ""}
   ${w.status==="Pending"||w.status==="Paid"?backendLine(w):""}
   ${w.txn?`<div class="k">Transaction ID</div><div class="v" style="margin-bottom:8px">${E(w.txn)}</div>`:""}
   <div class="ar" style="justify-content:flex-start;flex-wrap:wrap">
     <button class="b s" data-a="copy" data-t="${E(w.to)}">Copy ID</button>
     ${link && w.status==="Pending" ? `<a class="b" href="${E(link)}">Pay via UPI app</a>` : ""}
     ${w.status==="Pending" && A.payout.webhookUrl ? `<button class="b s" data-a="tobk" data-id="${E(w.id)}">📤 ${A.sent[w.id]?"Resend":"Send"} to Backend</button>` : ""}
+    ${w.status==="Pending" && w.method==="Amazon" ? `<button class="b g" data-a="gcsend" data-id="${E(w.id)}">🎁 Send Gift Card</button>` : ""}
     ${w.status==="Pending" ? `<button class="b g" data-a="paid" data-id="${E(w.id)}" data-m="${E(w.mobile)}">Mark Paid</button><button class="b bad" data-a="rej" data-id="${E(w.id)}" data-m="${E(w.mobile)}">Reject</button>` : ""}
   </div></div>`;
 }
@@ -4328,9 +4408,45 @@ function tRep(){
     ${btns("all")}</div>
   <div class="mut" style="margin-top:8px">Har file ke sabse niche Total Gross, Total Fee aur Total Net ki summary rows hoti hain (sabhi listed rows + sirf Success wali alag).</div>`;
 }
+
+function gcAvail(){ return (A.gc.items||[]).filter(c=>c.status==="available"); }
+function gcFor(w){   // which stock cards would be sent for this withdrawal (same logic as the server)
+  const cc = String(w.country||"").toUpperCase(), st = gcAvail().filter(c=>c.country===cc && c.cur===w.currency);
+  return gcPick(st, w.net) || gcPick(st, w.gross);
+}
+function gcLine(w){
+  if(!A.gc.loaded) return `<div class="mut" style="margin:4px 0">🎁 Stock check ho raha hai...</div>`;
+  const p = gcFor(w);
+  return p ? `<div style="background:#1fa97122;border:1px solid #1fa971;color:#3ddc97;font-weight:700;font-size:12px;padding:6px 8px;border-radius:8px;margin-bottom:6px">🎁 Stock ready: ${p.map(c=>sym(c.cur)+c.denom).join(" + ")} ${E(w.country)} card</div>`
+    : `<div style="background:#ff3b3022;border:1px solid #ff3b30;color:#ff6b61;font-weight:700;font-size:12px;padding:6px 8px;border-radius:8px;margin-bottom:6px">🎁 ${E(w.country)} ka ${sym(w.currency)}${E(w.net)} card stock mein nahi — Gift Cards tab mein add karo</div>`;
+}
+function tGc(){
+  const g = A.gc, av = gcAvail(), sold = (g.items||[]).filter(c=>c.status!=="available");
+  const grp = {}; av.forEach(c=>{ const k = c.country+"|"+c.cur; ((grp[k] = grp[k]||{cc:c.country, cur:c.cur, d:{}}).d[c.denom] = (grp[k].d[c.denom]||0)+1); });
+  const rows = Object.values(grp).sort((a,b)=>a.cc.localeCompare(b.cc)).map(x=>`<div class="card2"><div class="ar"><b>${ctryTag(x.cc)}</b><span class="mut">${x.cur}</span></div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px">${Object.keys(x.d).map(Number).sort((a,b)=>a-b).map(d=>`<span class="badge" style="background:#6366f133;color:var(--text)">${sym(x.cur)}${d} × ${x.d[d]}</span>`).join("")}</div></div>`).join("");
+  const pend = (A.wd.items||[]).filter(w=>w.status==="Pending" && w.method==="Amazon"), ready = pend.filter(w=>gcFor(w)).length;
+  const cur = curOf(g.country);
+  const list = av.slice().sort((a,b)=>a.country.localeCompare(b.country)||a.denom-b.denom).slice(0,200).map(c=>`<div class="ar" style="padding:4px 0"><span>${ctryTag(c.country)} • <b>${sym(c.cur)}${c.denom}</b> • <span class="mut">${E(c.code.slice(0,4))}••••${E(c.code.slice(-4))}</span></span><button class="b bad sm" data-a="gcdel" data-id="${E(c.id)}">🗑</button></div>`).join("");
+  return `<h3>🎁 Gift Card Stock</h3>
+  <div class="mut" style="margin-bottom:8px;line-height:1.5">Amazon gift cards khareed kar yahan country-wise daalo. Jab koi user Amazon redeem karta hai, uski country ka sahi amount wala card yahan se chuna jata hai aur uske app mein code dikh jata hai.</div>
+  <div class="card2"><b>➕ Cards add karo</b>
+    <div class="ar" style="margin-top:8px"><span class="mut">Country</span><select data-a2="gc" data-k="country">${COUNTRIES.map(c=>`<option value="${c.id}" ${g.country===c.id?"selected":""}>${E(c.flag+" "+c.name)}</option>`).join("")}</select></div>
+    <div class="ar"><span class="mut">Card value (${sym(cur)} ${cur})</span><input data-a2="gc" data-k="denom" type="number" step="any" inputmode="decimal" placeholder="jaise 10 ya 500" value="${E(g.denom)}" style="width:130px;margin:0"></div>
+    <div class="mut" style="margin:6px 0 2px">Codes — har line mein ek code</div>
+    <textarea data-a2="gc" data-k="codes" placeholder="ABCD-EFGHIJ-KLMN&#10;WXYZ-123456-QRST" style="min-height:110px">${E(g.codes)}</textarea>
+    <button class="b g wf" data-a="gcadd">➕ Stock mein add karo</button></div>
+  <div class="card2"><b>🚀 Pending Amazon requests: ${pend.length}</b><div class="mut" style="margin:4px 0 8px">${pend.length?`${ready} ke liye stock ready hai.`:"Abhi koi pending request nahi."}</div>
+    <button class="b g wf" data-a="gcall" ${ready?"":"disabled"}>🎁 Ready wali sabko card bhejo (${ready})</button></div>
+  <div class="ar" style="margin-top:12px"><b>📦 Available stock (${av.length})</b><button class="b s sm" data-a="gcload">Refresh</button></div>
+  ${g.loaded ? (rows || `<div class="mut">Stock khaali hai.</div>`) : `<div class="mut">Loading...</div>`}
+  ${av.length?`<details style="margin-top:8px"><summary class="mut">Saare codes dekho / delete karo (${Math.min(av.length,200)})</summary>${list}</details>`:""}
+  <div class="mut" style="margin-top:12px">✅ Bheje gaye cards: ${sold.length}</div>`;
+}
+function ctryTag(id){ const c = COUNTRIES.find(x=>x.id===String(id||"").toUpperCase()); return c ? `<span style="font-size:20px;vertical-align:middle">${c.flag}</span> ${E(c.name)} <span class="mut">(${E(c.id)})</span>` : E(id||"-"); }
 function userIsPrem(x){ return (A.doc.config.premiumCountries||[]).map(v=>String(v).toUpperCase()).includes(String(x.country||"").toUpperCase()); }
 function userCard(x){
-  return `<div class="card2"><div class="ar"><b>${E(x.name||"-")}</b><span class="mut">${userIsPrem(x)?"⭐ ":""}${E(x.country)}</span></div>
+  return `<div class="card2"><div class="ar"><b>${E(x.name||"-")}</b><span style="font-weight:700;text-align:right">${userIsPrem(x)?"⭐ ":""}${ctryTag(x.country)}</span></div>
     <div class="g2"><div><div class="k">Gmail</div><div class="v">${E(x.email||"-")}</div></div><div><div class="k">Referral</div><div class="v">${E(x.code)}</div></div>
     <div><div class="k">Coins</div><div class="v">${E(x.coins)}</div></div><div><div class="k">RP</div><div class="v">${E(x.rp)}</div></div>
     <div><div class="k">Device</div><div class="v" style="font-size:12px">${E(x.device||"-")}</div></div>${x.flag?`<div style="grid-column:1/-1;color:#ffb020;font-size:12px">🚩 ${E(x.flag)}</div>`:""}<div><div class="k">First seen</div><div class="v" style="font-size:12px">${E(x.first)}</div></div><div><div class="k">Last seen</div><div class="v" style="font-size:12px">${E(x.last||"-")}</div></div></div>
@@ -4360,7 +4476,7 @@ function tUsers(){
 function body(){
   switch(A.tab){
     case "wd": return tWd(); case "rep": return tRep(); case "users": return tUsers(); case "games": return tGames(); case "lb": return tLb();
-    case "wal": return tWal(); case "prem": return tPrem(); case "bonus": return tBonus(); case "ads": return tAds(); case "info": return tInfo(); case "ctry": return tCtry(); case "promo": return tPromo(); case "ctl": return tCtl(); case "sup": return tSup(); case "aud": return tAud();
+    case "wal": return tWal(); case "prem": return tPrem(); case "gc": return tGc(); case "bonus": return tBonus(); case "ads": return tAds(); case "info": return tInfo(); case "ctry": return tCtry(); case "promo": return tPromo(); case "ctl": return tCtl(); case "sup": return tSup(); case "aud": return tAud();
   }
   return "";
 }
@@ -4415,6 +4531,7 @@ $adm.addEventListener("input", e=>{
   if(d.a2 === "pq"){ A.pq = e.target.value; const l = $adm.querySelector("#premList"); if(l) l.innerHTML = premList(); return; }
   if(d.a2 === "cq"){ A.cq = e.target.value; const l = $adm.querySelector("#ctryList"); if(l) l.innerHTML = ctryList(); return; }
   if(d.a2 === "uq"){ A.us.q = e.target.value; return; }
+  if(d.a2 === "gc"){ if(e.target.tagName!=="SELECT") A.gc[d.k] = e.target.value; return; }
   if(d.a2 === "pvem"){ A.pvEm = e.target.value; return; }
   if(d.a2 === "pvcc"){ A.pvCc = e.target.value.toUpperCase(); return; }
   if(e.target.tagName === "SELECT") return;
@@ -4425,12 +4542,13 @@ $adm.addEventListener("change", e=>{
   if(d.a2 === "pos"){ const o = A.doc.config.gamesOrder, g = d.g, i = o.indexOf(g); o.splice(i,1); o.splice(parseInt(e.target.value,10),0,g); markDirty(); draw(); return; }
   if(d.a2 === "repMonth"){ A.repMonth = e.target.value; return; }
   if(d.a2 === "rp"){ A.rp[d.k] = e.target.value; return; }
+  if(d.a2 === "gc"){ A.gc[d.k] = e.target.value; if(d.k==="country") draw(); return; }
   onField(e, true);
 });
 const actions = {
   close(){ closeAdmin(); },
   tmenu(){ A.menu = !A.menu; draw(); },
-  tab(el){ A.tab = el.dataset.v; A.menu = false; draw(); if(A.tab==="users" && !A.us.loaded) loadUsers(); if(A.tab==="wd" && !A.wd.loaded) loadWd(); if(A.tab==="sup" && !A.tk.loaded) loadTk(); if(A.tab==="aud" && !A.au.loaded) loadAud(); loadSummary(); },
+  tab(el){ A.tab = el.dataset.v; A.menu = false; draw(); if(A.tab==="users" && !A.us.loaded) loadUsers(); if(A.tab==="gc") loadGc(); if(A.tab==="wd" && !A.wd.loaded) loadWd(); if(A.tab==="sup" && !A.tk.loaded) loadTk(); if(A.tab==="aud" && !A.au.loaded) loadAud(); loadSummary(); },
   login(){ const pin = ($adm.querySelector("#admPin")||{}).value || ""; if(window.__ADMIN_ONLY && !(($adm.querySelector("#admEmail")||{}).value||"").trim()){ A.msg = "Email daalo"; draw(); return; } if(!pin) { A.msg = "Password daalo"; draw(); return; } login(pin); },
   save(){ saveCfg(); },
   unity(){ setUnity(); },
@@ -4464,6 +4582,42 @@ const actions = {
   resetMyRp(){ if(S){ S.rp = 0; save(); flash("Is device ka RP 0 ho gaya"); } else flash("Pehle app mein login karo"); },
   copy(el){ try{ navigator.clipboard.writeText(el.dataset.t); flash("Copied"); }catch(e){ flash("Copy nahi hua"); } },
   wdload(){ loadWd(); },
+  gcload(){ loadGc(); },
+  async gcadd(){
+    const g = A.gc; if(!g.country) return flash("Country chuno");
+    if(!(Number(g.denom)>0)) return flash("Card ki value daalo");
+    if(!String(g.codes||"").trim()) return flash("Codes paste karo");
+    try{
+      const d = await call("adminGcAdd", {country:g.country, denom:g.denom, codes:g.codes});
+      if(d.ok){ g.codes = ""; flash(d.added+" card add hue ✅"+(d.dup?` (${d.dup} duplicate skip)`:"")); await loadGc(true); }
+      else flash(d.error||"Add fail");
+    }catch(e){ if(e.message!=="auth") flash("Network error"); }
+    draw();
+  },
+  async gcdel(el){
+    if(!await ask({title:"Card delete?", msg:"Yeh code stock se hata diya jayega.", ok:"Delete", bad:true})) return;
+    try{ const d = await call("adminGcDel", {id:el.dataset.id}); flash(d.ok?"Delete ho gaya":(d.error||"Fail")); await loadGc(true); }catch(e){ if(e.message!=="auth") flash("Network error"); }
+    draw();
+  },
+  async gcsend(el){
+    const id = el.dataset.id;
+    if(!await ask({title:"Gift card bhejo?", msg:`${id} ko uski country ka card app mein bhej diya jayega aur request Paid ho jayegi.`, ok:"Send"})) return;
+    try{
+      const d = await call("adminGcAssign", {id});
+      if(d.ok){ flash(`${id} → card bhej diya 🎁`); await Promise.all([loadWd(true), loadGc(true)]); } else flash(d.error||"Fail");
+    }catch(e){ if(e.message!=="auth") flash("Network error"); }
+    draw();
+  },
+  async gcall(){
+    const list = (A.wd.items||[]).filter(w=>w.status==="Pending" && w.method==="Amazon" && gcFor(w));
+    if(!list.length) return flash("Koi ready request nahi");
+    if(!await ask({title:"Sabko bhejo?", msg:`${list.length} requests ko card bheje jayenge.`, ok:"Send all"})) return;
+    let ok = 0, fail = 0;
+    for(const w of list){
+      try{ const d = await call("adminGcAssign", {id:w.id}); if(d.ok){ ok++; await loadGc(true); } else fail++; }catch(e){ if(e.message==="auth") return; fail++; }
+    }
+    await loadWd(true); flash(`${ok} bheje ✅`+(fail?`, ${fail} fail`:"")); draw();
+  },
   wdf(el){ A.wd.filter = el.dataset.v; draw(); },
   wdm(el){ A.wd.method = el.dataset.v; draw(); },
   async paid(el){
