@@ -77,10 +77,10 @@ public class MainActivity extends AppCompatActivity {
         webView = new WebView(this);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.addView(webView, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
-        bannerHolder = new FrameLayout(this);
+        bannerHolder = new FrameLayout(this);          // banner pinned to the TOP, above the web content (never next to game buttons)
         bannerHolder.setVisibility(android.view.View.GONE);
         root.addView(bannerHolder, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        root.addView(webView, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
         root.setBackgroundColor(android.graphics.Color.parseColor("#140a2e"));
         // targetSdk 35+ forces edge-to-edge: keep the page clear of the status bar / navigation bar / cutout
         androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {

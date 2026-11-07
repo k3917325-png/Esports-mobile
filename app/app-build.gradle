@@ -2,8 +2,7 @@ plugins {
     id 'com.android.application'
 }
 
-// Ad networks, priority: Unity LevelPlay -> Start.io. IDs are public identifiers, not secrets.
-def startioAppId = System.getenv("STARTIO_APP_ID") ?: "209272738"
+// Ad network: Unity LevelPlay only (AdMob / AppLovin / Mintegral / Liftoff are mediated inside LevelPlay). IDs are public identifiers, not secrets.
 def runNumber = Integer.parseInt(System.getenv("GITHUB_RUN_NUMBER") ?: "1")   // auto-increments every CI build (Play rejects duplicates)
 def lpAppKey = System.getenv("LEVELPLAY_APP_KEY") ?: "2907ef07d"
 def lpRewarded = System.getenv("LEVELPLAY_REWARDED_ID") ?: "irnjcdz0cypidlpf"
@@ -19,7 +18,6 @@ android {
         targetSdk 36
         versionCode runNumber
         versionName "1.0.0"
-        resValue "string", "startio_app_id", startioAppId
         resValue "string", "levelplay_app_key", lpAppKey
         resValue "string", "levelplay_rewarded_id", lpRewarded
         resValue "string", "levelplay_banner_id", lpBanner
@@ -67,6 +65,5 @@ dependencies {
     implementation 'com.google.android.gms:play-services-appset:16.0.0'
     implementation 'com.google.android.gms:play-services-ads-identifier:18.1.0'
     implementation 'com.google.android.gms:play-services-basement:18.1.0'
-    implementation 'com.startapp:inapp-sdk:5.+'   // Start.io (fallback network)
     implementation 'com.google.android.gms:play-services-auth:21.2.0'   // Google Sign-In
 }
