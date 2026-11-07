@@ -594,7 +594,7 @@ function defaultConfig(){ return {
     100,100,100,100,100,100,100,100,100,100,
     65,65,65,65,65,65,65,65,65,65];
     const t = {}; p.forEach((v,i)=>t[i+1]=v); return t; })(),
-  rpPerCent: 100000, rpCoins: 15, premiumCountries: ["US","CA","GB","AU","NZ","DE","CH","NO","SE"], rpPremiumUsd: 0.10, // rpPerCent RP = rpCoins coins (shown on the Games screen; admin can change). 15 coins = $0.01 at the default rate
+  rpPerCent: 100000, rpCoins: 15, premiumCountries: ["US","CA","GB","AU","NZ","DE","CH","NO","SE"], rpPremiumUsd: 0.10, premium2Countries: [], // rpPerCent RP = rpCoins coins (shown on the Games screen; admin can change). 15 coins = $0.01 at the default rate
   dailyBonusRp: 500,
   dailyBonusIntervalDays: 1, // 1=roz, 2=har 2 din mein ek baar, 3=har 3 din mein ek baar, etc.
   dailyBonusTimeEnabled: false, dailyBonusTimeStart: "18:00", dailyBonusTimeEnd: "22:00", // sirf is window mein claim available
@@ -612,35 +612,49 @@ function defaultConfig(){ return {
   payoutWebhookUrl: ""
 }; }
 function cfg(){ return RCFG || (S && S.config) || defaultConfig(); }
-function premList(c){ c = c || cfg(); return ((c.premiumCountries===undefined||c.premiumCountries===null) ? ["US","CA","GB","AU","NZ","DE","CH","NO","SE"] : c.premiumCountries).map(x=>String(x).toUpperCase()); }
-function wdIsPrem(){ const cc = pvCc() || String(window.wdIpCc||(S&&S.countryId)||"").toUpperCase(); return !!cc && premList().includes(cc); }
-function minUsd(){ const c = cfg(), v = Number(c.minWithdrawUsdPrem); return (wdIsPrem() && isFinite(v) && v>0) ? v : c.minWithdrawUsd; }
-function maxUsd(){ const c = cfg(), v = Number(c.maxWithdrawUsdPrem); return (wdIsPrem() && isFinite(v) && v>0) ? v : c.maxWithdrawUsd; }
+function tierCountries(c, t){ c = c || cfg(); const a = t===2 ? c.premium2Countries : c.premiumCountries; return ((a===undefined||a===null) ? (t===2 ? [] : ["US","CA","GB","AU","NZ","DE","CH","NO","SE"]) : a).map(x=>String(x).toUpperCase()); }
+function tierOfCc(cc, c){ cc = String(cc||"").toUpperCase(); if(!cc) return 0; if(tierCountries(c,2).includes(cc)) return 2; if(tierCountries(c,1).includes(cc)) return 1; return 0; }
+function wdTier(){ return tierOfCc(pvCc() || String(window.wdIpCc||(S&&S.countryId)||"").toUpperCase()); }
+function wdIsPrem(){ return wdTier()>0; }
+/* per-group settings: Normal = config.<key>, Premium (1) / Premium 2 (2) = config.tiers.t1 / t2.<key> (empty -> falls back to the normal value) */
+const TIER_BASE = {minUsd:"minWithdrawUsd", maxUsd:"maxWithdrawUsd", perDay:"wdMaxPerDay", timeOn:"wdTimeEnabled", timeStart:"wdTimeStart", timeEnd:"wdTimeEnd", daysOn:"wdDaysEnabled", days:"wdDays", presetAmounts:"presetAmounts", rpPer:"rpPerCent"};
+const TIER_LEGACY = {rpUsd:"rpPremiumUsd", minUsd:"minWithdrawUsdPrem", maxUsd:"maxWithdrawUsdPrem"};
+function tv(k, t, c){
+  c = c || cfg(); t = t===undefined ? wdTier() : t;
+  if(t>0){
+    let v = ((c.tiers||{})["t"+t]||{})[k];
+    if((v===undefined||v===null||v==="") && t===1 && TIER_LEGACY[k]) v = c[TIER_LEGACY[k]];
+    const num = (k==="minUsd"||k==="maxUsd"||k==="perDay"||k==="rpPer");
+    const ok = !(v===undefined||v===null||v==="") && !(num && !(Number(v)>0)) && !(k==="presetAmounts" && !(Array.isArray(v)&&v.length)) && !(k==="days" && !Array.isArray(v));
+    if(ok) return v;
+  }
+  return TIER_BASE[k] ? c[TIER_BASE[k]] : undefined;
+}
+function minUsd(){ return tv("minUsd"); }
+function maxUsd(){ return tv("maxUsd"); }
 function minCoins(){ return Math.round(minUsd()*cfg().rate); }
 function maxCoins(){ return Math.round(maxUsd()*cfg().rate); }
 function wdInTimeWindow(){
-  const c = cfg();
-  if(!c.wdTimeEnabled) return true;
+  if(!tv("timeOn")) return true;
   const d = new Date(), mins = d.getHours()*60 + d.getMinutes();
-  const [sh,sm] = (c.wdTimeStart||"00:00").split(":").map(Number);
-  const [eh,em] = (c.wdTimeEnd||"23:59").split(":").map(Number);
+  const [sh,sm] = (tv("timeStart")||"00:00").split(":").map(Number);
+  const [eh,em] = (tv("timeEnd")||"23:59").split(":").map(Number);
   const startM = sh*60+sm, endM = eh*60+em;
   if(startM<=endM) return mins>=startM && mins<=endM;
   return mins>=startM || mins<=endM; // overnight window
 }
 function wdDayOk(){
-  const c = cfg();
-  if(!c.wdDaysEnabled) return true;
-  return (c.wdDays||[]).includes(new Date().getDay());
+  if(!tv("daysOn")) return true;
+  return (tv("days")||[]).includes(new Date().getDay());
 }
 function wdWindowFmt(){
-  const c = cfg(), fmtT = t=>{ const [h,m]=(t||"00:00").split(":").map(Number); const hh=h%12===0?12:h%12; return `${hh}:${String(m).padStart(2,"0")} ${h<12?"AM":"PM"}`; };
-  return `${fmtT(c.wdTimeStart)} - ${fmtT(c.wdTimeEnd)}`;
+  const fmtT = t=>{ const [h,m]=(t||"00:00").split(":").map(Number); const hh=h%12===0?12:h%12; return `${hh}:${String(m).padStart(2,"0")} ${h<12?"AM":"PM"}`; };
+  return `${fmtT(tv("timeStart"))} - ${fmtT(tv("timeEnd"))}`;
 }
 function wdCountLeft(){
   const todayStr = new Date().toDateString();
   const used = (S.wdCountDate===todayStr) ? (S.wdCountToday||0) : 0;
-  return Math.max(0, (cfg().wdMaxPerDay||1) - used);
+  return Math.max(0, (tv("perDay")||1) - used);
 }
 function wdAvailable(){ return wdInTimeWindow() && wdDayOk() && wdCountLeft()>0; }
 let S = load() || null;
@@ -993,7 +1007,9 @@ const FBA = {
     const blk = Array.from(new Set((wdOn ? (doc.config.blockedWithdrawCountries||[]).map(cleanCc).filter(Boolean) : []).concat(earnOff)));   // Earn OFF countries can never withdraw (enforced by Firestore rules via config/blocked)
     const lblk = loginOn ? Array.from(new Set((doc.config.blockedLoginCountries||[]).map(cleanCc).filter(Boolean))) : [];
     await commit("admin",[wUpdate("config","app",{json, unityAds: wantUnity?"ON":"OFF"},{now:["updated"]}), wUpdate("config","blocked",{list:blk, loginList:lblk},{now:["updated"]}), wUpdate("config","geo",{earnOff, is_earning_allowed_false:earnOff},{now:["updated"]}), wUpdate("config","fees",{pct:feeMap(doc.config)},{now:["updated"]}),
-      (()=>{ const c = doc.config, rate = Math.max(1, Math.round(Number(c.rate)||1500)); return wUpdate("config","wdlimits",{rate, minCoins:Math.max(1,Math.round((Number(c.minWithdrawUsd)||1.32)*rate)), maxCoins:Math.max(1,Math.round((Number(c.maxWithdrawUsd)||10)*rate)), usdToInr:Math.max(1,Number(c.usdToInr)||83), pMinCoins:Math.max(1,Math.round((Number(c.minWithdrawUsdPrem)||Number(c.minWithdrawUsd)||1.32)*rate)), pMaxCoins:Math.max(1,Math.round((Number(c.maxWithdrawUsdPrem)||Number(c.maxWithdrawUsd)||10)*rate)), prem:premList(c).slice(0,60)},{now:["updated"]}); })(),
+      (()=>{ const c = doc.config, rate = Math.max(1, Math.round(Number(c.rate)||1500)); return wUpdate("config","wdlimits",{rate, minCoins:Math.max(1,Math.round((Number(c.minWithdrawUsd)||1.32)*rate)), maxCoins:Math.max(1,Math.round((Number(c.maxWithdrawUsd)||10)*rate)), usdToInr:Math.max(1,Number(c.usdToInr)||83),
+        pMinCoins:Math.max(1,Math.round((tv("minUsd",1,c)||1.32)*rate)), pMaxCoins:Math.max(1,Math.round((tv("maxUsd",1,c)||10)*rate)), p2MinCoins:Math.max(1,Math.round((tv("minUsd",2,c)||1.32)*rate)), p2MaxCoins:Math.max(1,Math.round((tv("maxUsd",2,c)||10)*rate)),
+        prem:tierCountries(c,1).filter(x=>tierOfCc(x,c)===1).slice(0,60), prem2:tierCountries(c,2).slice(0,60)},{now:["updated"]}); })(),
       wUpdate("config","flags",{maintenance:doc.config.maintenanceOn===true, vpnBlock: wdOn && doc.config.vpnBlock!==false, minVer: doc.config.forceUpdateOn===true ? Math.max(0,Math.floor(Number(doc.config.minVersion)||0)) : 0},{now:["updated"]}),
       auditW("settings saved","config","maintenance="+(doc.config.maintenanceOn===true?"ON":"off")+" • force-update="+(doc.config.forceUpdateOn===true?"ON(min v"+doc.config.minVersion+")":"off")+" • blocked countries="+blk.length)]);
     return {ok:true};
@@ -2032,13 +2048,16 @@ function claimBonus(){
 
 function left(end){ const s = Math.max(0, Math.floor((end-now())/1000)); return s>=3600 ? Math.floor(s/3600)+"h "+Math.floor(s%3600/60)+"m" : Math.floor(s/60)+"m "+(s%60)+"s"; }
 function rpRate(){
-  const c = cfg(), per = Math.max(1, Number(c.rpPerCent)||100000), rate = Number(c.rate)||1500;
-  const list = (c.premiumCountries===undefined||c.premiumCountries===null) ? ["US","CA","GB","AU","NZ","DE","CH","NO","SE"] : c.premiumCountries;
-  const cc = pvCc() || String((S&&S.countryId)||window.wdIpCc||"").toUpperCase();
-  const prem = !!cc && list.map(x=>String(x).toUpperCase()).includes(cc);
-  const usd = (c.rpPremiumUsd===undefined||c.rpPremiumUsd===null||c.rpPremiumUsd==="") ? 0.10 : Math.max(0, Number(c.rpPremiumUsd)||0);
-  const co = prem ? usd*rate : ((c.rpCoins===undefined||c.rpCoins===null||c.rpCoins==="") ? 15 : Math.max(0, Number(c.rpCoins)||0));
-  return {per, co, prem};
+  const c = cfg(), rate = Number(c.rate)||1500;
+  const cc = pvCc() || String((S&&S.countryId)||window.wdIpCc||"").toUpperCase(), t = tierOfCc(cc);
+  if(t>0){
+    let usd = tv("rpUsd", t); usd = (usd===undefined||usd===null||usd==="") ? 0.10 : Math.max(0, Number(usd)||0);
+    const per = Math.max(1, Number(tv("rpPer", t))||100000);
+    return {per, co:usd*rate, prem:true, tier:t};
+  }
+  const per = Math.max(1, Number(c.rpPerCent)||100000);
+  const co = (c.rpCoins===undefined||c.rpCoins===null||c.rpCoins==="") ? 15 : Math.max(0, Number(c.rpCoins)||0);
+  return {per, co, prem:false, tier:0};
 }
 function rpCoinsOf(rp){ const r = rpRate(); return (rp/r.per)*r.co; }
 /* ===== Geo-Control: earnings allowed per country (admin: Countries tab -> config.earnOffCountries; written to Firebase as config/blocked + config.app) ===== */
@@ -3388,7 +3407,7 @@ function wallet(){
   const selCc = window.wdIpCc || "";
   const enabledOpts = wdOptsFor(selCc);
   if(!window.opt || !enabledOpts.includes(window.opt)) window.opt = enabledOpts[0] || 0;
-  const presets = (c.presetAmounts&&c.presetAmounts.length) ? c.presetAmounts : defaultConfig().presetAmounts;
+  const presets = (tv("presetAmounts")&&tv("presetAmounts").length) ? tv("presetAmounts") : defaultConfig().presetAmounts;
   const isINR = !isFeeOpt(window.opt);
   $("#view").innerHTML = adBox('wallet') + noticeBanner('wallet')
     + (notify?`<div class="card" style="background:linear-gradient(135deg,#0f766e,#14532d);color:#fff;text-align:center"><b>✅ ${esc(notify)}</b></div>`:"")
@@ -3404,7 +3423,7 @@ function wallet(){
     ${selCc && enabledOpts.length ? wdCards(selCc, enabledOpts) : ""}
     ${selCc && !enabledOpts.length?`<div class="mut" style="margin:6px 0">Is country ke liye abhi koi payment method ON nahi hai.</div>`:""}
     ${enabledOpts.length ? `<div class="mut" style="margin:2px 0 8px;text-align:center">👆 Card par tap karo — amount choose karke slide karo</div>` : ""}
-    <div class="mut" style="margin-top:6px;text-align:center">Din mein max ${c.wdMaxPerDay||1} withdrawal${(c.wdMaxPerDay||1)>1?"s":""} allowed hai (${wdCountLeft()} bache hain)${c.wdTimeEnabled?` • Timing: ${wdWindowFmt()}`:""}${c.wdDaysEnabled?` • Din: ${(c.wdDays||[]).map(i=>["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][i]).join(", ")||"Koi nahi"}`:""}</div></div>
+    <div class="mut" style="margin-top:6px;text-align:center">Din mein max ${tv("perDay")||1} withdrawal${(tv("perDay")||1)>1?"s":""} allowed hai (${wdCountLeft()} bache hain)${tv("timeOn")?` • Timing: ${wdWindowFmt()}`:""}${tv("daysOn")?` • Din: ${(tv("days")||[]).map(i=>["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][i]).join(", ")||"Koi nahi"}`:""}</div></div>
     <h3>History</h3>${wdHistory()}`;
   if(notify){ S.wdNotify = null; save(); }
 }
@@ -3469,7 +3488,7 @@ function rdList(){
   const cur = userCur(), mnC = minCoins(), mxC = maxCoins();
   const base = cur==="INR" ? [100,150,200,250,300,500,750,1000] : [1,2,3,4,5,6,7,8,9,10,15,20,25,30,40,50,75,100,150,200,250,300,500,1000];
   let out = base.filter(v=>{ const c = rdCoins(v); return c>=mnC && c<=mxC; });
-  if(!out.length) out = (cfg().presetAmounts||[]).map(d=>Math.round(d*fxRate(cur)*100)/100).filter(v=>{ const c = rdCoins(v); return c>=mnC && c<=mxC; });
+  if(!out.length) out = (tv("presetAmounts")||[]).map(d=>Math.round(d*fxRate(cur)*100)/100).filter(v=>{ const c = rdCoins(v); return c>=mnC && c<=mxC; });
   if(out.length>9) out = Array.from(new Set(Array.from({length:9},(_,i)=>out[Math.round(i*(out.length-1)/8)])));
   return out;
 }
@@ -3650,7 +3669,7 @@ async function withdraw(){
   if(!a) return toast("Details daalo", false);
   if(!c) return toast("Upar se ek amount choose karo", false);
   if(S.wdCountDate !== todayStr){ S.wdCountDate = todayStr; S.wdCountToday = 0; }
-  const maxPerDay = cfg().wdMaxPerDay || 1;
+  const maxPerDay = tv("perDay") || 1;
   if((S.wdCountToday||0) >= maxPerDay) return toast(`Din mein sirf ${maxPerDay} withdrawal${maxPerDay>1?"s":""} allowed hai${maxPerDay>1?"n":""}`, false);
   if(!wdDayOk()) return toast("Aaj ke din withdrawal allowed nahi hai", false);
   if(!wdInTimeWindow()) return toast(`Withdrawal sirf ${wdWindowFmt()} ke beech allowed hai`, false);
