@@ -460,7 +460,7 @@ const TERMS_HTML = `
 <h3>4. Taxes</h3>
 <p>Users apni individual tax liability ke liye khud responsible hain. App kisi bhi personal tax filing ke liye responsible nahi hai.</p>
 <h3>5. Ad Serving & Third-Party Services</h3>
-<p>Rewards claim karne ke liye user ko third-party rewarded ads (jaise Unity Ads, Start.io) dekhne pad sakte hain. App in third-party ad networks ki kisi bhi downtime, failure ya malfunction ke liye responsible nahi hai.</p>
+<p>Rewards claim karne ke liye user ko third-party rewarded ads (Unity LevelPlay aur uske mediation partner networks) dekhne pad sakte hain. App in third-party ad networks ki kisi bhi downtime, failure ya malfunction ke liye responsible nahi hai.</p>
 <h3>6. Service Termination & Modifications</h3>
 <p>Management ke paas kisi bhi samay, bina prior notice ke, app ke features, RP allocation rates, reward structure, ya leaderboard rules ko update/modify/discontinue karne ka adhikar surakshit hai.</p>
 <h3>7. Agreement</h3>
@@ -471,7 +471,7 @@ const PRIVACY_HTML = `
 <h3>2. How We Use Your Information</h3>
 <p>Collected data ka use account verification, rewards/leaderboard calculate karne, withdrawal process karne, fraud prevention, aur app ki services improve karne ke liye hota hai. Aapka data kisi third party ko bina zaroorat ke becha ya share nahi kiya jaata.</p>
 <h3>3. Third-Party Services</h3>
-<p>App rewarded ads dikhane ke liye third-party ad networks (Unity Ads, Start.io) use karta hai — in networks ki apni alag privacy policies hoti hain jo device/ad data collect kar sakti hain.</p>
+<p>App rewarded ads dikhane ke liye third-party ad networks (Unity LevelPlay aur uske mediation partner networks) use karta hai — in networks ki apni alag privacy policies hoti hain jo device/ad data collect kar sakti hain.</p>
 <h3>4. Data Security</h3>
 <p>Hum aapke data ko surakshit rakhne ke liye reasonable security measures use karte hain, lekin koi bhi internet-based service 100% secure hone ki guarantee nahi de sakti.</p>
 <h3>5. Payout Information</h3>
@@ -1191,7 +1191,7 @@ function mergeDeep(b, o){
   }
   return o === undefined ? b : o;
 }
-function defaultAdConfig(){ return {on:true, id:"", bannerId:"", interstitialId:"", rewardedId:"", network:"mediation", order:"unity,startio", unityOn:true, startOn:true, adDebug:false,
+function defaultAdConfig(){ return {on:true, id:"", bannerId:"", interstitialId:"", rewardedId:"", network:"mediation", order:"levelplay", unityOn:true, bannerOn:true, rewardedOn:true, adDebug:false,
   networks:{unity:{gameId:"",bannerId:"",interstitialId:"",rewardedId:""}, startio:{appId:""}, levelplay:{appKey:"",bannerId:"",rewardedId:""}},
   screens:{home:true,matches:true,promo:true,wallet:true,profile:true,game:true}}; }
 let RCFG = null, RADS = null, RPROMOS = null, lastRemoteJson = "";
@@ -1566,7 +1566,7 @@ if(S && S.wd && S.wd.length && S.wd.some(w=>!w.id)){
 function pushAdCfg(){
   if(!(window.AndroidAds && window.AndroidAds.configure && S && S.adConfig)) return;
   const a = S.adConfig, n = a.networks || {}, u = n.unity || {}, st = n.startio || {}, lp = n.levelplay || {};
-  try{ window.AndroidAds.configure(JSON.stringify({on:a.on!==false, unityOn:a.unityOn!==false, startOn:a.startOn!==false, adDebug:a.adDebug===true,
+  try{ window.AndroidAds.configure(JSON.stringify({on:a.on!==false, unityOn:a.unityOn!==false, bannerOn:a.bannerOn!==false, rewardedOn:a.rewardedOn!==false, adDebug:a.adDebug===true,
     unityGame:u.gameId||"", unityBanner:u.bannerId||"", unityRewarded:u.rewardedId||"", startId:st.appId||"", lpKey:lp.appKey||"", lpRewarded:lp.rewardedId||"", lpBanner:lp.bannerId||""})); }catch(e){}
 }
 function adBox(screen){
@@ -1616,7 +1616,7 @@ function claimRun(){
     if(!G || G.claimed) return; G.claimed = true;
     S.rp = (S.rp||0) + amt; save();
     const bl = $(".bal"); if(bl) bl.textContent = balText();
-    const b = $("#boostBtn"); if(b){ b.dataset.done = "1"; b.disabled = true; b.textContent = "✅ +"+amt+" RP mile"; b.style.background = "linear-gradient(180deg,#86efac,#22c55e)"; b.style.color = "#06290f"; setTimeout(()=>{ if(G && G.claimed) playAgain(); }, 1300); }
+    const b = $("#boostBtn"); if(b){ b.dataset.done = "1"; b.disabled = true; b.textContent = "✅ +"+amt+" RP mile"; b.style.background = "linear-gradient(180deg,#86efac,#22c55e)"; b.style.color = "#06290f"; gToast("✅ +"+amt+" RP mile"); setTimeout(()=>{ if(G && G.claimed) playAgain(); }, 500); }
   }, {onFail: ()=>{ const b = $("#boostBtn"); if(b){ b.disabled = false; b.textContent = "🎁 Claim "+amt+" RP"; } }});
 }
 function runReward(t, sc){
@@ -1853,7 +1853,7 @@ function home(){
     + `<div class="card" style="background:linear-gradient(135deg,#3a1f78,#6d2fe0);display:flex;justify-content:space-between;align-items:center">
       <div><h3 style="color:#fff;margin:0 0 2px">🎁 Daily Bonus</h3><div style="color:#e4d9ff;font-size:12px">${bonusSub}</div></div>
       <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-        ${(claimed||waitingForWindow)?"":`<div style="background:#22c55e;color:#fff;font-size:10px;font-weight:800;padding:3px 8px;border-radius:8px;display:flex;align-items:center;gap:3px">🎬 WATCH AD</div>`}
+        
         <button class="btn sm" style="background:#ffd54a;color:#3a1f00;font-weight:800;white-space:nowrap" ${(claimed||waitingForWindow)?"disabled":""} onclick="claimBonus()">
           ${claimed?"✅ Claimed":waitingForWindow?"⏰ Band":"Claim"}</button>
       </div></div>
@@ -1901,7 +1901,7 @@ function claimStreak(){
   const todayStr = dailyPeriodKey(), SR = streakRewards();
   if(S.lastStreakClaim === todayStr) return;
   const day = S.streakDay, reward = SR[day-1];
-  watchAd(`Ad khatam hone par Day ${day} ka reward milega`, ()=>{
+  noAd(()=>{
     if(S.lastStreakClaim === todayStr) return; // double-safe: already claimed today meanwhile
     if(typeof reward === "number") S.rp = (S.rp||0) + reward;
     else S.coins = (S.coins||0) + Math.round(parseFloat(String(reward).replace("$",""))*cfg().rate); // $ amount at current rate
@@ -1946,7 +1946,7 @@ function claimBonus(){
   if(!earnOk()) return earnBlockMsg();
   if(!bonusIntervalOk() || !bonusInTimeWindow()) return;
   const amt = cfg().dailyBonusRp;
-  watchAd(`Ad khatam hone par ${amt.toLocaleString()} RP mile`, ()=>{
+  noAd(()=>{
     S.rp = (S.rp||0) + amt; S.lastBonus = dailyPeriodKey(); S.lastBonusDayNum = dailyPeriodDayNum(); save(); render();
   });
 }
@@ -2118,8 +2118,10 @@ function adFailToast(){
   d.textContent = "Ad abhi available nahi hai ya poora nahi dekha — thodi der baad dobara try karo";
   document.body.appendChild(d); setTimeout(()=>d.remove(), 3500);
 }
+function noAd(done){ done(); }
 function watchAd(subtext, onDone, opts){
   opts = opts || {};
+  if(S && S.adConfig && (S.adConfig.on===false || S.adConfig.rewardedOn===false)) return onDone();   // admin turned rewarded ads off
   if(window.AndroidAds){
     pushAdCfg();
     const id = ++adSeq;
@@ -3208,12 +3210,17 @@ function gameRestart(o){
   loop();
 }
 function goLater(ms){ const g = G; setTimeout(()=>{ if(G && G===g) gameOver(); }, ms); }
+function gToast(t){ const d = document.createElement("div"); d.style.cssText = "position:fixed;left:50%;top:92px;transform:translateX(-50%);z-index:130;background:#2a1560e6;color:#fff;padding:10px 18px;border-radius:14px;font-size:13.5px;font-weight:800;max-width:86vw;text-align:center;box-shadow:0 6px 20px rgba(0,0,0,.4)"; d.textContent = t; document.body.appendChild(d); setTimeout(()=>d.remove(), 2200); }
 function playAgain(){ const t = G && G.t; if(!t) return; closeGame(); openGame(t); }
 function gameOver(){
   if(G && G.tl!==undefined && G.tl>0.1 && !G.ending){ if(!G.rs){ G.rs = true; const o = G; G.rsT = setTimeout(()=>gameRestart(o), 450); } return; }
   try{ fxSound("over"); navigator.vibrate && navigator.vibrate([60,40,90]); }catch(e){}
   const t = G.t, sc = bank(), gh = $("#gh");
   G.eligible = earnOk() && sc>=RUN_MIN && (G.tl===undefined || G.tl<=0.1);   // 100+ total score AND the full 3-minute timer finished
+  if(!G.eligible){   // 100 score not reached (or earning off): no reward, straight back into a fresh game
+    gToast(earnOk() ? "🎯 "+RUN_MIN+" score nahi bana — dobara shuru" : "🎮 Dobara shuru");
+    const gg = G; setTimeout(()=>{ if(G && G===gg) playAgain(); }, 700); return;
+  }
   gh.style.bottom = "auto"; gh.style.top = "30px"; gh.style.pointerEvents = "auto";
   const list = genReport(t);
   let rank = list.findIndex(e=>sc>=e.score); if(rank===-1) rank = list.length;
@@ -3223,11 +3230,11 @@ function gameOver(){
     <button onclick="closeGame()" style="position:absolute;top:10px;right:10px;background:#ffffff22;border:none;color:#fff;border-radius:8px;width:30px;height:30px;font-size:16px">✕</button>
     <div style="font-size:26px;font-weight:900;color:#ffd54a;text-shadow:0 2px 0 #7c3f00,0 0 16px rgba(255,213,74,.6);margin:8px 0 16px">🎉 NICE GAME! 🎉</div>
     <div style="background:#bbf7d0;border-radius:12px;padding:10px;margin-bottom:14px"><div style="font-size:10px;color:#14532d;font-weight:800;letter-spacing:.5px">BEST SCORE</div><div style="font-size:22px;font-weight:900;color:#14532d">🏆 ${S.best[t.id]||sc}</div></div>
-    ${!earnOk()?"":G.eligible?`<div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:4px">
+    <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:4px">
       <button class="btn" id="boostBtn" style="background:linear-gradient(180deg,#ffe488,#f5a300);color:#3a1f00;font-weight:900;font-size:18px;flex:1;max-width:220px" onclick="claimRun()">🎁 Claim ${runRpAmt()} RP</button>
       <div style="background:#22c55e;color:#fff;font-size:11px;font-weight:800;padding:5px 10px;border-radius:8px;display:flex;align-items:center;gap:3px">🎬 ADS</div>
-    </div>`:`<div style="background:#ffffff1f;color:#fff;border-radius:12px;padding:10px;font-weight:700;font-size:13px;line-height:1.5">🎯 ${RUN_MIN}+ score aur ⏱ poora 3 minute khelo to 💜 ${runRpAmt()} RP milega<br><span style="opacity:.8">Is baar: score ${Math.floor(G.score)}${(G.tl!==undefined&&G.tl>0.1)?" • game 2 min se pehle khatam":""}</span></div>`}
-    <button class="btn" style="width:100%;margin-top:10px;background:linear-gradient(180deg,#34d58a,#12a35f);color:#fff;font-weight:900;font-size:16px;box-shadow:0 4px 0 #0b7a47" onclick="playAgain()">▶ Play Again</button>
+    </div>
+    <button class="btn" id="skipBtn" style="width:100%;margin-top:10px;background:#ffffff26;border:1px solid #ffffff44;color:#fff;font-weight:900;font-size:15px" onclick="playAgain()">⏭ Skip Ads</button>
   </div>`;
   }
 function rpAdLeft(){ return 0; } // cooldown removed
@@ -3250,7 +3257,7 @@ function claim2x(sc, id){
   const mult = 2;
   const el0 = (G && G.elapsedSec) || 0.5;
   const btn = $("#boostBtn"); if(btn){ btn.disabled = true; btn.textContent = "..."; }
-  watchAd(`Ad khatam hone par x${mult} reward milega`, ()=>{
+  noAd(()=>{
     S.lastRpAd = now();
     const newScore = sc*mult, extra = newScore - sc;
     S.best[id] = Math.max(S.best[id]||0, newScore); S.rp = (S.rp||0) + extra; save();
@@ -4055,17 +4062,15 @@ function tAds(){
   const ad = A.doc.adConfig, un = ad.unityOn !== false;
   const net = (k,f,ph,max) => `<input data-p="adConfig.networks.${k}.${f}" data-t="t" placeholder="${ph}" ${max?`maxlength="${max}"`:""} value="${E(gp(A.doc,`adConfig.networks.${k}.${f}`)||"")}">`;
   return `<h3>5️⃣ Ad Control & Monetization</h3>
+  <div class="mut" style="font-size:12px;margin-bottom:8px">App mein sirf <b>2 ad</b> hain: <b>🎬 Rewarded Video</b> (sirf game ke baad "Claim RP" par) aur <b>🔲 Banner</b> (hamesha screen ke upar — game ke andar aur bahar). Saare networks (AdMob, AppLovin, Mintegral, Liftoff...) LevelPlay ke andar jodo.</div>
   <div class="card2"><div class="ar"><span><b>🎮 Unity LevelPlay Status</b><br><span class="mut">Seedha app ke database (Firebase) mein save hota hai</span></span>
     <button class="b ${un?"g":"s"}" data-a="unity">${un?"ON ✅":"OFF ❌"}</button></div></div>
   ${tg("All Ads","adConfig.on","1")}
+  ${tg("🎬 Rewarded Video (Claim RP par) ON/OFF","adConfig.rewardedOn","1")}
+  ${tg("🔲 Banner (upar) ON/OFF","adConfig.bannerOn","1")}
   ${tg("🐞 Ad Debug Messages (test ke liye — publish se pehle OFF)","adConfig.adDebug","")}
-  ${tg("2️⃣ Start.io (1st Backup) ON/OFF","adConfig.startOn","1")}
-  <div class="mut" style="font-size:11px;margin:2px 0 6px">Priority: <b>1) Unity LevelPlay</b> (Rewarded + Banner) → LevelPlay ka ad na aaye/fail ho to <b>2) Start.io</b>. Har network ka ON/OFF seedha app mein lagu hota hai, naya build nahi chahiye. Khali ID = build wala default.</div>
-  <div class="mut" style="margin:8px 0 4px">1️⃣ Unity LevelPlay — App Key & Ad Unit IDs (LevelPlay dashboard se; Unity Ads ke BP_ placements LevelPlay ke andar set hote hain)</div>${net("levelplay","appKey","LevelPlay App Key",20)}${net("levelplay","rewardedId","LevelPlay Rewarded Ad Unit ID",20)}${net("levelplay","bannerId","LevelPlay Banner Ad Unit ID",20)}
-  <div class="mut" style="margin:8px 0 4px">2️⃣ Start.io — App ID (default 209272738)</div>${net("startio","appId","Start.io App ID (numeric)",20)}
-
-  <div class="mut" style="margin:12px 0 4px">Per-Screen Ad Toggle</div>
-  ${["home","matches","promo","wallet","profile","game"].map(sc=>tg(sc[0].toUpperCase()+sc.slice(1),`adConfig.screens.${sc}`,"1")).join("")}`;
+  <div class="mut" style="font-size:11px;margin:2px 0 6px">Rewarded OFF ho to Claim par ad ke bina RP mil jayega. Khali ID = build wala default. Har switch seedha app mein lagu hota hai, naya build nahi chahiye.</div>
+  <div class="mut" style="margin:8px 0 4px">Unity LevelPlay — App Key & Ad Unit IDs (LevelPlay dashboard se; baaki networks LevelPlay ke andar set hote hain)</div>${net("levelplay","appKey","LevelPlay App Key",20)}${net("levelplay","rewardedId","LevelPlay Rewarded Ad Unit ID",20)}${net("levelplay","bannerId","LevelPlay Banner Ad Unit ID",20)}`;
 }
 function tInfo(){
   const c = A.doc.config;
