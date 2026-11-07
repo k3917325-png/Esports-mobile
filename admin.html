@@ -81,7 +81,7 @@ canvas{display:block;margin:0 auto 10px;border-radius:10px;max-width:100%}
 #adm{display:none;position:fixed;inset:0;z-index:2147483200;background:var(--bg);color:var(--text);overflow:hidden}
 #adm .aw{max-width:520px;margin:0 auto;height:100%;display:flex;flex-direction:column;padding:env(safe-area-inset-top,0px) 12px 0;position:relative}
 #adm .atop{display:flex;justify-content:space-between;align-items:center;padding:12px 2px;font-size:17px}
-/*gamelist*/.gl{background:var(--card);border-radius:20px;padding:4px 14px;margin-bottom:14px;box-shadow:0 4px 14px rgba(80,40,160,.14)}.gr{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line,#8882)}.gr:last-child{border-bottom:none}.gri{flex:none;display:flex}.grt{flex:1;min-width:0}.grt b{display:block;font-size:16px;line-height:1.25}.grs{font-size:11.5px;font-weight:700;color:var(--mut,#7a7699);margin-top:3px}.grb{flex:none;border:none;border-radius:12px;padding:10px 20px;font-weight:900;font-size:14px;color:#fff;background:linear-gradient(180deg,#6d8bff,#4a63e6);box-shadow:0 3px 0 #2f44b8;cursor:pointer}
+/*gamelist*/.gl{padding:0;margin-bottom:14px}.gr{position:relative;display:flex;align-items:center;gap:12px;padding:10px 12px 10px 10px;margin-bottom:10px;border-radius:24px;background:linear-gradient(135deg,var(--card),var(--card));border:1.5px solid rgba(124,92,255,.16);box-shadow:0 8px 22px rgba(80,40,160,.14);transition:transform .12s}.gr:active{transform:scale(.985)}.gri{flex:none;display:flex;filter:drop-shadow(0 6px 10px rgba(60,20,140,.35))}.grt{flex:1;min-width:0}.grt b{display:block;font-size:16px;font-weight:900;line-height:1.2;letter-spacing:.1px}.grs{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}.grs i{font-style:normal;font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:20px;background:rgba(124,92,255,.12);color:var(--text);white-space:nowrap}.grs i.rp{background:linear-gradient(90deg,#ffe488,#ffc233);color:#4a2b00}.grn{position:absolute;top:-7px;left:12px;font-size:9.5px;font-weight:900;letter-spacing:.6px;color:#fff;background:linear-gradient(90deg,#ff4d6d,#ff8a00);padding:2px 9px;border-radius:20px;box-shadow:0 3px 8px rgba(255,77,109,.45)}.grb{flex:none;border:none;border-radius:16px;padding:10px 16px;font-weight:900;font-size:14px;letter-spacing:.3px;color:#fff;background:linear-gradient(180deg,#34d58a,#12a35f);box-shadow:0 4px 0 #0b7a47,0 8px 16px rgba(18,163,95,.35);cursor:pointer;text-shadow:0 1px 0 rgba(0,0,0,.2)}.grb:active{transform:translateY(3px);box-shadow:0 1px 0 #0b7a47}
 /*cards*/.rwg{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}.rwc{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:10px 8px 12px;min-height:118px;border-radius:18px;border:2.5px solid transparent;background:#fff;color:#1b1340;font:inherit;cursor:pointer;text-align:center;box-shadow:0 4px 14px rgba(40,20,90,.16)}.rwc.on{border-color:#7c3aed;box-shadow:0 0 0 3px #7c3aed33,0 6px 18px rgba(124,58,237,.3)}.rwlg{height:58px;display:flex;align-items:center;justify-content:center;width:100%}.rwlg img{max-height:54px;max-width:86%;object-fit:contain}.rwt{font-weight:900;font-size:21px;letter-spacing:-.3px;color:#1b1340}.rws{font-size:12px;color:#6b6890;font-weight:600}.rwm{font-size:11px;font-weight:800;color:#b45309}
 #adm .atabs{display:flex;flex-direction:column;gap:5px;padding-bottom:8px;flex:0 0 auto;max-height:55vh;overflow-y:auto}
 #adm .atabs .ch{padding:11px 12px;font-size:14px;text-align:left;width:100%;white-space:nowrap}
@@ -1465,7 +1465,7 @@ const GSVG = {
 };
 function gLogo(g, sz, mr){
   sz = sz||30; const r = Math.round(sz*0.24), m = (mr===undefined?8:mr);
-  if(GSVG[g]) return `<span style="display:inline-flex;width:${sz}px;height:${sz}px;border-radius:${r}px;vertical-align:middle;margin-right:${m}px;flex:none;box-shadow:0 4px 12px rgba(0,0,0,.35),0 0 0 1.5px rgba(255,255,255,.35)"><svg viewBox="0 0 100 100" width="${sz}" height="${sz}" style="display:block;border-radius:${r}px" aria-hidden="true">${GSVG[g]}<path d="M0 0h100v46C70 38 30 38 0 46z" fill="#fff" opacity=".13"/></svg></span>`;
+  if(GSVG[g]) return `<span style="display:inline-flex;width:${sz}px;height:${sz}px;border-radius:${r}px;vertical-align:middle;margin-right:${m}px;flex:none;box-shadow:0 4px 12px rgba(0,0,0,.3)"><svg viewBox="0 0 100 100" width="${sz}" height="${sz}" style="display:block;border-radius:${r}px" aria-hidden="true">${GSVG[g]}<defs><linearGradient id="lgx_sh" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient><linearGradient id="lgx_bt" x1="0" y1="0" x2="0" y2="1"><stop offset=".6" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".35"/></linearGradient></defs><rect width="100" height="100" rx="24" fill="url(#lgx_bt)"/><path d="M4 30Q4 4 30 4H70Q96 4 96 30V44Q50 30 4 44Z" fill="url(#lgx_sh)" opacity=".75"/><rect x="1.5" y="1.5" width="97" height="97" rx="23" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="2"/></svg></span>`;
   const c = TCONF[g]||{emoji:"🎮",grad:"#7c3aed"};
   return `<span style="display:inline-flex;align-items:center;justify-content:center;width:${sz}px;height:${sz}px;border-radius:${Math.round(sz*0.3)}px;background:${c.grad};font-size:${Math.round(sz*0.62)}px;box-shadow:0 2px 6px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.35);vertical-align:middle;margin-right:${m}px;flex:none">${c.emoji}</span>`;
 }
@@ -1570,8 +1570,8 @@ function pushAdCfg(){
     unityGame:u.gameId||"", unityBanner:u.bannerId||"", unityRewarded:u.rewardedId||"", startId:st.appId||"", lpKey:lp.appKey||"", lpRewarded:lp.rewardedId||"", lpBanner:lp.bannerId||""})); }catch(e){}
 }
 function adBox(screen){
-  // Banner ads removed completely (rewarded ads only). Always tell the native side to hide any banner.
-  if(window.AndroidAds && window.AndroidAds.setBanner){ try{ window.AndroidAds.setBanner(false); }catch(e){} }
+  // Banner sits at the very TOP of the screen (away from buttons, so no accidental taps). Rewarded ad only on the RP claim.
+  if(window.AndroidAds && window.AndroidAds.setBanner){ try{ window.AndroidAds.setBanner(true); }catch(e){} }
   return "";
 }
 function noticeBanner(screen){
@@ -1616,7 +1616,7 @@ function claimRun(){
     if(!G || G.claimed) return; G.claimed = true;
     S.rp = (S.rp||0) + amt; save();
     const bl = $(".bal"); if(bl) bl.textContent = balText();
-    const b = $("#boostBtn"); if(b){ b.dataset.done = "1"; b.disabled = true; b.textContent = "✅ +"+amt+" RP mile"; b.style.background = "linear-gradient(180deg,#86efac,#22c55e)"; b.style.color = "#06290f"; }
+    const b = $("#boostBtn"); if(b){ b.dataset.done = "1"; b.disabled = true; b.textContent = "✅ +"+amt+" RP mile"; b.style.background = "linear-gradient(180deg,#86efac,#22c55e)"; b.style.color = "#06290f"; setTimeout(()=>{ if(G && G.claimed) playAgain(); }, 1300); }
   }, {onFail: ()=>{ const b = $("#boostBtn"); if(b){ b.disabled = false; b.textContent = "🎁 Claim "+amt+" RP"; } }});
 }
 function runReward(t, sc){
@@ -2037,7 +2037,7 @@ function play(){
     <div style="padding:12px 14px 0;font-weight:800;color:var(--acc);font-size:18px">${esc(cg.name)}</div>
     <div class="mut" style="padding:6px 14px 0">External game link</div>
     <button class="btn play" style="margin:10px 14px 14px" onclick="window.open('${esc(cg.url)}','_blank')">Open Link ›</button></div>`).join("");
-  v.innerHTML = adBox('matches') + noticeBanner('matches') + chips + (earnOk() ? rewardsCard() : "") + `<div class="gl">` + toursSorted.map(t=>`<div class="gr"><div class="gri">${gLogo(t.g,64,0)}</div><div class="grt"><b>${esc(t.name)}</b><div class="grs">${earnOk() ? "🎯 "+RUN_MIN+" Score • ⏱ 2:00 • 💜 "+runRpAmt()+" RP" : "🎮 Free Play • ⏱ 2:00"}</div></div><button class="grb" onclick="playT(${t.id})">Play</button></div>`).join("") + `</div>` + customLinks + `<div class="mut" style="text-align:center;font-size:11.5px;line-height:1.5;margin:6px 6px 16px">✅ 100% free to play — koi deposit ya entry fee nahi. Rewards promotional hain aur ads se funded hain. Ye gambling ya betting app nahi hai. Rewards fixed score milestones par milte hain, kisi player ke against nahi.</div>`;
+  v.innerHTML = adBox('matches') + noticeBanner('matches') + chips + (earnOk() ? rewardsCard() : "") + `<div class="gl">` + toursSorted.map(t=>`<div class="gr">${t.g==="bubbleshoot"?'<span class="grn">NEW</span>':''}<div class="gri">${gLogo(t.g,68,0)}</div><div class="grt"><b>${esc(t.name)}</b><div class="grs">${earnOk() ? "<i>🎯 "+RUN_MIN+" • ⏱ 3:00</i><i class='rp'>💜 "+runRpAmt()+" RP</i>" : "<i>🎮 Free Play • ⏱ 3:00</i>"}</div></div><button class="grb" onclick="playT(${t.id})">▶ Play</button></div>`).join("") + `</div>` + customLinks + `<div class="mut" style="text-align:center;font-size:11.5px;line-height:1.5;margin:6px 6px 16px">✅ 100% free to play — koi deposit ya entry fee nahi. Rewards promotional hain aur ads se funded hain. Ye gambling ya betting app nahi hai. Rewards fixed score milestones par milte hain, kisi player ke against nahi.</div>`;
 }
 function nextLbPayoutTime(){
   const c = cfg(), d = new Date();
@@ -2104,7 +2104,7 @@ function playT(id){
   const t = S.tours.find(x=>x.id===id);
   if(!S.playCount) S.playCount = {};
   S.playCount[id] = (S.playCount[id]||0) + 1; save();
-  showRewardedAd(t);
+  openGame(t);   // ads only on the 5000 RP claim
 }
 function showRewardedAd(t){ watchAd("Ad khatam hote hi game apne aap shuru hoga", ()=>openGame(t), {optional:true}); }
 // Real AdMob rewarded ad (Android app exposes window.AndroidAds); browser/preview falls back to the 5s placeholder.
@@ -2144,23 +2144,26 @@ function watchAd(subtext, onDone, opts){
     if(pct >= 100){ clearInterval(iv); const box = $("#rad"); if(box) box.remove(); onDone(); }
   },100);
 }
+function mkG(t, c){
+  return {t, score:0, over:false, tx:160, ty:240, frame:0, ice:[], time:120, ball:null, raf:0, c, x:c.getContext("2d"), sx:160, sy:240, mt:0,
+       lane:1, obst:[], gems:[], target:null, left:true, colors:["#ff5c5c","#3ddc97","#3b82f6","#ffb020"],
+       startMs:now(), bullets:[], roids:[], knifeRot:0, knifeRotSpeed:0.038, stuck:[], grid:null, bmTime:120, carry:0};
+}
 function openGame(t){
-  try{ if(window.AndroidAds && window.AndroidAds.setBanner) window.AndroidAds.setBanner(false); }catch(e){}
+  try{ if(window.AndroidAds && window.AndroidAds.setBanner) window.AndroidAds.setBanner(true); }catch(e){}
   const o = document.createElement("div"); o.id = "gm";
-  o.style.cssText = "position:fixed;inset:0;z-index:99;background:#140a2e;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:env(safe-area-inset-top,0px) 10px env(safe-area-inset-bottom,0px);overflow-y:auto";
-  const gameAdOn = S.adConfig && S.adConfig.on && (!S.adConfig.screens || S.adConfig.screens.game!==false);
+  const acc = GACC[t.g]||"#8b5cf6"; o.style.cssText = "position:fixed;inset:0;z-index:99;background:radial-gradient(120% 60% at 50% 0%,"+acc+"55,transparent 62%),radial-gradient(90% 50% at 50% 100%,"+acc+"33,transparent 70%),#0d0826;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:env(safe-area-inset-top,0px) 10px env(safe-area-inset-bottom,0px);overflow-y:auto";
+  const gameAdOn = !window.AndroidAds && S.adConfig && S.adConfig.on && (!S.adConfig.screens || S.adConfig.screens.game!==false);
   const gameAdBox = gameAdOn ? `<div style="width:min(320px,92vw);min-height:50px;margin-top:4px;margin-bottom:2px;border:1px dashed #555;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#888;background:#ffffff0a">${S.adConfig.bannerId?"Banner Ad • "+esc(S.adConfig.bannerId):"Banner Ad (320x50)"}</div>` : "";
-  o.innerHTML = `<div style="width:min(320px,92vw);display:flex;justify-content:space-between;align-items:center;font-weight:700"><span style="display:flex;align-items:center">${gLogo(t.g,26)}${esc(t.name)}</span><span id="gs">Score: 0</span><button onclick="closeGame()" style="background:#ffffff22;border:none;color:#fff;border-radius:8px;padding:6px 10px;font-size:16px">✕</button></div>
+  o.innerHTML = `<div style="width:min(320px,92vw);display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:800"><span style="display:flex;align-items:center;font-size:15px">${gLogo(t.g,34,8)}${esc(t.name)}</span><span id="gs" style="margin-left:auto;background:linear-gradient(180deg,#ffe488,#f5a300);color:#3a1f00;font-size:12.5px;font-weight:900;padding:5px 12px;border-radius:20px;box-shadow:0 3px 10px rgba(245,163,0,.4)">Score: 0</span><button onclick="closeGame()" style="background:#ffffff26;border:1px solid #ffffff33;color:#fff;border-radius:50%;width:34px;height:34px;font-size:15px;line-height:1">✕</button></div>
     ${gameAdBox}
-    <div style="position:relative"><canvas id="gc" width="320" height="480" style="width:min(320px,92vw);height:auto;border-radius:14px;touch-action:none;display:block"></canvas><div id="gh" style="position:absolute;left:0;right:0;bottom:12px;text-align:center;font-size:13px;opacity:.9;pointer-events:none"></div></div>`;
+    <div style="position:relative"><canvas id="gc" width="320" height="480" style="width:min(320px,92vw);height:auto;border-radius:20px;touch-action:none;display:block;box-shadow:0 0 0 2px ${acc}99,0 0 0 5px ${acc}22,0 14px 44px ${acc}55"></canvas><div id="gh" style="position:absolute;left:0;right:0;bottom:12px;text-align:center;font-size:13px;opacity:.9;pointer-events:none"></div></div>`;
   document.body.appendChild(o);
   const c = $("#gc"), HD = Math.min(2.5, Math.max(2, window.devicePixelRatio||2));
   c.width = Math.round(320*HD); c.height = Math.round(480*HD);
-  G = {t, score:0, over:false, tx:160, ty:240, frame:0, ice:[], time:120, ball:null, raf:0, c, x:c.getContext("2d"), sx:160, sy:240, mt:0,
-       lane:1, obst:[], gems:[], target:null, left:true, colors:["#ff5c5c","#3ddc97","#3b82f6","#ffb020"],
-       startMs:now(), bullets:[], roids:[], knifeRot:0, knifeRotSpeed:0.038, stuck:[], grid:null, bmTime:120};
+  G = mkG(t, c);
   $("#gh").textContent = ({
-    hoop:"Ball ko ungli se left-right ghumao, ungli uthate hi ball jayegi • Hoop mein daalo (2 min)",
+    hoop:"Ball ko ungli se left-right ghumao, ungli uthate hi ball jayegi • Hoop mein daalo (3 min)",
     arctic:"Screen par drag karo • Icebergs se bacho!",
     loop:"Left/Right tap karo • Lane badlo, obstacles se bacho, gems lo!",
     colorbounce:"Upar wale color se match karta hua side jaldi tap karo!",
@@ -2168,17 +2171,17 @@ function openGame(t){
     drive:"Left/Right tap karo • Traffic se bacho, fuel lo!",
     shooter:"Drag karke spaceship move karo • Asteroids se bacho, auto-fire se shoot karo!",
     knife:"Tap karo knife fenkne ke liye • Rotating log mein dusri knife se mat takrao!",
-    blockmatch:"Same color wale 2+ blocks ke group par tap karo • Clear karo, bade group = zyada score (2 min)",
+    blockmatch:"Same color wale 2+ blocks ke group par tap karo • Clear karo, bade group = zyada score (3 min)",
     dollar:"💲 ko left/right drag karo • 🟢 green pakdo (+1) • 🔴 red se mat takrao, warna game over!",
     candle:"Left/Right drag karo • Green candle par jump karke upar jao • Red candle par land mat karo, neeche mat girna!",
-    bricksmash:"Drag karke nishana lagao, ungli uthate hi balls niklengi • Bricks tod do, +1 ball lo • Bricks neeche pahunche to game over (2 min)",
-    bubbleshoot:"Drag karke nishana lagao, chhodte hi bubble fire • 3+ same color pop karo • 5 miss par chhat neeche aati hai (2 min)",
-    colortubes:"Tube par tap karke upar ki ball uthao, dusri tube par tap karke rakho • Same color ek tube mein jama karo (2 min)",
-    tilematch:"Tile par tap karo • Tray mein same 3 fruits milao to clear • Tray (7) bhar gayi to game over • Dabe hue tiles pehle upar wale hatao (2 min)",
-    blockfit:"Neeche se block ko drag karke 8×8 board par rakho • Poori row/column bharo to clear • Jagah khatam = game over (2 min)",
+    bricksmash:"Drag karke nishana lagao, ungli uthate hi balls niklengi • Bricks tod do, +1 ball lo • Bricks neeche pahunche to game over (3 min)",
+    bubbleshoot:"Drag karke nishana lagao, chhodte hi bubble fire • 3+ same color pop karo • 5 miss par chhat neeche aati hai (3 min)",
+    colortubes:"Tube par tap karke upar ki ball uthao, dusri tube par tap karke rakho • Same color ek tube mein jama karo (3 min)",
+    tilematch:"Tile par tap karo • Tray mein same 3 fruits milao to clear • Tray (7) bhar gayi to game over • Dabe hue tiles pehle upar wale hatao (3 min)",
+    blockfit:"Neeche se block ko drag karke 8×8 board par rakho • Poori row/column bharo to clear • Jagah khatam = game over (3 min)",
     dollarbox:"Box ko left/right drag karo • 💵 dollar pakdo (+50 har dollar) • 🔴 red ball box mein aayi to game over • 3 dollar miss = game over!"
   })[t.g];
-  G.x.setTransform(HD,0,0,HD,0,0); G.x.imageSmoothingEnabled = true; G.x.imageSmoothingQuality = "high";
+  G.hd = HD; G.x.setTransform(HD,0,0,HD,0,0); G.x.imageSmoothingEnabled = true; G.x.imageSmoothingQuality = "high";
   let rc = c.getBoundingClientRect(); const refreshRc = () => { rc = c.getBoundingClientRect(); };
   addEventListener("resize", refreshRc);
   // ---- Touch / drag input: pointer events + touch events together so dragging works in every WebView ----
@@ -2216,12 +2219,36 @@ function openGame(t){
   fxReset(); fxAudio();
   fxCountdown(()=>{ if(G){ G.startMs = now(); G.lastTs = null; if(["blockfit","tilematch","bricksmash","colortubes","bubbleshoot"].includes(G.t.g)){ const h = $("#gh"); if(h) h.textContent = ""; } loop(); } });
 }
+/* ===== Visual helpers shared by all games ===== */
+function shade(h,a){ if(!/^#[0-9a-f]{6}$/i.test(h)) return h; const n=parseInt(h.slice(1),16); let r=n>>16,g=(n>>8)&255,b=n&255; const f=a>=0?255:0, p=Math.abs(a); r=Math.round(r+(f-r)*p); g=Math.round(g+(f-g)*p); b=Math.round(b+(f-b)*p); return "rgb("+r+","+g+","+b+")"; }
+function fxBg(x,c1,c2,glow){
+  const g = x.createLinearGradient(0,0,0,480); g.addColorStop(0,c1); g.addColorStop(1,c2); x.fillStyle = g; x.fillRect(0,0,320,480);
+  const r = x.createRadialGradient(160,130,10,160,130,320); r.addColorStop(0,glow||"rgba(139,92,246,.35)"); r.addColorStop(1,"rgba(0,0,0,0)"); x.fillStyle = r; x.fillRect(0,0,320,480);
+  const f = (G&&G.frame)||0; x.save();
+  for(let i=0;i<7;i++){ const px = (i*53+20+Math.sin(f/120+i)*14)%320, py = (i*97+40+f*(0.12+i*0.02))%520-20, rd = 10+(i%4)*9; x.globalAlpha = 0.05+0.02*(i%3); x.fillStyle = "#fff"; x.beginPath(); x.arc(px,py,rd,0,7); x.fill(); }
+  x.restore();
+}
+function glossRect(x,px,py,w,h,rad,col,glow){
+  x.save(); if(glow){ x.shadowColor = col; x.shadowBlur = glow; }
+  const g = x.createLinearGradient(0,py,0,py+h); g.addColorStop(0,shade(col,.38)); g.addColorStop(.45,col); g.addColorStop(1,shade(col,-.32));
+  x.fillStyle = g; x.beginPath(); if(x.roundRect) x.roundRect(px,py,w,h,rad); else x.rect(px,py,w,h); x.fill(); x.shadowBlur = 0;
+  x.strokeStyle = "rgba(255,255,255,.45)"; x.lineWidth = 1.2; x.stroke();
+  x.fillStyle = "rgba(255,255,255,.28)"; x.beginPath(); if(x.roundRect) x.roundRect(px+3,py+2.5,w-6,Math.max(3,h*.3),Math.min(rad,6)); else x.rect(px+3,py+2.5,w-6,h*.3); x.fill();
+  x.restore();
+}
+let FX_VIG = null;
+function fxVignette(x){
+  if(!FX_VIG){ const c = document.createElement("canvas"); c.width = 160; c.height = 240; const q = c.getContext("2d"), g = q.createRadialGradient(80,120,60,80,120,170); g.addColorStop(0,"rgba(0,0,0,0)"); g.addColorStop(1,"rgba(0,0,0,.42)"); q.fillStyle = g; q.fillRect(0,0,160,240); FX_VIG = c; }
+  x.drawImage(FX_VIG,0,0,320,480);
+}
+const GACC = {arctic:"#38bdf8",hoop:"#fb923c",blockfit:"#818cf8",tilematch:"#f472b6",bricksmash:"#22d3ee",colortubes:"#34d399",bubbleshoot:"#a78bfa"};
 function gameClock(){
-  const x = G.x, tl = Math.max(0, G.tl===undefined ? 120 : G.tl), m = Math.floor(Math.ceil(tl)/60), sec = Math.ceil(tl)%60, lbl = "⏱ "+m+":"+String(sec).padStart(2,"0");
+  const x = G.x, tl = Math.max(0, G.tl===undefined ? 180 : G.tl), m = Math.floor(Math.ceil(tl)/60), sec = Math.ceil(tl)%60, lbl = "⏱ "+m+":"+String(sec).padStart(2,"0");
   x.save(); x.font = "bold 14px sans-serif"; x.textAlign = "center"; x.textBaseline = "middle";
   const w = 76; x.fillStyle = tl<=10 ? "rgba(220,38,38,.85)" : "rgba(0,0,0,.45)"; x.beginPath(); if(x.roundRect) x.roundRect(160-w/2,8,w,22,11); else x.rect(160-w/2,8,w,22); x.fill();
   x.fillStyle = "#fff"; x.fillText(lbl,160,19.5); x.restore();
-  if(tl<=0 && !G.over){ G.over = true; gameOver(); }
+  if(G.msgT>0){ G.msgT--; x.save(); x.globalAlpha = Math.min(1,G.msgT/25); x.font = "900 24px sans-serif"; x.textAlign = "center"; x.lineWidth = 6; x.strokeStyle = "rgba(0,0,0,.55)"; x.strokeText(G.rmsg,160,110); x.fillStyle = "#ffd54a"; x.fillText(G.rmsg,160,110); x.restore(); }
+  if(tl<=0 && !G.over){ G.ending = true; G.over = true; gameOver(); }
 }
 function loop(ts){
   if(!G || G.over) return;
@@ -2231,14 +2258,15 @@ function loop(ts){
   let steps = 0;
   while(G && !G.over && G.acc >= 16.0 && steps < 3){
     G.acc -= 16.667; steps++; G.frame++; G.x.clearRect(0,0,320,480);
-    if(!G.over){ G.tl = 120 - G.frame/60; }
+    if(!G.over){ G.tl = 180 - G.frame/60; }
     ({hoop:hoopStep, arctic:arcticStep, loop:loopStep, colorbounce:colorbounceStep, bubble:bubbleStep, drive:driveStep, shooter:shooterStep, knife:knifeStep, blockmatch:blockmatchStep, dollar:dollarStep, candle:candleStep, dollarbox:dollarboxStep, blockfit:blockfitStep, tilematch:tilematchStep, bricksmash:bricksmashStep, colortubes:colortubesStep, bubbleshoot:bsStep})[G.t.g]();
   }
+  if(G && !G.over){ try{ fxVignette(G.x); }catch(e){} }
   if(G && !G.over){ try{ fxFrame(); }catch(e){} }
   if(G && !G.over){ try{ gameClock(); }catch(e){} }
   if(G){
     const sc = Math.floor(G.score);
-    if(sc !== G.shown){ G.shown = sc; const gs = $("#gs"); if(gs) gs.textContent = "Score: "+sc; }
+    if(sc !== G.shown){ G.shown = sc; const gs = $("#gs"); if(gs) gs.textContent = "Score: "+(sc+(G.carry||0)); }
     if(!G.over) G.raf = requestAnimationFrame(loop);
   }
 }
@@ -2327,7 +2355,7 @@ function arcticStep(){
   // wake behind ship
   if(G.frame%3===0) FX.parts.push({x:G.sx+(Math.random()-0.5)*10, y:458, vx:(Math.random()-0.5)*0.6, vy:0.8, l:0.8, c:"#e0f2fe", r:3});
   x.save(); x.shadowColor = "rgba(255,213,74,.8)"; x.shadowBlur = 14; x.font = "34px serif"; x.textAlign = "center"; x.fillText("🚢",G.sx,440+Math.sin(G.frame/10)*2); x.restore();
-  if(G.over){ fxBurst(G.sx,430,30,["#ffffff","#bae6fd","#ffd54a"]); setTimeout(()=>{ if(G) gameOver(); }, 1000); }
+  if(G.over){ fxBurst(G.sx,430,30,["#ffffff","#bae6fd","#ffd54a"]); goLater(1000); }
 }
 function loopStep(){
   const x = G.x; x.fillStyle = "#0a2a33"; x.fillRect(0,0,320,480);
@@ -2354,7 +2382,7 @@ function loopStep(){
   });
   x.font = "32px serif"; x.textAlign = "center"; x.fillText("🐝",lanesX[G.lane],432);
   G.score += 0.06;
-  if(G.over) setTimeout(()=>{ if(G) gameOver(); }, 3000);
+  if(G.over) goLater(1200);
 }
 function newColorRound(){
   G.target = G.colors[Math.floor(Math.random()*G.colors.length)];
@@ -2382,7 +2410,7 @@ function colorbounceStep(){
   x.fillStyle = G.target; x.beginPath(); x.arc(160,44,13,0,7); x.fill(); x.strokeStyle = "#fff"; x.lineWidth=2; x.stroke();
   const pct = Math.max(0,1-(elapsed/G.roundDur));
   x.fillStyle = "#ffffff66"; x.fillRect(20,470,280*pct,4);
-  if(G.over) setTimeout(()=>{ if(G) gameOver(); }, 3000);
+  if(G.over) goLater(1200);
 }
 function bubbleStep(){
   const x = G.x;
@@ -2397,7 +2425,7 @@ function bubbleStep(){
   });
   x.font = "34px serif"; x.textAlign = "center"; x.fillText("🫧",G.sx,440);
   G.score += 0.1;
-  if(G.over) setTimeout(()=>{ if(G) gameOver(); }, 3000);
+  if(G.over) goLater(1200);
 }
 function driveStep(){
   const x = G.x; x.fillStyle = "#2b2b2b"; x.fillRect(0,0,320,480);
@@ -2426,14 +2454,27 @@ function driveStep(){
   });
   x.font = "30px serif"; x.fillText("🚗",lanesX[G.lane],432);
   G.score += 0.06;
-  if(G.over) setTimeout(()=>{ if(G) gameOver(); }, 3000);
+  if(G.over) goLater(1200);
 }
 function hoopStep(){
-  const x = G.x; G.time -= 1/60; if(G.time <= 0){ G.over = true; return gameOver(); }
-  x.fillStyle = "#1b1240"; x.fillRect(0,0,320,480);
+  const x = G.x; 
+  fxBg(x,"#2a1366","#0a0620","rgba(251,146,60,.30)");
+  // court floor
+  const fl = x.createLinearGradient(0,450,0,480); fl.addColorStop(0,"#b45309"); fl.addColorStop(1,"#78350f"); x.fillStyle = fl; x.fillRect(0,452,320,28);
+  x.strokeStyle = "rgba(255,255,255,.35)"; x.lineWidth = 2; x.beginPath(); x.moveTo(0,452); x.lineTo(320,452); x.stroke();
   G.hx = 160+Math.sin(G.frame/(G.score>=10?24:32))*(100+Math.min(50,G.score*3));
-  x.fillStyle = "#fff"; x.fillRect(G.hx-34,50,68,40); x.fillStyle = "#ff7a1a"; x.fillRect(G.hx-30,92,60,6);
-  x.strokeStyle = "#ffffff88"; for(let i=-24;i<=24;i+=12){ x.beginPath(); x.moveTo(G.hx+i,98); x.lineTo(G.hx+i/2,124); x.stroke(); }
+  const hx = G.hx;
+  // backboard
+  glossRect(x,hx-38,42,76,50,8,"#f8fafc",12);
+  x.strokeStyle = "#ef4444"; x.lineWidth = 3; x.strokeRect(hx-14,62,28,20);
+  // net
+  x.strokeStyle = "rgba(255,255,255,.75)"; x.lineWidth = 1.4;
+  for(let i=-24;i<=24;i+=12){ x.beginPath(); x.moveTo(hx+i,97); x.lineTo(hx+i*0.55,126); x.stroke(); }
+  for(let k=0;k<3;k++){ const yy = 104+k*9, ww = 24-k*5; x.beginPath(); x.moveTo(hx-ww,yy); x.lineTo(hx,yy+4); x.lineTo(hx+ww,yy); x.stroke(); }
+  // rim
+  x.save(); x.shadowColor = "#fb923c"; x.shadowBlur = 10; x.strokeStyle = "#ff7a1a"; x.lineWidth = 5; x.lineCap = "round"; x.beginPath(); x.moveTo(hx-28,95); x.lineTo(hx+28,95); x.stroke(); x.restore();
+  // ball shadow
+  if(!G.ball){ x.fillStyle = "rgba(0,0,0,.35)"; x.beginPath(); x.ellipse(G.tx,452,16,4,0,0,7); x.fill(); }
   x.font = "30px serif"; x.textAlign = "center";
   if(G.ball){ const b = G.ball; b.f++; b.y = 430-(b.f/22)*332;
     if(b.f >= 22){ if(Math.abs(G.hx-b.x) < 20){ G.score += 2; G.msg = "🏀 Swish! +2"; } else G.msg = "Miss!"; G.mt = 35; G.ball = null; }
@@ -2475,7 +2516,7 @@ function shooterStep(){
   });
   x.font = "30px serif"; x.textAlign = "center"; x.fillText("🚀",G.sx,440);
   G.score += 0.03;
-  if(G.over) setTimeout(()=>{ if(G) gameOver(); }, 1000);
+  if(G.over) goLater(1000);
 }
 function throwKnife(){
   if(!G || G.over) return;
@@ -2486,7 +2527,7 @@ function throwKnife(){
     G.over = true; G.knifeHitFx = 18;
     cancelAnimationFrame(G.raf);
     knifeStep(); // render the final frame showing the collision
-    setTimeout(()=>{ if(G) gameOver(); }, 900);
+    goLater(900);
     return;
   }
   G.stuck.push(absAngle);
@@ -2592,7 +2633,7 @@ function dollarStep(){
   x.font = "34px serif"; x.textAlign = "center"; x.fillText("💲", G.sx, py+12);
   if(G.over && G.hit){ x.strokeStyle = "#ff5c5c"; x.lineWidth = 4; x.beginPath(); x.arc(G.sx, py, 26, 0, 7); x.stroke(); x.fillStyle = "#ff5c5c"; x.font = "bold 18px sans-serif"; x.fillText("📉 BEAR MARKET!", 160, 300); }
   x.fillStyle = "#cfe3ff"; x.font = "bold 12px sans-serif"; x.textAlign = "left"; x.fillText("🟢 pakdo +1   🔴 bacho!", 10, 20);
-  if(G.over) setTimeout(()=>{ if(G) gameOver(); }, 1000);
+  if(G.over) goLater(1000);
 }
 function candleStep(){
   // Candle Jump: bull character auto-bounces on GREEN candles (stock-chart pillars) and climbs; landing on a RED candle
@@ -2644,7 +2685,7 @@ function candleStep(){
   if(G.over){
     x.fillStyle = "#ff5c5c"; x.font = "bold 18px sans-serif"; x.textAlign = "center";
     x.fillText(G.fell ? "📉 Market gir gaya!" : "🐻 BEARISH! Red candle", 160, 240);
-    setTimeout(()=>{ if(G) gameOver(); }, 1000);
+    goLater(1000);
   }
 }
 // keep generating rows above the screen; every row has >=1 reachable GREEN candle (jump height ~145px, max gap 108px)
@@ -2722,7 +2763,7 @@ function dollarboxStep(){
   x.textAlign = "right"; x.fillText("❤️".repeat(Math.max(0,D.lives)) + "🖤".repeat(3-Math.max(0,D.lives)), 310, 20);
   if(G.over){
     x.fillStyle = "#ff8a8a"; x.font = "bold 18px sans-serif"; x.textAlign = "center"; x.fillText(G.hitRed ? "🔴 Red ball pakdi — Game Over!" : "💸 Dollars miss ho gaye!", 160, 240);
-    setTimeout(()=>{ if(G) gameOver(); }, 1000);
+    goLater(1000);
   }
 }
 
@@ -2783,28 +2824,25 @@ function blockfitStep(){
   const x = G.x;
   if(!G.bf){ G.bf = {b:Array.from({length:8},()=>Array(8).fill(0)), pcs:[null,null,null], drag:null, time:120}; bfSpawn(); }
   const B = G.bf;
-  B.time -= 1/60; if(B.time<=0){ G.over = true; return gameOver(); }
-  x.fillStyle = "#0f172a"; x.fillRect(0,0,320,480);
+  fxBg(x,"#1e1b4b","#0b1022","rgba(99,102,241,.38)");
   const rr = (px,py,w,h,r)=>{ x.beginPath(); if(x.roundRect) x.roundRect(px,py,w,h,r); else x.rect(px,py,w,h); x.fill(); };
-  x.fillStyle = "#1e293b"; rr(BF_X-6, BF_Y-6, 8*BF_P+10, 8*BF_P+10, 14);
+  x.fillStyle = "rgba(15,23,42,.72)"; rr(BF_X-6, BF_Y-6, 8*BF_P+10, 8*BF_P+10, 14);
   const a = (B.drag!==null && B.pcs[B.drag]) ? bfAnchor(B.pcs[B.drag].shape) : null;
   const okDrop = a && bfCan(B.pcs[B.drag].shape, a.row, a.col);
   for(let r=0;r<8;r++) for(let c=0;c<8;c++){
     const v = B.b[r][c], px = BF_X+c*BF_P, py = BF_Y+r*BF_P;
-    x.fillStyle = v ? BF_COL[v-1] : "#334155"; rr(px, py, 34, 34, 6);
-    if(v){ x.fillStyle = "rgba(0,0,0,.22)"; x.fillRect(px+2, py+29, 30, 3); x.fillStyle = "rgba(255,255,255,.22)"; x.fillRect(px+3, py+3, 28, 4); }
+    if(v) glossRect(x,px,py,34,34,7,BF_COL[v-1]); else { x.fillStyle = "rgba(148,163,184,.16)"; rr(px, py, 34, 34, 7); }
   }
   if(okDrop){ const sh = B.pcs[B.drag].shape; x.fillStyle = "rgba(255,255,255,.35)";
     sh.forEach((rw,r)=>rw.forEach((v,c)=>{ if(v) rr(BF_X+(a.col+c)*BF_P, BF_Y+(a.row+r)*BF_P, 34, 34, 6); })); }
   // dock
-  x.fillStyle = "#1e293b"; rr(8, 344, 304, 134, 14);
+  x.fillStyle = "rgba(15,23,42,.72)"; rr(8, 344, 304, 134, 18);
   for(let i=0;i<3;i++){ const p = B.pcs[i]; if(!p || B.drag===i) continue;
     const sh = p.shape, w = sh[0].length, h = sh.length, sp = 20, ox = BF_SLOT[i]-w*sp/2, oy = BF_SY-h*sp/2;
-    x.fillStyle = BF_COL[p.color-1];
-    sh.forEach((rw,r)=>rw.forEach((v,c)=>{ if(v) rr(ox+c*sp, oy+r*sp, sp-2, sp-2, 4); })); }
+    sh.forEach((rw,r)=>rw.forEach((v,c)=>{ if(v) glossRect(x,ox+c*sp, oy+r*sp, sp-2, sp-2, 5, BF_COL[p.color-1]); })); }
   if(B.drag!==null && B.pcs[B.drag]){ const p = B.pcs[B.drag], sh = p.shape, d = bfAnchor(sh);
-    x.globalAlpha = 0.92; x.fillStyle = BF_COL[p.color-1];
-    sh.forEach((rw,r)=>rw.forEach((v,c)=>{ if(v) rr(d.px+c*BF_P, d.py+r*BF_P, 34, 34, 6); })); x.globalAlpha = 1; }
+    x.globalAlpha = 0.94;
+    sh.forEach((rw,r)=>rw.forEach((v,c)=>{ if(v) glossRect(x,d.px+c*BF_P, d.py+r*BF_P, 34, 34, 7, BF_COL[p.color-1], 10); })); x.globalAlpha = 1; }
   x.fillStyle = "#fff"; x.font = "bold 16px sans-serif"; x.textAlign = "left"; 
   x.textAlign = "right"; x.fillText("🟧 "+Math.floor(G.score), 310, 24);
 }
@@ -2843,9 +2881,8 @@ function tilematchStep(){
   const x = G.x;
   if(!G.tm){ G.tm = {level:1, tiles:[], tray:[], time:120, lvlT:0}; tmLevel(); }
   const T = G.tm;
-  T.time -= 1/60; if(T.time<=0){ G.over = true; return gameOver(); }
   if(!G.bgTm){ G.bgTm = x.createLinearGradient(0,0,0,480); G.bgTm.addColorStop(0,"#2e1065"); G.bgTm.addColorStop(1,"#0f172a"); }
-  x.fillStyle = G.bgTm; x.fillRect(0,0,320,480);
+  fxBg(x,"#2e1065","#0f172a","rgba(236,72,153,.3)");
   const rr = (px,py,w,h,r)=>{ x.beginPath(); if(x.roundRect) x.roundRect(px,py,w,h,r); else x.rect(px,py,w,h); x.fill(); };
   x.fillStyle = "rgba(255,255,255,.07)"; rr(8,44,304,300,16);
   x.textAlign = "center"; x.textBaseline = "middle";
@@ -2900,7 +2937,7 @@ function bricksmashStep(){
   if(!G.bb) bbInit();
   const B = G.bb;
   if(!G.bgBb){ G.bgBb = x.createRadialGradient(160,240,20,160,240,320); G.bgBb.addColorStop(0,"#16183a"); G.bgBb.addColorStop(1,"#070713"); }
-  x.fillStyle = G.bgBb; x.fillRect(0,0,320,480);
+  fxBg(x,"#0f1a4a","#07071a","rgba(34,211,238,.26)");
   if(B.aiming && !B.shooting){ let a = Math.atan2(G.ty-BB.DEAD, G.tx-B.lx); if(a>0) a = G.tx<B.lx ? -3.02 : -0.12; B.angle = Math.max(-3.02, Math.min(-0.12, a)); }
   // shoot balls
   if(B.shooting){
@@ -2940,10 +2977,9 @@ function bricksmashStep(){
     const it = B.grid[r][c]; if(!it) continue; const px = c*BB.CW+2, py = BB.Y0+r*BB.CH+2, w = BB.CW-4, h = BB.CH-4;
     if(it.type==="ball"){ x.strokeStyle = "#22d3ee"; x.lineWidth = 3; x.beginPath(); x.arc(px+w/2,py+h/2,9,0,7); x.stroke(); x.fillStyle = "#22d3ee"; x.font = "bold 12px sans-serif"; x.fillText("+1",px+w/2,py+h/2+1); continue; }
     const col = it.type==="brick" ? BB.COLOR[Math.min(4,Math.floor((it.hp/Math.max(B.stage,1))*4))] : (it.type==="laser" ? "#facc15" : "#f97316");
-    x.save(); x.shadowColor = col; x.shadowBlur = 8; x.fillStyle = col; rr(px,py,w,h,7); x.restore();
-    x.fillStyle = "rgba(255,255,255,.25)"; rr(px+3,py+3,w-6,6,3);
-    x.fillStyle = it.type==="brick" ? "#04121a" : "#1c1917"; x.font = "bold 15px sans-serif";
-    x.fillText(it.type==="laser" ? "↔ "+it.hp : it.type==="bomb" ? "💣"+it.hp : it.hp, px+w/2, py+h/2+1);
+    glossRect(x,px,py,w,h,8,col,10);
+    x.font = "900 15px sans-serif"; const lbl = it.type==="laser" ? "↔ "+it.hp : it.type==="bomb" ? "💣"+it.hp : it.hp;
+    x.lineWidth = 3; x.strokeStyle = "rgba(0,0,0,.45)"; x.strokeText(lbl, px+w/2, py+h/2+1); x.fillStyle = "#fff"; x.fillText(lbl, px+w/2, py+h/2+1);
   }
   // deadline + aim guide
   x.strokeStyle = "rgba(255,80,120,.55)"; x.setLineDash([6,5]); x.lineWidth = 1.5; x.beginPath(); x.moveTo(0,BB.DEAD); x.lineTo(320,BB.DEAD); x.stroke(); x.setLineDash([]);
@@ -3027,13 +3063,13 @@ function bsLand(x,y){
   else if(r>=BS.ROWS-1){ G.over = true; gameOver(); }
   if(G && !G.over && bsLow()){ G.over = true; gameOver(); }
 }
-function bsLow(){ const B = G.bs; for(let r=0;r<BS.ROWS;r++){ if(bsXY(r,0).y+BS.R > BS.DANGER && B.grid[r].some(v=>v>=0)) return true; } return false; }
+function bsLow(){ const B = G.bs; if(!B) return false; for(let r=0;r<BS.ROWS;r++){ if(bsXY(r,0).y+BS.R > BS.DANGER && B.grid[r].some(v=>v>=0)) return true; } return false; }
 function bsDropRow(nc){ const B = G.bs; B.grid.pop(); B.grid.unshift(Array(BS.COLS).fill(-1)); B.par ^= 1; bsFillRow(0,nc); }
 function bsDrop(){ bsDropRow(6); fxSound("go"); }
 function bsStep(){
   const x = G.x; if(!G.bs) bsInit(); const B = G.bs, sp = bsSprites();
   if(!G.bgBs){ G.bgBs = x.createLinearGradient(0,0,0,480); G.bgBs.addColorStop(0,"#0b1d4a"); G.bgBs.addColorStop(1,"#1b0a3d"); }
-  x.fillStyle = G.bgBs; x.fillRect(0,0,320,480);
+  fxBg(x,"#0b1d4a","#1b0a3d","rgba(56,189,248,.3)");
   if(B.aiming && !B.shot){ let a = Math.atan2(G.ty-440, G.tx-160); if(a>0) a = G.tx<160 ? -3.0 : -0.14; B.angle = Math.max(-3.0, Math.min(-0.14, a)); }
   // flying bubble
   if(B.shot){
@@ -3112,7 +3148,7 @@ function colortubesStep(){
   if(!G.ct){ G.ct = {level:1, lvlT:0}; ctLevel(); }
   const T = G.ct;
   if(!G.bgCt){ G.bgCt = x.createLinearGradient(0,0,0,480); G.bgCt.addColorStop(0,"#14162b"); G.bgCt.addColorStop(1,"#0b0c16"); }
-  x.fillStyle = G.bgCt; x.fillRect(0,0,320,480);
+  fxBg(x,"#0f172a","#0a0a1c","rgba(16,185,129,.24)");
   const rr = (px,py,w,h,r)=>{ x.beginPath(); if(x.roundRect) x.roundRect(px,py,w,h,r); else x.rect(px,py,w,h); };
   const L = ctLayout();
   L.forEach((t,i)=>{
@@ -3138,7 +3174,6 @@ function colortubesStep(){
 function blockmatchStep(){
   const x = G.x;
   if(!G.grid) initBlockGrid();
-  G.bmTime -= 1/60; if(G.bmTime<=0){ G.over = true; return gameOver(); }
   x.fillStyle = "#0f2a22"; x.fillRect(0,0,320,480);
   const gx=10, gy=60, cell=50;
   for(let r=0;r<G.grid.length;r++) for(let c=0;c<G.grid[0].length;c++){
@@ -3151,7 +3186,7 @@ function blockmatchStep(){
   x.textAlign = "right"; x.fillText("🧩 "+Math.floor(G.score),310,24);
 }
 function bank(){
-  const rawSc = Math.max(0, Math.floor(G.score)||0), id = G.t.id;
+  const rawSc = Math.max(0, Math.floor((G.score||0)+(G.carry||0))||0), id = G.t.id;
   // Anti-cheat: cap the banked score to a plausible max based on real elapsed play time,
   // so a tampered/injected G.score (e.g. via devtools) can't produce an absurd result.
   const elapsedSec = Math.max(0.5, (now() - (G.startMs||now())) / 1000);
@@ -3162,10 +3197,23 @@ function bank(){
   G.elapsedSec = elapsedSec; cloudScore(G.t, sc, 1, elapsedSec);
   return sc;
 }
+function gameRestart(o){
+  if(!o || G!==o) return;
+  bank(); cancelAnimationFrame(o.raf);
+  const n = mkG(o.t, o.c); n.x.setTransform(o.hd||1,0,0,o.hd||1,0,0);
+  Object.assign(n, {hd:o.hd, frame:o.frame, tl:o.tl, carry:(o.carry||0)+Math.floor(o.score||0), kd:o.kd, ku:o.ku, sawDown:o.sawDown, lastDown:o.lastDown, tx:o.tx, ty:o.ty, startMs:o.startMs, lastTs:null, acc:0, msgT:90, rmsg:"💥 Dobara shuru!", shown:-1});
+  n.x.imageSmoothingEnabled = true; n.x.imageSmoothingQuality = "high";
+  G = n; fxReset(); try{ fxSound("over"); navigator.vibrate && navigator.vibrate(60); }catch(e){}
+  const gs = $("#gs"); if(gs) gs.textContent = "Score: "+(n.carry);
+  loop();
+}
+function goLater(ms){ const g = G; setTimeout(()=>{ if(G && G===g) gameOver(); }, ms); }
+function playAgain(){ const t = G && G.t; if(!t) return; closeGame(); openGame(t); }
 function gameOver(){
+  if(G && G.tl!==undefined && G.tl>0.1 && !G.ending){ if(!G.rs){ G.rs = true; const o = G; G.rsT = setTimeout(()=>gameRestart(o), 450); } return; }
   try{ fxSound("over"); navigator.vibrate && navigator.vibrate([60,40,90]); }catch(e){}
   const t = G.t, sc = bank(), gh = $("#gh");
-  G.eligible = earnOk() && G.score>=RUN_MIN && (G.tl===undefined || G.tl<=0.1);   // 100+ score AND the full 2-minute timer finished
+  G.eligible = earnOk() && sc>=RUN_MIN && (G.tl===undefined || G.tl<=0.1);   // 100+ total score AND the full 3-minute timer finished
   gh.style.bottom = "auto"; gh.style.top = "30px"; gh.style.pointerEvents = "auto";
   const list = genReport(t);
   let rank = list.findIndex(e=>sc>=e.score); if(rank===-1) rank = list.length;
@@ -3178,8 +3226,8 @@ function gameOver(){
     ${!earnOk()?"":G.eligible?`<div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:4px">
       <button class="btn" id="boostBtn" style="background:linear-gradient(180deg,#ffe488,#f5a300);color:#3a1f00;font-weight:900;font-size:18px;flex:1;max-width:220px" onclick="claimRun()">🎁 Claim ${runRpAmt()} RP</button>
       <div style="background:#22c55e;color:#fff;font-size:11px;font-weight:800;padding:5px 10px;border-radius:8px;display:flex;align-items:center;gap:3px">🎬 ADS</div>
-    </div>`:`<div style="background:#ffffff1f;color:#fff;border-radius:12px;padding:10px;font-weight:700;font-size:13px;line-height:1.5">🎯 ${RUN_MIN}+ score aur ⏱ poora 2 minute khelo to 💜 ${runRpAmt()} RP milega<br><span style="opacity:.8">Is baar: score ${Math.floor(G.score)}${(G.tl!==undefined&&G.tl>0.1)?" • game 2 min se pehle khatam":""}</span></div>`}
-    <button class="btn s" style="width:100%;margin-top:10px;background:#ffffff22;color:#fff" onclick="closeGame()">Close</button>
+    </div>`:`<div style="background:#ffffff1f;color:#fff;border-radius:12px;padding:10px;font-weight:700;font-size:13px;line-height:1.5">🎯 ${RUN_MIN}+ score aur ⏱ poora 3 minute khelo to 💜 ${runRpAmt()} RP milega<br><span style="opacity:.8">Is baar: score ${Math.floor(G.score)}${(G.tl!==undefined&&G.tl>0.1)?" • game 2 min se pehle khatam":""}</span></div>`}
+    <button class="btn" style="width:100%;margin-top:10px;background:linear-gradient(180deg,#34d58a,#12a35f);color:#fff;font-weight:900;font-size:16px;box-shadow:0 4px 0 #0b7a47" onclick="playAgain()">▶ Play Again</button>
   </div>`;
   }
 function rpAdLeft(){ return 0; } // cooldown removed
@@ -3213,7 +3261,7 @@ function claim2x(sc, id){
 }
 function closeGame(){
   if(G && G.kd){ removeEventListener("keydown", G.kd); removeEventListener("keyup", G.ku); }
-  if(G){ cancelAnimationFrame(G.raf); clearTimeout(G.cdT); if(!G.over && G.score > 0){ G.over = true; bank(); } }
+  if(G){ cancelAnimationFrame(G.raf); clearTimeout(G.cdT); clearTimeout(G.rsT); if(!G.over && G.score > 0){ G.over = true; bank(); } }
   const o = $("#gm"); if(o) o.remove(); G = null; render();
 }
 
