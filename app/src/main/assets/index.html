@@ -137,6 +137,11 @@ nav button{border-radius:16px;padding:7px 2px;font-weight:700;transition:backgro
 nav button.on{background:linear-gradient(180deg,rgba(139,77,255,.22),rgba(139,77,255,.08));color:var(--acc)}
 nav span{font-size:20px;margin-bottom:1px}
 .lb{border:1px solid var(--line);border-radius:14px}
+.gcbox{flex:1 1 100%;margin-top:8px;padding:10px 12px;border-radius:12px;background:linear-gradient(135deg,#ff990022,#ffb02011);border:1px solid #ff990066}
+.gcbox .gch{font-size:12px;font-weight:800;color:#ffb020;margin-bottom:6px}
+.gcbox .gcr{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0}
+.gcbox .gcr b{flex:1 1 auto;min-width:0;width:auto;font-size:15px;letter-spacing:.6px;overflow-wrap:anywhere;user-select:all;color:#ffb020}
+.gcbox .gcr .btn{padding:6px 12px;font-size:12px}
 .lb:nth-child(1){background:linear-gradient(90deg,rgba(255,213,74,.22),var(--card))}
 .lb:nth-child(2){background:linear-gradient(90deg,rgba(203,213,225,.2),var(--card))}
 .lb:nth-child(3){background:linear-gradient(90deg,rgba(217,119,6,.2),var(--card))}
@@ -843,6 +848,22 @@ const cleanTxt = (s, n) => String(s==null?"":s).replace(/[\u0000-\u001f]/g," ").
 const cleanDev = d => /^[A-Za-z0-9\-]{16,64}$/.test(String(d||"")) ? String(d) : "";
 
 /* ---- actions (same names/replies the app and admin panel already use) ---- */
+/* picks stock cards whose face values add up EXACTLY to target (same-value single card first, else a small combination) */
+function gcPick(stock, target){
+  target = Math.round(Number(target)*100); if(!(target>0)) return null;
+  const by = {}; stock.forEach(c=>{ const k = Math.round(Number(c.denom)*100); (by[k] = by[k]||[]).push(c); });
+  if(by[target]) return [by[target][0]];
+  const ds = Object.keys(by).map(Number).sort((a,b)=>b-a).filter(d=>d<target);
+  let best = null;
+  (function go(i, left, chosen){
+    if(best) return;
+    if(left===0){ best = chosen.slice(); return; }
+    if(i>=ds.length || chosen.length>=12) return;
+    const d = ds[i], pool = by[d];
+    for(let n=Math.min(pool.length, Math.floor(left/d)); n>=0 && !best; n--) go(i+1, left-n*d, chosen.concat(pool.slice(0,n)));
+  })(0, target, []);
+  return best;
+}
 const FBA = {
   async config(){
     const c = await getDoc("none","config","app").catch(()=>null);
@@ -935,7 +956,7 @@ const FBA = {
     const digits = acctOf(b.mobile), ids = (Array.isArray(b.ids)?b.ids:[]).slice(0,50).map(String).filter(x=>/^WD\d{3,9}$/.test(x));
     if(!digits || !ids.length) return {ok:false, error:"bad request"};
     const rows = await Promise.all(ids.map(i=>getDoc("user","withdrawals",i).catch(()=>null)));
-    return {ok:true, items: rows.filter(r=>r && r.mobile===digits).map(r=>({id:r.id, status:r.status, txn:r.txn||""}))};
+    return {ok:true, items: rows.filter(r=>r && r.mobile===digits).map(r=>({id:r.id, status:r.status, txn:r.txn||"", giftCode:r.giftCode||""}))};
   },
 
   /* ---------- admin ---------- */
@@ -1164,6 +1185,55 @@ const FBA = {
         first:istTime(u.first), seen:istTime(u.seen), device:String(u.device||"").substring(0,8), flag:u.flag||""}));
     return {ok:true, items, total, bans:Array.from(bans)};
   },
+  /* ---------- Gift card stock (admin only; codes never reach normal users) ---------- */
+  async adminGcList(){
+    const rows = await runQuery("admin",{from:[{collectionId:"giftcards"}], limit:5000});
+    return {ok:true, items: rows.map(r=>({id:r.id, country:r.country||"", cur:r.cur||"", denom:Number(r.denom)||0, code:r.code||"", status:r.status||"available", wd:r.wd||"", added:istTime(r.added), sold:r.soldAt?istTime(r.soldAt):""}))};
+  },
+  async adminGcAdd(b){
+    const cc = cleanCc(b.country), denom = Math.round(Number(b.denom)*100)/100;
+    if(!cc) return {ok:false, error:"country chuno"};
+    if(!(denom>0 && denom<=100000)) return {ok:false, error:"card ki value (amount) sahi daalo"};
+    const seen = new Set(), codes = [];
+    String(b.codes||"").split(/[\n,;]+/).map(x=>x.trim()).filter(Boolean).forEach(c=>{ if(!seen.has(c)){ seen.add(c); codes.push(c); } });
+    if(!codes.length) return {ok:false, error:"koi code nahi mila"};
+    if(codes.length>300) return {ok:false, error:"ek baar mein max 300 codes"};
+    const badC = codes.find(c=>!/^[A-Za-z0-9\- ]{4,60}$/.test(c));
+    if(badC) return {ok:false, error:"galat code format: "+badC.slice(0,24)};
+    const ex = new Set((await runQuery("admin",{from:[{collectionId:"giftcards"}], limit:5000})).map(r=>String(r.code||"")));
+    const fresh = codes.filter(c=>!ex.has(c)), dup = codes.length-fresh.length;
+    const cur = curOf(cc), stamp = Date.now().toString(36).toUpperCase();
+    for(let i=0;i<fresh.length;i+=100){
+      const w = fresh.slice(i,i+100).map((c,k)=>{ const gid = "G"+stamp+(i+k).toString(36).toUpperCase()+Math.random().toString(36).slice(2,5).toUpperCase(); return wUpdate("giftcards", gid, {id:gid, country:cc, cur, denom, code:c, status:"available", wd:""}, {exists:false, now:["added"]}); });
+      await commit("admin", w);
+    }
+    try{ await commit("admin",[auditW("gift cards added", cc+" "+cur+" "+denom, fresh.length+" codes")]); }catch(e){}
+    return {ok:true, added:fresh.length, dup};
+  },
+  async adminGcDel(b){
+    const id = String(b.id||""); if(!/^G[A-Z0-9]{5,30}$/.test(id)) return {ok:false, error:"bad id"};
+    const c = await getDoc("admin","giftcards",id); if(!c) return {ok:false, error:"nahi mila"};
+    if(c.status!=="available") return {ok:false, error:"sold card delete nahi hota"};
+    await commit("admin",[wDelete("giftcards",id)]); return {ok:true};
+  },
+  async adminGcAssign(b){
+    const id = String(b.id||""); if(!/^WD\d{3,9}$/.test(id)) return {ok:false, error:"bad id"};
+    const w = await getDoc("admin","withdrawals",id);
+    if(!w) return {ok:false, error:"withdrawal nahi mila"};
+    if(w.status!=="Pending") return {ok:false, error:"already "+w.status};
+    if(w.method!=="Amazon") return {ok:false, error:"sirf Amazon request"};
+    const cc = cleanCc(w.country);
+    const stock = (await runQuery("admin",{from:[{collectionId:"giftcards"}], where:andF([fEq("country",cc), fEq("status","available")]), limit:2000})).filter(x=>x.cur===w.currency);
+    const net = Number(w.net_payable_amount), gross = Number(w.gross_amount);
+    const pick = gcPick(stock, net) || gcPick(stock, gross);
+    if(!pick) return {ok:false, error:"stock mein "+(CUR_SYM[w.currency]||w.currency+" ")+net+" ka "+cc+" card nahi hai — Gift Cards tab mein add karo"};
+    const codes = pick.map(c=>c.code).join("\n");
+    const ws = pick.map(c=>wUpdate("giftcards", c.id, {status:"sold", wd:id}, {mask:["status","wd","soldAt"], exists:true, now:["soldAt"]}));
+    ws.push(wUpdate("withdrawals", id, {status:"Paid", txn:"GC-"+id, giftCode:codes}, {mask:["status","txn","giftCode"], exists:true, now:["decidedAt"]}));
+    ws.push(auditW("gift card sent", id, (w.email||w.mobile)+" • "+cc+" • "+pick.length+" card"));
+    try{ await commit("admin", ws); }catch(e){ if(e.auth) throw e; return {ok:false, error:"update fail"}; }
+    return {ok:true, cards:pick.length};
+  },
   async adminBan(b){
     let m = acctOf(b.mobile);
     if(!m){   // admin typed an e-mail: find the account
@@ -1177,7 +1247,7 @@ const FBA = {
     return {ok:true};
   }
 };
-const FB_ADMIN = new Set(["adminSummary","adminAudit","adminAdjust","adminBroadcast","adminTickets","adminTicketReply","adminReport","adminLogin","adminConfigGet","adminConfigSet","adminUnitySet","adminPayoutSet","adminList","adminSet","adminUsers","adminBan"]);
+const FB_ADMIN = new Set(["adminSummary","adminAudit","adminAdjust","adminBroadcast","adminTickets","adminTicketReply","adminReport","adminLogin","adminConfigGet","adminConfigSet","adminUnitySet","adminPayoutSet","adminList","adminSet","adminUsers","adminBan","adminGcList","adminGcAdd","adminGcDel","adminGcAssign"]);
 async function sheetsCall(body){   // legacy name kept: now talks to Firestore
   const f = FBA[body && body.action];
   if(!FB_READY) return {ok:false, error:"Firebase config set nahi hai"};
@@ -1808,10 +1878,10 @@ function maybeNotifyDaily(){
   if(!("Notification" in window) || Notification.permission!=="granted") return;
   const today = dailyPeriodKey();
   if(S.lastNotifyDate===today) return;
-  const bonusLeft = bonusAvailable(), streakLeft = S.lastStreakClaim!==today;
-  if(bonusLeft || streakLeft){
+  const bonusLeft = bonusAvailable();
+  if(bonusLeft){
     S.lastNotifyDate = today; save();
-    try{ new Notification("🎁 GameNest Rewards", {body:"Aaj ka Daily Bonus aur Login Streak claim karna na bhoolo!"}); }catch(e){}
+    try{ new Notification("🎁 GameNest Rewards", {body:"Aaj ka Daily Bonus claim karna na bhoolo!"}); }catch(e){}
   }
 }
 function enableNotifications(){
@@ -1826,7 +1896,7 @@ function notifyPreBox(){
   o.innerHTML = `<div style="background:var(--card);border-radius:16px;padding:20px;max-width:320px;width:100%;text-align:center">
     <div style="font-size:34px;margin-bottom:6px">🔔</div>
     <h3 style="margin:0 0 10px">Notifications On karein?</h3>
-    <div class="mut" style="margin-bottom:16px;text-align:left;line-height:1.5">Isse aapko milega:<br>• 🎁 Daily Bonus reminder<br>• 🔥 Login Streak chhoote nahi<br>• 💰 Withdrawal status update<br><br>Agar aap "Not Now" choose karte ho, app bilkul normal chalta rahega — kuch block nahi hoga.</div>
+    <div class="mut" style="margin-bottom:16px;text-align:left;line-height:1.5">Isse aapko milega:<br>• 🎁 Daily Bonus reminder<br>• 💰 Withdrawal status update<br><br>Agar aap "Not Now" choose karte ho, app bilkul normal chalta rahega — kuch block nahi hoga.</div>
     <div class="row" style="gap:8px"><button class="btn s" onclick="document.getElementById('notifypre').remove()">Not Now</button><button class="btn" onclick="notifyPreConfirm()">Allow</button></div></div>`;
   document.body.appendChild(o);
 }
@@ -1834,7 +1904,7 @@ function notifyPreConfirm(){
   const o = $("#notifypre"); if(o) o.remove();
   Notification.requestPermission().then(p=>{
     S.notifyEnabled = p==="granted"; save(); me();
-    if(p==="granted") try{ new Notification("GameNest Rewards", {body:"Notifications ON! Daily streak aur bonus reminders milenge."}); }catch(e){}
+    if(p==="granted") try{ new Notification("GameNest Rewards", {body:"Notifications ON! Daily bonus reminders milenge."}); }catch(e){}
     else if(p==="denied") alert("Notifications block ho gaye — browser/app settings se allow karo. App waise hi chalta rahega.");
   });
 }
@@ -1855,7 +1925,7 @@ function home(){
   const extCard = (c.extAppOn===true && (c.extAppPkg||c.extAppUrl)) ? `<div class="card" style="display:flex;justify-content:space-between;align-items:center"><div><h3 style="margin:0 0 2px">🎮 ${esc(c.extAppName||"Partner Game")}</h3><div class="mut">Game / app kholo</div></div><button class="btn sm" onclick="openExternalApp(cfg().extAppPkg, cfg().extAppUrl)">Open</button></div>` : "";
   const _usd = ((S.coins||0)/(c.rate||1500)).toFixed(2), _nm = esc(String(S.name||"Player").split(" ")[0]);
   const walletHero = `<div class="wh"><div class="hi">👋 Welcome, ${_nm}</div><div class="big">🪙 ${S.coins||0}<small>coins ≈ $${_usd}</small></div>
-      <div class="sub"><b>💜 ${S.rp||0} RP</b><b>🔥 Streak day ${S.streakDay||1}</b></div>
+      <div class="sub"><b>💜 ${S.rp||0} RP</b></div>
       <div class="acts"><button class="a1" onclick="tab='play';render()">🎮 Play</button><button class="a2" onclick="tab='wallet';render()">💰 Redeem</button></div></div>`;
   $("#view").innerHTML = walletHero + adBox('home') + noticeBanner('home') + extCard
     + (("Notification" in window) ? `<div class="row" style="margin-bottom:8px"><span class="mut">🔔 Reminders ${(S.notifyEnabled && Notification.permission==="granted")?"ON ✅":"OFF"}</span>${(S.notifyEnabled && Notification.permission==="granted")?"":`<button class="btn s sm" onclick="enableNotifications()">Enable</button>`}</div>` : "")
@@ -3360,13 +3430,15 @@ function wdCards(cc, opts){
   }).join("");
   return `<div class="mut" style="margin-bottom:8px;font-weight:800">${head}</div><div class="rwg">${cards}</div><div class="mut" style="font-size:11px;margin:-4px 0 10px">Amazon is a trademark of Amazon.com, Inc. This app is not affiliated with, sponsored or endorsed by Amazon.</div>${inr?`<div class="mut" style="margin:-4px 0 10px">Code aapke email par bheja jayega.</div>`:""}`;
 }
+function gcCopy(c, b){ b = b || (event && event.target); const done = ok=>{ if(b){ const o = b.textContent; b.textContent = ok?"Copied ✓":"Hold & copy"; setTimeout(()=>{ b.textContent = o; }, 1600); } };
+  try{ navigator.clipboard.writeText(c).then(()=>done(true), ()=>done(false)); }catch(e){ done(false); } }
 function wdHistory(){
   return S.wd.length?S.wd.slice().reverse().map(w=>{
       const badge = {PENDING:["⏳ Pending","#8a93a8"],APPROVED:["✔️ Approved","#38bdf8"],SUCCESS:["✅ Success","#1fa971"],REJECTED:["❌ Rejected","#ff5c5c"]}[w.status]||["",w.status];
       const hc = w.cur || (isFeeMethod(w.method, w.country) ? (isUsdtMethod(w.method) ? "USDT" : "USD") : "INR");
       const hm = w.cur ? (w.fx || fxRate(hc)) : (hc==="INR" ? (w.inrRate || cfg().usdToInr) : 1), L = v => curFmt(hc, parseFloat(v)*hm);
       const mainLine = `${esc(w.method)} • ${L(w.net)} net <span class="mut">(req ${L(w.requested)}${(parseFloat(w.requested)-parseFloat(w.net))>0.004?`, Fee ${w.pct!=null?w.pct:tdsPctForMethod(w.method)}%: -${L(parseFloat(w.requested)-parseFloat(w.net))}`:""})</span>`;
-      return `<div class="lb" style="flex-wrap:wrap"><span class="n">${mainLine}${w.country?`<br><span class="mut">🌍 ${esc(w.country)}${w.autoReject?" • "+esc(w.autoReject):""}</span>`:""}${w.utr?`<br><span class="mut">UTR: ${esc(w.utr)}</span>`:""}<br><span class="mut">📅 ${esc(new Date(w.created||Date.now()).toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}))} • ${w.status==="REJECTED"?"Coins wapas mil gaye":"🪙 "+esc(w.coins)+" coins"}</span></span><span style="color:${badge[1]};font-weight:700;font-size:12px">${badge[0]}</span></div>`;
+      return `<div class="lb" style="flex-wrap:wrap"><span class="n">${mainLine}${w.country?`<br><span class="mut">🌍 ${esc(w.country)}${w.autoReject?" • "+esc(w.autoReject):""}</span>`:""}${!w.giftCode&&w.utr?`<br><span class="mut">UTR: ${esc(w.utr)}</span>`:""}<br><span class="mut">📅 ${esc(new Date(w.created||Date.now()).toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}))} • ${w.status==="REJECTED"?"Coins wapas mil gaye":"🪙 "+esc(w.coins)+" coins"}</span></span><span style="color:${badge[1]};font-weight:700;font-size:12px">${badge[0]}</span>${w.giftCode?`<div class="gcbox"><div class="gch">🎁 Your Amazon Gift Card code${w.giftCode.indexOf("\n")>=0?"s":""}</div>${w.giftCode.split("\n").map(c=>`<div class="gcr"><b>${esc(c)}</b><button class="btn sm" onclick="gcCopy('${esc(c)}',this)">Copy</button></div>`).join("")}</div>`:""}</div>`;
     }).join(""):`<div class="mut">Abhi koi request nahi.</div>`;
 }
 function wdIpHint(force){
@@ -3517,6 +3589,7 @@ async function syncWdStatuses(){
         const ns = SHEET_STATUS[it.status] || w.status;
         if(ns !== w.status){ w.status = ns; changed = true; }
         if(it.txn && w.utr !== it.txn){ w.utr = it.txn; changed = true; }
+        if(it.giftCode && w.giftCode !== it.giftCode){ w.giftCode = it.giftCode; changed = true; }
         if(ns === "REJECTED" && !w.refunded){ wdRefund(w); changed = true; }
       });
     }

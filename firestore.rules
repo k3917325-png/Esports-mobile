@@ -1,0 +1,242 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function isAdmin()  { return signedIn() && request.auth.uid == 'pidQ2en01AWEc2qOwPMgO4VepwG3'; }
+    function isAcct(s) { return s is string && s.matches('^[A-Za-z0-9]{20,40}$'); }
+    function isGoogle() { return signedIn() && request.auth.token.email is string && request.auth.token.email_verified == true
+      && request.auth.token.firebase.sign_in_provider in ['google.com', 'password']
+      && request.auth.token.email.matches('^[a-z0-9._]{6,40}@gmail[.]com$'); }
+    function isCc(s) { return s is string && s.matches('^[A-Z]{2}$'); }
+    function feeDefault(m) { return m in ['UPI','Paytm','PhonePe','GooglePlay','Amazon','PhonePeGift'] ? 0 : 18; }
+    function feePct(m) { return exists(doc('config', 'fees')) ? get(doc('config', 'fees')).data.pct[m] : feeDefault(m); }
+    // v16 anti-cheat helpers. config/wdlimits is written by the admin panel on every Save (rate, minCoins, maxCoins, usdToInr).
+    // premium countries (config/wdlimits.prem) get their own min/max coins (pMinCoins / pMaxCoins); everyone else uses minCoins / maxCoins.
+    function isPremCc(c) { return exists(doc('config', 'wdlimits')) && ('prem' in get(doc('config', 'wdlimits')).data) && (c in get(doc('config', 'wdlimits')).data.prem); }
+    function minC(c) { return isPremCc(c) ? lim('pMinCoins', lim('minCoins', 1980)) : lim('minCoins', 1980); }
+    function maxC(c) { return isPremCc(c) ? lim('pMaxCoins', lim('maxCoins', 15000)) : lim('maxCoins', 15000); }
+    function lim(k, d) { return exists(doc('config', 'wdlimits')) ? get(doc('config', 'wdlimits')).data.get(k, d) : d; }
+    // Max coin balance a normal account can hold by its age: 30000 start + 22000 per day (real earning is about 18000/day).
+    function coinCap(first) { return 30000 + 22000 * ((request.time.toMillis() - first.toMillis()) / 86400000); }
+    function countryBlocked(c) { return exists(doc('config', 'blocked')) && (c in get(doc('config', 'blocked')).data.list); }
+    function isDevice(s) { return s is string && s.matches('^[A-Za-z0-9-]{16,64}$'); }
+    function flagsOk(v) { return !exists(doc('config', 'flags'))
+      || (get(doc('config', 'flags')).data.maintenance != true && v is int && v >= get(doc('config', 'flags')).data.minVer); }
+    function vpnOk(rk) { return !exists(doc('config', 'flags')) || get(doc('config', 'flags')).data.get('vpnBlock', false) != true
+      || !rk.matches('.*(VPN|PROXY|TOR|DATACENTER).*'); }
+    function loginBlocked(c) { return exists(doc('config', 'blocked')) && (c in get(doc('config', 'blocked')).data.get('loginList', [])); }
+    function doc(c, id) { return /databases/$(database)/documents/$(c)/$(id); }
+
+    match /config/{d} {
+      allow get: if d == 'app' || d == 'blocked' || d == 'fees' || d == 'broadcast' || d == 'lb' || isAdmin();
+      allow write: if isAdmin();
+    }
+
+    match /bans/{m} {
+      allow get: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    // --- NEW: Unique Usernames Collection Rules ---
+    match /names/{username} {
+      allow get: if signedIn();
+      allow list: if isAdmin();
+      // Naya naam tabhi banega jab wo pehle se exist na karta ho aur ownerUid match ho
+      allow create: if isGoogle() 
+        && username.size() >= 3 && username.size() <= 40
+        && !exists(doc('names', username))
+        && request.resource.data.keys().hasOnly(['ownerUid', 'createdAt'])
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.createdAt == request.time;
+      // Sirf wahi user apna naam delete/update kar sakta hai jo uska owner ho
+      allow delete: if isGoogle() && resource.data.ownerUid == request.auth.uid;
+      allow update: if false; // Naam direct update nahi hoga, delete karke naya create hoga
+    }
+
+    match /devices/{dev} {
+      allow get: if signedIn();
+      allow list: if isAdmin();
+      allow create: if isGoogle() && isDevice(dev)
+        && request.resource.data.keys().hasOnly(['mobile', 'ownerUid'])
+        && request.resource.data.mobile == request.auth.uid
+        && request.resource.data.ownerUid == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
+    match /users/{m} {
+      allow list: if isAdmin();
+      allow get: if isAdmin() || (signedIn() && (resource == null || resource.data.ownerUid == request.auth.uid));
+
+      function profileOk(d) {
+        return d.keys().hasOnly(['mobile','name','email','coins','rp','code','country','device','ownerUid','banned','flag','first','seen'])
+          && d.mobile == m
+          && d.name is string && d.name.size() <= 40
+          && d.email == request.auth.token.email.lower()
+          && d.coins is int && d.coins >= 0 && d.coins <= 1000000000
+          && d.rp is int && d.rp >= 0 && d.rp <= 1000000000000
+          && d.code is string && d.code.size() <= 12
+          && d.country is string && d.country.size() <= 4
+          && !loginBlocked(d.country)
+          && isDevice(d.device)
+          && d.flag is string && d.flag.size() <= 80
+          && d.ownerUid == request.auth.uid
+          && d.seen == request.time
+          && existsAfter(doc('devices', d.device))
+          && getAfter(doc('devices', d.device)).data.mobile == m;
+      }
+
+      allow create: if isGoogle() && m == request.auth.uid
+        && !exists(doc('bans', m))
+        && profileOk(request.resource.data)
+        && request.resource.data.banned == false
+        && request.resource.data.coins <= 30000
+        && request.resource.data.first == request.time;
+
+      // v15: Play Store account-deletion requirement - the owner can delete their own profile document
+      allow delete: if isAdmin() || (isGoogle() && m == request.auth.uid);
+
+      allow update: if isAdmin() || (isGoogle() && m == request.auth.uid
+        && !exists(doc('bans', m))
+        && (resource.data.ownerUid == request.auth.uid || resource.data.device == request.resource.data.device)
+        && profileOk(request.resource.data)
+        && request.resource.data.banned == resource.data.banned
+        && request.resource.data.first == resource.data.first
+        && (request.resource.data.coins - resource.data.coins <= 60000)
+        && (request.resource.data.coins <= resource.data.coins || request.resource.data.coins <= coinCap(resource.data.first)));
+    }
+
+    // v13: receipts written ONLY by the scheduled Cloud Function (Admin SDK bypasses rules); the owner can read them
+    match /users/{m}/payouts/{d} {
+      allow get, list: if isAdmin() || (isGoogle() && m == request.auth.uid);
+      allow write: if false;
+    }
+
+    match /wdc/{m} {
+      allow get: if signedIn() || isAdmin();
+      allow create, update: if isGoogle() && m == request.auth.uid
+        && request.resource.data.keys().hasOnly(['uid','year','month','day','count','lastId'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.year == request.time.year()
+        && request.resource.data.month == request.time.month()
+        && request.resource.data.day == request.time.day()
+        && request.resource.data.count >= 1 && request.resource.data.count <= 5
+        && (resource == null
+              ? request.resource.data.count == 1
+              : ((resource.data.year == request.time.year() && resource.data.month == request.time.month() && resource.data.day == request.time.day())
+                  ? request.resource.data.count == resource.data.count + 1
+                  : request.resource.data.count == 1))
+        && existsAfter(doc('withdrawals', request.resource.data.lastId))
+        && getAfter(doc('withdrawals', request.resource.data.lastId)).data.mobile == m
+        && getAfter(doc('withdrawals', request.resource.data.lastId)).data.uid == request.auth.uid;
+    }
+
+    // Upper bound of (local currency per 1 USD) used to sanity-check withdrawal amounts (generous caps, not the exact rates).
+    function fxMax(c) {
+      return c == 'INR' ? lim('usdToInr', 83)
+        : c == 'BRL' ? 9
+        : c == 'MYR' ? 7
+        : (c == 'AED' || c == 'SAR' || c == 'QAR') ? 6
+        : (c == 'CAD' || c == 'AUD' || c == 'SGD') ? 2.5
+        : 1.6;
+    }
+
+    match /withdrawals/{id} {
+      allow list: if isAdmin();
+      allow get: if isAdmin() || (signedIn() && (resource == null || resource.data.uid == request.auth.uid));
+
+      allow create: if isGoogle()
+        && id.matches('^WD[0-9]{3,9}$')
+        && request.resource.data.keys().hasOnly(['id','uid','mobile','email','country','ipCountry','appVer','risk','to','method','coins','gross_amount','tax_or_fee_deducted','net_payable_amount','applied_fee_percent','currency','name','status','txn','device','created'])
+        && request.resource.data.id == id
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.mobile == request.auth.uid
+        && request.resource.data.email == request.auth.token.email.lower()
+        && isCc(request.resource.data.country) && request.resource.data.country == request.resource.data.ipCountry
+        && !countryBlocked(request.resource.data.country)
+        && request.resource.data.risk is string && request.resource.data.risk.size() <= 40
+        && flagsOk(request.resource.data.appVer)
+        && vpnOk(request.resource.data.risk)
+        && request.resource.data.status == 'Pending' && request.resource.data.txn == ''
+        && request.resource.data.created == request.time
+        && request.resource.data.method in ['UPI','PayPal','Paytm','PhonePe','Binance','Bybit','GooglePlay','Amazon','PhonePeGift']
+        && request.resource.data.currency in ['INR','USD','USDT','GBP','EUR','CAD','AUD','CHF','AED','SAR','QAR','SGD','MYR','KWD','BHD','OMR','BRL']
+        && request.resource.data.coins is int && request.resource.data.coins >= minC(request.resource.data.country) && request.resource.data.coins <= maxC(request.resource.data.country)
+        && request.resource.data.gross_amount <= (request.resource.data.coins / lim('rate', 1500)) * fxMax(request.resource.data.currency) * 1.03 + 1
+        && request.resource.data.applied_fee_percent == feePct(request.resource.data.method)
+        && request.resource.data.net_payable_amount >= 0 && request.resource.data.net_payable_amount <= 1000000
+        && request.resource.data.gross_amount >= request.resource.data.net_payable_amount && request.resource.data.gross_amount <= 1000000
+        && request.resource.data.tax_or_fee_deducted >= 0
+        && request.resource.data.tax_or_fee_deducted + request.resource.data.net_payable_amount - request.resource.data.gross_amount <= 0.011
+        && request.resource.data.gross_amount - request.resource.data.tax_or_fee_deducted - request.resource.data.net_payable_amount <= 0.011
+        && request.resource.data.tax_or_fee_deducted * 100 - request.resource.data.gross_amount * request.resource.data.applied_fee_percent <= 150
+        && request.resource.data.gross_amount * request.resource.data.applied_fee_percent - request.resource.data.tax_or_fee_deducted * 100 <= 150
+        && request.resource.data.to is string && request.resource.data.to.size() >= 3 && request.resource.data.to.size() <= 128
+        && (!(request.resource.data.method in ['GooglePlay','Amazon','PhonePeGift']) || request.resource.data.to.matches('^[^\\s@]{1,64}@[^\\s@]{1,128}\\.[A-Za-z]{2,}$'))
+        && (request.resource.data.method != 'UPI' || request.resource.data.to.matches('^[A-Za-z0-9._-]{2,64}@[A-Za-z]{2,32}$'))
+        && !exists(doc('bans', request.resource.data.mobile))
+        && get(doc('users', request.resource.data.mobile)).data.ownerUid == request.auth.uid
+        && get(doc('users', request.resource.data.mobile)).data.device == request.resource.data.device
+        && request.resource.data.coins <= get(doc('users', request.resource.data.mobile)).data.coins + 30000
+        && get(doc('devices', request.resource.data.device)).data.mobile == request.resource.data.mobile
+        && existsAfter(doc('wdc', request.resource.data.mobile))
+        && getAfter(doc('wdc', request.resource.data.mobile)).data.lastId == id;
+
+      allow update: if isAdmin()
+        && resource.data.status == 'Pending'
+        && request.resource.data.status in ['Paid', 'Rejected']
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'txn', 'decidedAt', 'giftCode'])
+        && (!('giftCode' in request.resource.data.diff(resource.data).affectedKeys()) || (request.resource.data.giftCode is string && request.resource.data.giftCode.size() <= 600))
+        && (request.resource.data.status == 'Rejected' || request.resource.data.txn.matches('^[A-Za-z0-9_-]{4,40}$'));
+    }
+
+    // Amazon gift card stock: ONLY the admin can read or write (codes never reach normal users)
+    match /giftcards/{id} {
+      allow read, write: if isAdmin();
+    }
+
+    match /audit/{id} {
+      allow list, get: if isAdmin();
+      allow create: if isAdmin() && request.resource.data.keys().hasOnly(['admin','action','target','detail','at']) && request.resource.data.at == request.time;
+    }
+
+    match /adjustments/{id} {
+      allow list: if isAdmin() || (isGoogle() && resource.data.uid == request.auth.uid);
+      allow get: if isAdmin() || (isGoogle() && resource.data.uid == request.auth.uid);
+      allow create: if isAdmin() && request.resource.data.keys().hasOnly(['id','uid','email','delta','reason','applied','at'])
+        && request.resource.data.applied == false && request.resource.data.at == request.time;
+      allow update: if isGoogle() && resource.data.uid == request.auth.uid && resource.data.applied == false
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['applied','appliedAt'])
+        && request.resource.data.applied == true;
+      allow delete: if isAdmin();
+    }
+
+    match /tickets/{id} {
+      allow list: if isAdmin() || (isGoogle() && resource.data.uid == request.auth.uid);
+      allow get: if isAdmin() || (isGoogle() && resource.data.uid == request.auth.uid);
+      allow create: if isGoogle() && id.matches('^T[A-Za-z0-9]{6,20}$')
+        && request.resource.data.keys().hasOnly(['id','uid','email','name','subject','message','status','reply','created'])
+        && request.resource.data.id == id && request.resource.data.uid == request.auth.uid
+        && request.resource.data.email == request.auth.token.email.lower()
+        && request.resource.data.status == 'Open' && request.resource.data.reply == ''
+        && request.resource.data.subject is string && request.resource.data.subject.size() >= 3 && request.resource.data.subject.size() <= 80
+        && request.resource.data.message is string && request.resource.data.message.size() >= 5 && request.resource.data.message.size() <= 1000
+        && request.resource.data.created == request.time;
+      allow update: if isAdmin();
+    }
+
+    // Real leaderboard: one doc per account (id == uid). Anyone signed in can read the top list; only the owner writes their own row.
+    match /lbp/{m} {
+      allow get, list: if signedIn();
+      allow create, update: if isGoogle() && m == request.auth.uid && isAcct(m)
+        && request.resource.data.keys().hasOnly(['uid','name','rp','updated'])
+        && request.resource.data.uid == m
+        && request.resource.data.name is string && request.resource.data.name.size() <= 20
+        && request.resource.data.rp is int && request.resource.data.rp >= 0 && request.resource.data.rp <= 100000000
+        && request.resource.data.updated == request.time;
+      allow delete: if isAdmin();
+    }
+
+    match /{other=**} { allow read, write: if false; }
+  }
+}
