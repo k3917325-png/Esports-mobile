@@ -23,7 +23,7 @@ class AdHub {
     private final Result cb;
 
     // ---- admin config (pushed from HTML) ----
-    private boolean configured = false, on = true, lpOn = true, debug = false, consent = false;
+    private boolean configured = false, on = true, lpOn = true, bannerOn = true, debug = false, consent = false;
     private String lpKey = "", lpRewardedId = "", lpBannerId = "";
     private boolean bannerWanted = false;
     private long lastRetry = 0;
@@ -55,6 +55,7 @@ class AdHub {
             org.json.JSONObject o = new org.json.JSONObject(json);
             on = o.optBoolean("on", true);
             lpOn = o.optBoolean("unityOn", true);
+            bannerOn = o.optBoolean("bannerOn", true);
             lpKey = plc(o.optString("lpKey", ""));
             lpRewardedId = plc(o.optString("lpRewarded", ""));
             lpBannerId = plc(o.optString("lpBanner", ""));
@@ -137,7 +138,7 @@ class AdHub {
     // ================= banner =================
     /** LevelPlay banner only (other networks are mediated inside LevelPlay). */
     private String bannerNetwork() {
-        if (lpUsable() && lpReady && !bannerUnit().isEmpty() && !lpBannerFailed) return "levelplay";
+        if (bannerOn && lpUsable() && lpReady && !bannerUnit().isEmpty() && !lpBannerFailed) return "levelplay";
         return "";
     }
 
