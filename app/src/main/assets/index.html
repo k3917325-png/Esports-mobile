@@ -2116,9 +2116,10 @@ function adFailToast(){
   document.body.appendChild(d); setTimeout(()=>d.remove(), 3500);
 }
 function noAd(done){ done(); }
+function adOffToast(){ gToast ? gToast('📺 Ads abhi available nahi — thodi der baad try karo') : 0; const b = $('#boostBtn'); if(b){ b.disabled = false; b.textContent = '🎁 Claim '+runRpAmt()+' RP'; } }
 function watchAd(subtext, onDone, opts){
   opts = opts || {};
-  if(S && S.adConfig && (S.adConfig.on===false || S.adConfig.rewardedOn===false)) return onDone();   // admin turned rewarded ads off
+  if(S && S.adConfig && (S.adConfig.on===false || S.adConfig.rewardedOn===false)){ adOffToast(); if(opts.onFail) opts.onFail(); return; }   // ads switched off by admin: NO reward without a real ad
   if(window.AndroidAds){
     pushAdCfg();
     const id = ++adSeq;
@@ -2129,6 +2130,7 @@ function watchAd(subtext, onDone, opts){
     try{ window.AndroidAds.showRewarded(String(id)); }catch(e){ adCbs[id](false); }
     return;
   }
+  if(!window.__DEV_ADS){ adOffToast(); return; }   // no native ad bridge = no reward (the simulated ad is for local testing only)
   const o = document.createElement("div"); o.id = "rad";
   o.style.cssText = "position:fixed;inset:0;z-index:100;background:#000;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:20px;text-align:center";
   o.innerHTML = `<div style="font-size:13px;letter-spacing:1px;color:#aaa">📺 AD CHAL RAHA HAI</div>
