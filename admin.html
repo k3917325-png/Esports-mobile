@@ -616,7 +616,7 @@ function defaultConfig(){ return {
     100,100,100,100,100,100,100,100,100,100,
     65,65,65,65,65,65,65,65,65,65];
     const t = {}; p.forEach((v,i)=>t[i+1]=v); return t; })(),
-  rpPerCent: 100000, rpCoins: 15, premiumCountries: ["US","CA","GB","AU","NZ","DE","CH","NO","SE"], rpPremiumUsd: 0.10, premium2Countries: [], // rpPerCent RP = rpCoins coins (shown on the Games screen; admin can change). 15 coins = $0.01 at the default rate
+  rpPerCent: 100000, rpCoins: 15, premiumCountries: ["US","CA","GB","AU","NZ","DE","CH","NO","SE"], rpPremiumUsd: 0.10, premium2Countries: [], runScore: 100, runMins: 3, runRp: 5000, // rpPerCent RP = rpCoins coins (shown on the Games screen; admin can change). 15 coins = $0.01 at the default rate
   dailyBonusRp: 500,
   dailyBonusIntervalDays: 1, // 1=roz, 2=har 2 din mein ek baar, 3=har 3 din mein ek baar, etc.
   dailyBonusTimeEnabled: false, dailyBonusTimeStart: "18:00", dailyBonusTimeEnd: "22:00", // sirf is window mein claim available
@@ -639,14 +639,14 @@ function tierOfCc(cc, c){ cc = String(cc||"").toUpperCase(); if(!cc) return 0; i
 function wdTier(){ return tierOfCc(pvCc() || String(window.wdIpCc||(S&&S.countryId)||"").toUpperCase()); }
 function wdIsPrem(){ return wdTier()>0; }
 /* per-group settings: Normal = config.<key>, Premium (1) / Premium 2 (2) = config.tiers.t1 / t2.<key> (empty -> falls back to the normal value) */
-const TIER_BASE = {minUsd:"minWithdrawUsd", maxUsd:"maxWithdrawUsd", perDay:"wdMaxPerDay", timeOn:"wdTimeEnabled", timeStart:"wdTimeStart", timeEnd:"wdTimeEnd", daysOn:"wdDaysEnabled", days:"wdDays", presetAmounts:"presetAmounts", rpPer:"rpPerCent"};
+const TIER_BASE = {minUsd:"minWithdrawUsd", maxUsd:"maxWithdrawUsd", perDay:"wdMaxPerDay", timeOn:"wdTimeEnabled", timeStart:"wdTimeStart", timeEnd:"wdTimeEnd", daysOn:"wdDaysEnabled", days:"wdDays", presetAmounts:"presetAmounts", rpPer:"rpPerCent", runScore:"runScore", runMins:"runMins", runRp:"runRp"};
 const TIER_LEGACY = {rpUsd:"rpPremiumUsd", minUsd:"minWithdrawUsdPrem", maxUsd:"maxWithdrawUsdPrem"};
 function tv(k, t, c){
   c = c || cfg(); t = t===undefined ? wdTier() : t;
   if(t>0){
     let v = ((c.tiers||{})["t"+t]||{})[k];
     if((v===undefined||v===null||v==="") && t===1 && TIER_LEGACY[k]) v = c[TIER_LEGACY[k]];
-    const num = (k==="minUsd"||k==="maxUsd"||k==="perDay"||k==="rpPer");
+    const num = (k==="minUsd"||k==="maxUsd"||k==="perDay"||k==="rpPer"||k==="runScore"||k==="runMins"||k==="runRp");
     const ok = !(v===undefined||v===null||v==="") && !(num && !(Number(v)>0)) && !(k==="presetAmounts" && !(Array.isArray(v)&&v.length)) && !(k==="days" && !Array.isArray(v));
     if(ok) return v;
   }
@@ -1722,8 +1722,11 @@ function reconcileTours(){
 }
 applyRemoteToS();
 reconcileTours();
-const RUN_MIN = 100;                                   // minimum score to earn the RP reward
-function runRpAmt(){ return Math.max.apply(null, tourPrizes()); }   // 5000 RP by default
+function runMin(){ const v = Number(tv("runScore")); return v>0 ? Math.round(v) : 100; }      // minimum score to earn the RP reward (per country group)
+function runSecs(){ const v = Number(tv("runMins")); return Math.round(Math.min(60, Math.max(0.5, v>0 ? v : 3))*60); }   // game timer in seconds
+function runTimeLbl(sec){ sec = sec===undefined ? runSecs() : sec; return Math.floor(sec/60)+":"+String(sec%60).padStart(2,"0"); }
+function runMinsTxt(){ const m = runSecs()/60; return (Number.isInteger(m)?m:+m.toFixed(1))+" min"; }
+function runRpAmt(){ const v = Number(tv("runRp")); return v>0 ? Math.round(v) : Math.max.apply(null, tourPrizes()); }   // RP reward (per country group)
 function claimRun(){
   if(!earnOk()) return earnBlockMsg();
   if(!G || !G.eligible || G.claimed) return;
@@ -1974,8 +1977,9 @@ function home(){
         <button class="btn sm" style="background:#ffd54a;color:#3a1f00;font-weight:800;white-space:nowrap" ${(claimed||waitingForWindow)?"disabled":""} onclick="claimBonus()">
           ${claimed?"✅ Claimed":waitingForWindow?"⏰ Band":"Claim"}</button>
       </div></div>
+    ${refCardHome()}
     <h3>Game Categories</h3><div class="grid" style="grid-template-columns:1fr">${catCard("🕹️","Mini Games","tab='play';render()")}</div>
-    ${refCardHome()}<div class="msg" id="msg"></div>`;
+    <div class="msg" id="msg"></div>`;
 }
 function refCardHome(){
   if(S.isGuest || !earnOk()) return "";
@@ -2157,7 +2161,7 @@ function play(){
     <div style="padding:12px 14px 0;font-weight:800;color:var(--acc);font-size:18px">${esc(cg.name)}</div>
     <div class="mut" style="padding:6px 14px 0">External game link</div>
     <button class="btn play" style="margin:10px 14px 14px" onclick="window.open('${esc(cg.url)}','_blank')">Open Link ›</button></div>`).join("");
-  v.innerHTML = adBox('matches') + noticeBanner('matches') + chips + (earnOk() ? rewardsCard() : "") + `<div class="gl">` + toursSorted.map(t=>`<div class="gr">${t.g==="bubbleshoot"?'<span class="grn">NEW</span>':''}<div class="gri">${gLogo(t.g,68,0)}</div><div class="grt"><b>${esc(t.name)}</b><div class="grs">${earnOk() ? "<i>🎯 "+RUN_MIN+" • ⏱ 3:00</i><i class='rp'>💜 "+runRpAmt()+" RP</i>" : "<i>🎮 Free Play • ⏱ 3:00</i>"}</div></div><button class="grb" onclick="playT(${t.id})">▶ Play</button></div>`).join("") + `</div>` + customLinks + `<div class="mut" style="text-align:center;font-size:11.5px;line-height:1.5;margin:6px 6px 16px">✅ 100% free to play — koi deposit ya entry fee nahi. Rewards promotional hain aur ads se funded hain. Ye gambling ya betting app nahi hai. Rewards fixed score milestones par milte hain, kisi player ke against nahi.</div>`;
+  v.innerHTML = adBox('matches') + noticeBanner('matches') + chips + (earnOk() ? rewardsCard() : "") + `<div class="gl">` + toursSorted.map(t=>`<div class="gr">${t.g==="bubbleshoot"?'<span class="grn">NEW</span>':''}<div class="gri">${gLogo(t.g,68,0)}</div><div class="grt"><b>${esc(t.name)}</b><div class="grs">${earnOk() ? "<i>🎯 "+runMin()+" • ⏱ "+runTimeLbl()+"</i><i class='rp'>💜 "+runRpAmt()+" RP</i>" : "<i>🎮 Free Play • ⏱ "+runTimeLbl()+"</i>"}</div></div><button class="grb" onclick="playT(${t.id})">▶ Play</button></div>`).join("") + `</div>` + customLinks + `<div class="mut" style="text-align:center;font-size:11.5px;line-height:1.5;margin:6px 6px 16px">✅ 100% free to play — koi deposit ya entry fee nahi. Rewards promotional hain aur ads se funded hain. Ye gambling ya betting app nahi hai. Rewards fixed score milestones par milte hain, kisi player ke against nahi.</div>`;
 }
 function nextLbPayoutTime(){
   const c = cfg(), d = new Date();
@@ -2285,6 +2289,7 @@ function openGame(t){
   document.body.appendChild(o);
   const c = $("#gc"), HD = Math.min(2.5, Math.max(2, window.devicePixelRatio||2));
   c.width = Math.round(320*HD); c.height = Math.round(480*HD);
+  window.__runSecs = runSecs();
   G = mkG(t, c);
   $("#gh").textContent = ({
     hoop:"Ball ko ungli se left-right ghumao, ungli uthate hi ball jayegi • Hoop mein daalo (3 min)",
@@ -2304,7 +2309,7 @@ function openGame(t){
     tilematch:"Tile par tap karo • Tray mein same 3 fruits milao to clear • Tray (7) bhar gayi to game over • Dabe hue tiles pehle upar wale hatao (3 min)",
     blockfit:"Neeche se block ko drag karke 8×8 board par rakho • Poori row/column bharo to clear • Jagah khatam = game over (3 min)",
     dollarbox:"Box ko left/right drag karo • 💵 dollar pakdo (+50 har dollar) • 🔴 red ball box mein aayi to game over • 3 dollar miss = game over!"
-  })[t.g];
+  })[t.g].replace(/\(3 min\)/g, "("+runMinsTxt()+")");
   G.hd = HD; G.x.setTransform(HD,0,0,HD,0,0); G.x.imageSmoothingEnabled = true; G.x.imageSmoothingQuality = "high";
   let rc = c.getBoundingClientRect(); const refreshRc = () => { rc = c.getBoundingClientRect(); };
   addEventListener("resize", refreshRc);
@@ -2367,7 +2372,7 @@ function fxVignette(x){
 }
 const GACC = {arctic:"#38bdf8",hoop:"#fb923c",blockfit:"#818cf8",tilematch:"#f472b6",bricksmash:"#22d3ee",colortubes:"#34d399",bubbleshoot:"#a78bfa"};
 function gameClock(){
-  const x = G.x, tl = Math.max(0, G.tl===undefined ? 180 : G.tl), m = Math.floor(Math.ceil(tl)/60), sec = Math.ceil(tl)%60, lbl = "⏱ "+m+":"+String(sec).padStart(2,"0");
+  const x = G.x, tl = Math.max(0, G.tl===undefined ? (window.__runSecs||runSecs()) : G.tl), m = Math.floor(Math.ceil(tl)/60), sec = Math.ceil(tl)%60, lbl = "⏱ "+m+":"+String(sec).padStart(2,"0");
   x.save(); x.font = "bold 14px sans-serif"; x.textAlign = "center"; x.textBaseline = "middle";
   const w = 76; x.fillStyle = tl<=10 ? "rgba(220,38,38,.85)" : "rgba(0,0,0,.45)"; x.beginPath(); if(x.roundRect) x.roundRect(160-w/2,8,w,22,11); else x.rect(160-w/2,8,w,22); x.fill();
   x.fillStyle = "#fff"; x.fillText(lbl,160,19.5); x.restore();
@@ -2382,7 +2387,7 @@ function loop(ts){
   let steps = 0;
   while(G && !G.over && G.acc >= 16.0 && steps < 3){
     G.acc -= 16.667; steps++; G.frame++; G.x.clearRect(0,0,320,480);
-    if(!G.over){ G.tl = 180 - G.frame/60; }
+    if(!G.over){ G.tl = (window.__runSecs||180) - G.frame/60; }
     ({hoop:hoopStep, arctic:arcticStep, loop:loopStep, colorbounce:colorbounceStep, bubble:bubbleStep, drive:driveStep, shooter:shooterStep, knife:knifeStep, blockmatch:blockmatchStep, dollar:dollarStep, candle:candleStep, dollarbox:dollarboxStep, blockfit:blockfitStep, tilematch:tilematchStep, bricksmash:bricksmashStep, colortubes:colortubesStep, bubbleshoot:bsStep})[G.t.g]();
   }
   if(G && !G.over){ try{ fxVignette(G.x); }catch(e){} }
@@ -3338,9 +3343,9 @@ function gameOver(){
   if(G && G.tl!==undefined && G.tl>0.1 && !G.ending){ if(!G.rs){ G.rs = true; const o = G; G.rsT = setTimeout(()=>gameRestart(o), 450); } return; }
   try{ fxSound("over"); navigator.vibrate && navigator.vibrate([60,40,90]); }catch(e){}
   const t = G.t, sc = bank(), gh = $("#gh");
-  G.eligible = earnOk() && sc>=RUN_MIN && (G.tl===undefined || G.tl<=0.1);   // 100+ total score AND the full 3-minute timer finished
+  G.eligible = earnOk() && sc>=runMin() && (G.tl===undefined || G.tl<=0.1);   // min score AND the full timer finished
   if(!G.eligible){   // 100 score not reached (or earning off): no reward, straight back into a fresh game
-    gToast(earnOk() ? "🎯 "+RUN_MIN+" score nahi bana — dobara shuru" : "🎮 Dobara shuru");
+    gToast(earnOk() ? "🎯 "+runMin()+" score nahi bana — dobara shuru" : "🎮 Dobara shuru");
     const gg = G; setTimeout(()=>{ if(G && G===gg) playAgain(); }, 700); return;
   }
   gh.style.bottom = "auto"; gh.style.top = "30px"; gh.style.pointerEvents = "auto";
@@ -4142,9 +4147,19 @@ function table(prefix, n, label){
 }
 
 /* ---------- tab bodies ---------- */
+function runRulesBlock(){
+  const c = A.doc.config;
+  const card = t => { const u = TIER_UI[t], g = k => t===0 ? "config."+TIER_BASE[k] : "config.tiers.t"+t+"."+k, d = t===0 ? c : c.tiers["t"+t];
+    const sc = d[TIER_BASE.runScore] ?? d.runScore, mn = t===0 ? c.runMins : d.runMins, rp = t===0 ? c.runRp : d.runRp;
+    return `<div class="card2" style="border-left:4px solid ${u.col};margin-top:8px"><b>${u.ic} ${u.name} countries</b>
+      ${inp("🎯 Minimum score",g("runScore"),"i",{w:100})}${inp("⏱ Timer (minutes)",g("runMins"),"n",{w:100})}${inp("💜 Claim reward (RP)",g("runRp"),"i",{w:110})}
+      <div class="mut" style="margin-top:4px">👉 ${u.name} country ka user: <b>${(t===0?c.runScore:d.runScore)||0} score</b> • <b>${(t===0?c.runMins:d.runMins)||0} min</b> • <b>${((t===0?c.runRp:d.runRp)||0).toLocaleString("en-IN")} RP</b></div></div>`; };
+  return `<div class="mut" style="margin:6px 0 2px"><b>🎮 Game Rules — games list mein jo "🎯 100 • ⏱ 3:00 • 💜 5000 RP" dikhta hai.</b> Teen country groups ke liye alag. (Country kis group mein hai: "⭐ Premium" tab.) Save dabao.</div>${card(0)}${card(1)}${card(2)}`;
+}
 function tGames(){
   const c = A.doc.config; c.gamesOrder = gamesOrderAll(c); const order = c.gamesOrder;
   return `<h3>1️⃣ Tournaments & Games</h3>
+  ${runRulesBlock()}
   <div class="mut" style="margin:10px 0 4px">Game Management — ON/OFF + Position</div>
   ${order.map((g,i)=>{ const on = (c.gamesEnabled||{})[g]!==false; return `<div class="ar"><span style="flex:1">${E(GAME_CANON[g].name)}</span>
     <select data-a2="pos" data-g="${g}">${order.map((_,k)=>`<option value="${k}" ${k===i?"selected":""}>#${k+1}</option>`).join("")}</select>
