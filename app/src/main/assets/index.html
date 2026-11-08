@@ -460,7 +460,7 @@ const SUPPORT_PLATFORMS = {
 function supportLinksCard(){
   const links = (cfg().supportLinks||[]).filter(l=>l.url);
   if(!links.length) return "";
-  return `<div class="card"><h3>🎧 Support Team</h3>
+  return `<div class="card"><h3>🎧 Support</h3>
     <div class="mut" style="margin-bottom:10px">Kisi bhi help ke liye humse yahan judo</div>
     <div style="display:flex;flex-wrap:wrap;gap:8px">
       ${links.map(l=>{ const p = SUPPORT_PLATFORMS[l.platform]||SUPPORT_PLATFORMS.website;
@@ -562,7 +562,7 @@ function defaultConfig(){ return {
   rate: 1500, // coins per $1
   minWithdrawUsd: 1.32, maxWithdrawUsd: 10, minWithdrawUsdPrem: 1.32, maxWithdrawUsdPrem: 10, // *Prem = premium countries ke liye alag limit
   wdMaxPerDay: 1, // din mein max kitni baar withdrawal kar sakta hai
-  supportLinks: [], // Support Team / Social links: [{id,platform,url}] - admin panel se add/manage hote hain
+  supportTicketOn: true, supportLinks: [], // Support Team / Social links: [{id,platform,url}] - admin panel se add/manage hote hain
   legalUrl: "https://astonishing-biscochitos-6e3bd9.netlify.app", // hosted T&C/Privacy Policy public page (Play Console submission ke liye)
   cloudApiUrl: "", // public URL of the deployed Cloud API (esports-backend). No secrets here.
   rpAdCooldownMin: 3, // rewarded "2x" ad ke baad itne minute tak dobara RP-ad nahi (cooldown)
@@ -1961,16 +1961,16 @@ function home(){
         <button class="btn sm" style="background:#ffd54a;color:#3a1f00;font-weight:800;white-space:nowrap" ${(claimed||waitingForWindow)?"disabled":""} onclick="claimBonus()">
           ${claimed?"✅ Claimed":waitingForWindow?"⏰ Band":"Claim"}</button>
       </div></div>
-    ${refCardHome()}
     <h3>Game Categories</h3><div class="grid" style="grid-template-columns:1fr">${catCard("🕹️","Mini Games","tab='play';render()")}</div>
+    ${refCardHome()}
+    ${supportLinksCard()}
     <div class="msg" id="msg"></div>`;
 }
 function refCardHome(){
   if(S.isGuest || !earnOk()) return "";
-  return `<div class="card" style="margin-top:12px;position:relative;overflow:hidden;background:linear-gradient(135deg,#1e1b4b,#7c3aed 60%,#db2777);border:1px solid rgba(255,255,255,.18);box-shadow:0 8px 24px rgba(124,58,237,.35)">
+  return `<h3>Invite &amp; Earn</h3><div class="card" style="margin-top:0;position:relative;overflow:hidden;background:linear-gradient(135deg,#1e1b4b,#7c3aed 60%,#db2777);border:1px solid rgba(255,255,255,.18);box-shadow:0 8px 24px rgba(124,58,237,.35)">
     <div style="position:absolute;right:-18px;top:-18px;font-size:90px;opacity:.12">👥</div>
-    <div style="font-size:11px;font-weight:800;letter-spacing:1px;color:#ffd54a">INVITE &amp; EARN</div>
-    <h3 style="color:#fff;margin:2px 0 4px">👥 Refer a Friend</h3>
+    <h3 style="color:#fff;margin:0 0 4px">👥 Refer a Friend</h3>
     <div style="color:#efe6ff;font-size:12px;margin-bottom:10px">Dost ko code do — signup par <b style="color:#ffd54a">3000 RP</b> milenge.</div>
     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:rgba(0,0,0,.28);border:1.5px dashed rgba(255,213,74,.7);border-radius:12px;padding:8px 8px 8px 14px">
       <b style="font-size:20px;letter-spacing:2px;color:#ffd54a">${esc(S.code)}</b>
@@ -3763,7 +3763,7 @@ function me(){
     ${S.isGuest?'':`<div id="nmBox" style="margin-top:10px"><button class="btn s sm" onclick="nameEdit()">✏️ Naam badlo</button></div>`}</div>
     ${(S.isGuest||!earnOk())?'':`<div class="card"><h3>👥 Referral Code</h3><div class="row"><b style="font-size:20px;color:var(--gold)">${S.code}</b><button class="btn sm" onclick="navigator.clipboard&&navigator.clipboard.writeText('${S.code}');this.textContent='Copied'">Copy</button></div>
     <div class="mut" style="margin-top:6px">Dost ko code do — signup par 3000 RP.</div></div>`}
-    ${S.isGuest?'':`<div class="card"><h3>🆘 Support / Report</h3><input id="tkS" placeholder="${earnOk()?"Subject (jaise: Withdrawal nahi mila)":"Subject (jaise: Game problem)"}" maxlength="80"><textarea id="tkM" placeholder="Apni problem detail mein likho..." maxlength="1000" style="width:100%;min-height:70px;margin-bottom:8px"></textarea><div class="msg" id="tkMsg"></div><button class="btn" onclick="tkSubmit()">Submit Ticket</button><div id="tkList" style="margin-top:10px"></div></div>`}
+    ${(S.isGuest||cfg().supportTicketOn===false)?'':`<div class="card"><h3>🆘 Support / Report</h3><input id="tkS" placeholder="${earnOk()?"Subject (jaise: Withdrawal nahi mila)":"Subject (jaise: Game problem)"}" maxlength="80"><textarea id="tkM" placeholder="Apni problem detail mein likho..." maxlength="1000" style="width:100%;min-height:70px;margin-bottom:8px"></textarea><div class="msg" id="tkMsg"></div><button class="btn" onclick="tkSubmit()">Submit Ticket</button><div id="tkList" style="margin-top:10px"></div></div>`}
     ${(S.isGuest||!earnOk())?'':`<div class="card"><h3>🧾 Withdrawal History</h3>${wdHistory()}</div>`}
     <div class="card"><h3>☁️ Cloud Sync</h3><div class="mut" id="cloudStat">${cloudStatText()}</div></div>
     ${supportLinksCard()}
