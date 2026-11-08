@@ -233,12 +233,18 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
 /* ===== Country currency (withdraw amounts show in the user's own currency) ===== */
-const CUR_OF = (()=>{ const m = {IN:"INR",US:"USD",GB:"GBP",CA:"CAD",AU:"AUD",CH:"CHF",AE:"AED",SA:"SAR",QA:"QAR",SG:"SGD",MY:"MYR",KW:"KWD",BH:"BHD",OM:"OMR",BR:"BRL"};
+const CUR_OF = (()=>{ const m = {IN:"INR",US:"USD",GB:"GBP",CA:"CAD",AU:"AUD",CH:"CHF",AE:"AED",SA:"SAR",QA:"QAR",SG:"SGD",MY:"MYR",KW:"KWD",BH:"BHD",OM:"OMR",BR:"BRL",NZ:"NZD"};
   "DE FR IT ES NL BE AT IE PT FI GR LU SK SI EE LV LT MT CY HR".split(" ").forEach(c=>{ m[c] = "EUR"; }); return m; })();
-const CUR_SYM = {INR:"₹",USD:"$",GBP:"£",EUR:"€",CAD:"C$",AUD:"A$",CHF:"CHF ",AED:"AED ",SAR:"SAR ",QAR:"QAR ",SGD:"S$",MYR:"RM ",KWD:"KD ",BHD:"BD ",OMR:"OMR ",BRL:"R$",USDT:"USDT "};
-const FX_DEF = {GBP:0.78,EUR:0.92,CAD:1.38,AUD:1.55,CHF:0.88,AED:3.673,SAR:3.75,QAR:3.64,SGD:1.34,MYR:4.4,KWD:0.31,BHD:0.377,OMR:0.385,BRL:5.5};
+const CUR_SYM = {INR:"₹",USD:"$",GBP:"£",EUR:"€",CAD:"C$",AUD:"A$",CHF:"CHF ",AED:"AED ",SAR:"SAR ",QAR:"QAR ",SGD:"S$",MYR:"RM ",KWD:"KD ",BHD:"BD ",OMR:"OMR ",BRL:"R$",NZD:"NZ$",USDT:"USDT "};
+const FX_DEF = {GBP:0.78,EUR:0.92,CAD:1.38,AUD:1.55,CHF:0.88,AED:3.673,SAR:3.75,QAR:3.64,SGD:1.34,MYR:4.4,KWD:0.31,BHD:0.377,OMR:0.385,BRL:5.5,NZD:1.72};
+/* Play Store live countries (admin: Geo-Control -> "Live countries" preset). Currency per country = CUR_OF. */
+const LIVE_CC = ["US","GB","CA","AU","NZ","CH","AE","SA","QA","SG","MY","KW","BH","OM","BR","DE","FR","IT","ES","NL","BE","AT","IE","PT","FI","GR","LU","SK","SI","EE","LV","LT","MT","CY","HR"];
+/* admin rates are typed as "1 <currency> = ₹ X" (config.fxInr); local-currency-per-USD = fxInr.USD / fxInr[cur] */
+const FX_INR_DEF = {USD:94,GBP:127,EUR:106,CHF:116,AED:25,SAR:25,QAR:25,SGD:74,MYR:23,KWD:300,BHD:250,OMR:245,BRL:17,AUD:66,CAD:67,NZD:54};
+const FX_CUR_LIST = ["GBP","EUR","CAD","AUD","NZD","CHF","AED","SAR","QAR","SGD","MYR","KWD","BHD","OMR","BRL"];
+function usdInr(){ const t = cfg().fxInr||{}; const v = Number(t.USD); return v>0 ? v : (Number(cfg().usdToInr)||FX_INR_DEF.USD); }
 function curOf(cc){ return CUR_OF[cc] || "USD"; }
-function fxRate(cur){ if(cur==="INR") return Number(cfg().usdToInr)||83; if(cur==="USD"||cur==="USDT") return 1; const v = Number((cfg().fx||{})[cur]); return (isFinite(v) && v>0) ? v : (FX_DEF[cur]||1); }
+function fxRate(cur){ if(cur==="INR") return usdInr(); if(cur==="USD"||cur==="USDT") return 1; const t = cfg().fxInr||{}, iv = Number(t[cur]!==undefined?t[cur]:FX_INR_DEF[cur]); if(iv>0) return usdInr()/iv; const v = Number((cfg().fx||{})[cur]); return (isFinite(v) && v>0) ? v : (FX_DEF[cur]||1); }
 function curFmt(cur, v){ const n = Number(v)||0, dec = ["KWD","BHD","OMR"].indexOf(cur)>=0 ? 3 : 2; return (CUR_SYM[cur]||(cur+" ")) + (cur==="INR" ? Math.round(n).toLocaleString("en-IN") : (Math.abs(n-Math.round(n))<0.005 ? String(Math.round(n)) : n.toFixed(dec))); }
 function userCur(){ return curOf(window.wdIpCc || ""); }
 const COUNTRIES = [
@@ -570,7 +576,7 @@ function defaultConfig(){ return {
   lbServerPayout: false,
   loginRestrictOn: true, wdRestrictOn: true, vpnBlock: true, gpsRequired: true, extAppOn: false, extAppName: "", extAppPkg: "", extAppUrl: "",
   maintenanceOn: false, maintenanceMsg: "App abhi maintenance par hai. Thodi der baad dobara aao.", forceUpdateOn: false, minVersion: 1, updateUrl: "", updateMsg: "App ka naya version aa gaya hai. Aage use karne ke liye update karo.",
-  upiEnabled: true, paypalEnabled: true, usdToInr: 83,
+  upiEnabled: true, paypalEnabled: true, usdToInr: 94, fxInr: {USD:94,GBP:127,EUR:106,CHF:116,AED:25,SAR:25,QAR:25,SGD:74,MYR:23,KWD:300,BHD:250,OMR:245,BRL:17,AUD:66,CAD:67,NZD:54},
   binanceEnabled: true,
   bybitEnabled: true,
   upi_fee_enabled: false, upi_fee_percent: 0, paytm_fee_enabled: false, paytm_fee_percent: 0, phonepe_fee_enabled: false, phonepe_fee_percent: 0,
@@ -3449,7 +3455,7 @@ function wdCards(cc, opts){
   const head = inr ? "🇮🇳 India — Amazon Gift Card" : "🎁 Amazon Gift Card";
   const cards = opts.filter(o=>WD_CARD[o]).map(o=>{
     const d = WD_CARD[o], m = WD_METHOD[o], fee = appliedPct(m);
-    const minTxt = (inr && IN_METHODS.indexOf(m)>=0) ? "Min ₹"+Math.round(mn*c.usdToInr).toLocaleString("en-IN") : "Min $"+mn;
+    const minTxt = (inr && IN_METHODS.indexOf(m)>=0) ? "Min ₹"+Math.round(mn*usdInr()).toLocaleString("en-IN") : "Min $"+mn;
     return `<button class="rwc ${window.opt==o?"on":""}" id="o${o}" onclick="openRedeem(${o})"><span class="rwlg ${RW_IMG[d.k]?"full":""}"><img src="${RW_IMG[d.k]||"rw/"+d.k+".png"}" alt="${d.n}" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()"><span class="rwt">${d.n}</span></span><span class="rws">${d.sub}</span></button>`;
   }).join("");
   return `<div class="mut" style="margin-bottom:8px;font-weight:800">${head}</div><div class="rwg">${cards}</div><div class="mut" style="font-size:11px;margin:-4px 0 10px">Amazon is a trademark of Amazon.com, Inc. This app is not affiliated with, sponsored or endorsed by Amazon.</div>${inr?`<div class="mut" style="margin:-4px 0 10px">Code aapke email par bheja jayega.</div>`:""}`;
@@ -3460,7 +3466,7 @@ function wdHistory(){
   return S.wd.length?S.wd.slice().reverse().map(w=>{
       const badge = {PENDING:["⏳ Pending","#8a93a8"],APPROVED:["✔️ Approved","#38bdf8"],SUCCESS:["✅ Success","#1fa971"],REJECTED:["❌ Rejected","#ff5c5c"]}[w.status]||["",w.status];
       const hc = w.cur || (isFeeMethod(w.method, w.country) ? (isUsdtMethod(w.method) ? "USDT" : "USD") : "INR");
-      const hm = w.cur ? (w.fx || fxRate(hc)) : (hc==="INR" ? (w.inrRate || cfg().usdToInr) : 1), L = v => curFmt(hc, parseFloat(v)*hm);
+      const hm = w.cur ? (w.fx || fxRate(hc)) : (hc==="INR" ? (w.inrRate || usdInr()) : 1), L = v => curFmt(hc, parseFloat(v)*hm);
       const mainLine = `${esc(w.method)} • ${L(w.net)} net <span class="mut">(req ${L(w.requested)}${(parseFloat(w.requested)-parseFloat(w.net))>0.004?`, Fee ${w.pct!=null?w.pct:tdsPctForMethod(w.method)}%: -${L(parseFloat(w.requested)-parseFloat(w.net))}`:""})</span>`;
       return `<div class="lb" style="flex-wrap:wrap"><span class="n">${mainLine}${w.country?`<br><span class="mut">🌍 ${esc(w.country)}${w.autoReject?" • "+esc(w.autoReject):""}</span>`:""}${!w.giftCode&&w.utr?`<br><span class="mut">UTR: ${esc(w.utr)}</span>`:""}<br><span class="mut">📅 ${esc(new Date(w.created||Date.now()).toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}))} • ${w.status==="REJECTED"?"Coins wapas mil gaye":"🪙 "+esc(w.coins)+" coins"}</span></span><span style="color:${badge[1]};font-weight:700;font-size:12px">${badge[0]}</span>${w.giftCode?`<div class="gcbox"><div class="gch">🎁 Your Amazon Gift Card code${w.giftCode.indexOf("\n")>=0?"s":""}</div>${w.giftCode.split("\n").map(c=>`<div class="gcr"><b>${esc(c)}</b><button class="btn sm" onclick="gcCopy('${esc(c)}',this)">Copy</button></div>`).join("")}</div>`:""}</div>`;
     }).join(""):`<div class="mut">Abhi koi request nahi.</div>`;
@@ -3581,7 +3587,7 @@ async function sendWdToSheet(w){
   try{
     // Sheet amounts are in the PAYOUT currency: INR for India gift cards (what the user saw), USD for PayPal, USDT for Binance/Bybit.
     const cur = w.cur || (isFeeMethod(w.method, w.country) ? (isUsdtMethod(w.method) ? "USDT" : "USD") : "INR");
-    const mult = w.cur ? (w.fx || fxRate(cur)) : (cur==="INR" ? (w.inrRate || cfg().usdToInr || 83) : 1);
+    const mult = w.cur ? (w.fx || fxRate(cur)) : (cur==="INR" ? (w.inrRate || usdInr() || 83) : 1);
     const fx = v => { const n = parseFloat(v)*mult; return cur==="INR" ? Math.round(n) : +n.toFixed(2); };
     await userSyncNow();   // server must know this account (and its balance) before a payout request
     const d = await sheetsCall({action:"submit", device:deviceId(), requestId:w.id, mobile:w.mobile, country:w.country||"", ipCountry:w.ipCountry||"", risk:w.risk||"", to:w.to, method:w.method,
@@ -3713,7 +3719,7 @@ async function withdraw(){
   S.coins -= c; S.lastWithdraw = todayStr; S.wdCountDate = todayStr; S.wdCountToday = (S.wdCountToday||0)+1; // requested amount freezes instantly so user can't double-withdraw
   S.wdSeq = (S.wdSeq||1000)+1;
   const wdRec = {id:"WD"+S.wdSeq, user_id:S.phone, method, to:a, mobile:S.phone, country, ipCountry:ipc, risk, coins:c,
-    requested:gross.toFixed(2), pct, tds:tds.toFixed(2), net:net.toFixed(2), inrRate:cfg().usdToInr, cur:curOf(country), fx:fxRate(curOf(country)), status:"PENDING", utr:"", created:now()};
+    requested:gross.toFixed(2), pct, tds:tds.toFixed(2), net:net.toFixed(2), inrRate:usdInr(), cur:curOf(country), fx:fxRate(curOf(country)), status:"PENDING", utr:"", created:now()};
   S.wd.push(wdRec);
   save(); render();
   sendWdToSheet(wdRec);
