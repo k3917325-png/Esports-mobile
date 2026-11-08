@@ -2269,9 +2269,9 @@ function openGame(t){
   const gameAdBox = gameAdOn ? `<div style="width:min(320px,92vw);min-height:50px;margin-top:4px;margin-bottom:2px;border:1px dashed #555;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#888;background:#ffffff0a">${S.adConfig.bannerId?"Banner Ad • "+esc(S.adConfig.bannerId):"Banner Ad (320x50)"}</div>` : "";
   o.innerHTML = `<div style="width:min(320px,92vw);display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:800"><span style="display:flex;align-items:center;font-size:15px">${gLogo(t.g,34,8)}${esc(t.name)}</span><span id="gs" style="margin-left:auto;background:linear-gradient(180deg,#ffe488,#f5a300);color:#3a1f00;font-size:12.5px;font-weight:900;padding:5px 12px;border-radius:20px;box-shadow:0 3px 10px rgba(245,163,0,.4)">Score: 0</span><button onclick="closeGame()" style="background:#ffffff26;border:1px solid #ffffff33;color:#fff;border-radius:50%;width:34px;height:34px;font-size:15px;line-height:1">✕</button></div>
     ${gameAdBox}
-    <div style="position:relative"><canvas id="gc" width="320" height="480" style="width:min(320px,92vw);height:auto;border-radius:20px;touch-action:none;display:block;box-shadow:0 0 0 2px ${acc}99,0 0 0 5px ${acc}22,0 14px 44px ${acc}55"></canvas><div id="gh" style="position:absolute;left:0;right:0;bottom:12px;text-align:center;font-size:13px;opacity:.9;pointer-events:none"></div></div>`;
+    <div style="position:relative"><canvas id="gc" width="320" height="480" style="width:min(320px,92vw);height:auto;border-radius:20px;touch-action:none;display:block;box-shadow:0 0 0 2px ${acc}99,0 0 0 5px ${acc}22"></canvas><div id="gh" style="position:absolute;left:0;right:0;bottom:12px;text-align:center;font-size:13px;opacity:.9;pointer-events:none"></div></div>`;
   document.body.appendChild(o);
-  const c = $("#gc"), HD = Math.min(2.5, Math.max(2, window.devicePixelRatio||2));
+  const c = $("#gc"), HD = Math.min(1.75, Math.max(1.25, window.devicePixelRatio||1.5));
   c.width = Math.round(320*HD); c.height = Math.round(480*HD);
   window.__runSecs = runSecs();
   G = mkG(t, c);
@@ -2294,7 +2294,7 @@ function openGame(t){
     blockfit:"Neeche se block ko drag karke 8×8 board par rakho • Poori row/column bharo to clear • Jagah khatam = game over (3 min)",
     dollarbox:"Box ko left/right drag karo • 💵 dollar pakdo (+50 har dollar) • 🔴 red ball box mein aayi to game over • 3 dollar miss = game over!"
   })[t.g].replace(/\(3 min\)/g, "("+runMinsTxt()+")");
-  G.hd = HD; G.x.setTransform(HD,0,0,HD,0,0); G.x.imageSmoothingEnabled = true; G.x.imageSmoothingQuality = "high";
+  G.hd = HD; G.x.setTransform(HD,0,0,HD,0,0); G.x.imageSmoothingEnabled = true; G.x.imageSmoothingQuality = "low"; G.pf = {n:0, sum:0, lvl:0};
   let rc = c.getBoundingClientRect(); const refreshRc = () => { rc = c.getBoundingClientRect(); };
   addEventListener("resize", refreshRc);
   // ---- Touch / drag input: pointer events + touch events together so dragging works in every WebView ----
@@ -2363,13 +2363,27 @@ function gameClock(){
   if(G.msgT>0){ G.msgT--; x.save(); x.globalAlpha = Math.min(1,G.msgT/25); x.font = "900 24px sans-serif"; x.textAlign = "center"; x.lineWidth = 6; x.strokeStyle = "rgba(0,0,0,.55)"; x.strokeText(G.rmsg,160,110); x.fillStyle = "#ffd54a"; x.fillText(G.rmsg,160,110); x.restore(); }
   if(tl<=0 && !G.over){ G.ending = true; G.over = true; gameOver(); }
 }
+function perfWatch(dt){
+  const p = G && G.pf; if(!p || dt > 250) return;
+  p.n++; p.sum += dt;
+  if(p.n < 50) return;
+  const avg = p.sum / p.n; p.n = 0; p.sum = 0;
+  if(avg > 24 && p.lvl < 2){
+    p.lvl++;
+    const c = G.x.canvas, hd = p.lvl === 1 ? 1.25 : 1;
+    try{ Object.defineProperty(G.x, "shadowBlur", {configurable:true, get(){ return 0; }, set(v){}}); }catch(e){}
+    if(Math.abs((G.hd||1) - hd) > 0.01){ c.width = Math.round(320*hd); c.height = Math.round(480*hd); G.hd = hd; G.x.setTransform(hd,0,0,hd,0,0); G.x.imageSmoothingEnabled = true; G.x.imageSmoothingQuality = "low"; }
+  }
+}
 function loop(ts){
   if(!G || G.over) return;
   if(ts === undefined) ts = performance.now();
   if(G.lastTs == null) G.lastTs = ts - 16.7;
-  G.acc = (G.acc||0) + Math.min(100, ts - G.lastTs); G.lastTs = ts;
+  const rdt = ts - G.lastTs;
+  G.acc = (G.acc||0) + Math.min(100, rdt); G.lastTs = ts;
+  perfWatch(rdt);
   let steps = 0;
-  while(G && !G.over && G.acc >= 16.0 && steps < 3){
+  while(G && !G.over && G.acc >= 16.0 && steps < 2){
     G.acc -= 16.667; steps++; G.frame++; G.x.clearRect(0,0,320,480);
     if(!G.over){ G.tl = (window.__runSecs||180) - G.frame/60; }
     ({hoop:hoopStep, arctic:arcticStep, loop:loopStep, colorbounce:colorbounceStep, bubble:bubbleStep, drive:driveStep, shooter:shooterStep, knife:knifeStep, blockmatch:blockmatchStep, dollar:dollarStep, candle:candleStep, dollarbox:dollarboxStep, blockfit:blockfitStep, tilematch:tilematchStep, bricksmash:bricksmashStep, colortubes:colortubesStep, bubbleshoot:bsStep})[G.t.g]();
@@ -2430,7 +2444,7 @@ function fxFrame(){
   // level banner
   if(FX.lvlT>0){ FX.lvlT--; const k = FX.lvlT/90, sl = k>0.85 ? (1-k)/0.15 : (k<0.2 ? k/0.2 : 1); x.globalAlpha = Math.max(0, sl); x.font = "900 34px sans-serif"; x.lineWidth = 6; x.strokeStyle = "rgba(60,20,140,.9)"; x.strokeText("LEVEL "+FX.lvl+" ⭐", 160, 150); x.fillStyle = "#fff"; x.fillText("LEVEL "+FX.lvl+" ⭐", 160, 150); }
   // soft vignette
-  x.globalAlpha = 1; const vg = x.createRadialGradient(160,240,150,160,240,330); vg.addColorStop(0,"rgba(0,0,0,0)"); vg.addColorStop(1,"rgba(0,0,0,.28)"); x.fillStyle = vg; x.fillRect(0,0,320,480);
+  x.globalAlpha = 1;
   x.restore();
 }
 function fxCountdown(done){
@@ -3314,7 +3328,7 @@ function gameRestart(o){
   if(!o || G!==o) return;
   bank(); cancelAnimationFrame(o.raf);
   const n = mkG(o.t, o.c); n.x.setTransform(o.hd||1,0,0,o.hd||1,0,0);
-  Object.assign(n, {hd:o.hd, frame:o.frame, tl:o.tl, carry:(o.carry||0)+Math.floor(o.score||0), kd:o.kd, ku:o.ku, sawDown:o.sawDown, lastDown:o.lastDown, tx:o.tx, ty:o.ty, startMs:o.startMs, lastTs:null, acc:0, msgT:90, rmsg:"💥 Dobara shuru!", shown:-1});
+  Object.assign(n, {pf:o.pf, hd:o.hd, frame:o.frame, tl:o.tl, carry:(o.carry||0)+Math.floor(o.score||0), kd:o.kd, ku:o.ku, sawDown:o.sawDown, lastDown:o.lastDown, tx:o.tx, ty:o.ty, startMs:o.startMs, lastTs:null, acc:0, msgT:90, rmsg:"💥 Dobara shuru!", shown:-1});
   n.x.imageSmoothingEnabled = true; n.x.imageSmoothingQuality = "high";
   G = n; fxReset(); try{ fxSound("over"); navigator.vibrate && navigator.vibrate(60); }catch(e){}
   const gs = $("#gs"); if(gs) gs.textContent = "Score: "+(n.carry);

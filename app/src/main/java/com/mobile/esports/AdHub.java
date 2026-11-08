@@ -36,8 +36,8 @@ class AdHub {
         if (!debug) return;
         try { new android.app.AlertDialog.Builder(act).setTitle("Ad debug").setMessage(m).setPositiveButton("OK", null).show(); } catch (Throwable ignored) {}
     }
-    private long initAt = 0;
-    private String stat() { return "LevelPlay: " + lSt + "\nconfigured=" + configured + " on=" + on + " lpOn=" + lpOn + "\ninitStarted=" + lpInitStarted + " ready=" + lpReady + (initAt > 0 ? " (" + ((System.currentTimeMillis() - initAt) / 1000) + "s)" : "") + "\nrewardedAd ready=" + (lpAd != null && lpAd.isAdReady()); }
+    private long initAt = 0; private String bannerSt = "-"; private int bannerTries = 0;
+    private String stat() { return "LevelPlay: " + lSt + "\nconfigured=" + configured + " on=" + on + " lpOn=" + lpOn + "\ninitStarted=" + lpInitStarted + " ready=" + lpReady + (initAt > 0 ? " (" + ((System.currentTimeMillis() - initAt) / 1000) + "s)" : "") + "\nbanner=" + bannerSt + " (wanted=" + bannerWanted + ")" + "\nrewardedAd ready=" + (lpAd != null && lpAd.isAdReady()); }
 
     // ---- LevelPlay state ----
     private boolean lpInitStarted = false, lpReady = false, lpBannerFailed = false, lpEarned = false;
@@ -169,8 +169,12 @@ class AdHub {
                 LevelPlayBannerAdView.Config cfg = new LevelPlayBannerAdView.Config.Builder().setAdSize(LevelPlayAdSize.BANNER).build();
                 LevelPlayBannerAdView b = new LevelPlayBannerAdView(act, bannerUnit(), cfg);
                 b.setBannerListener(new LevelPlayBannerAdViewListener() {
-                    @Override public void onAdLoaded(LevelPlayAdInfo info) {}
-                    @Override public void onAdLoadFailed(LevelPlayAdError error) { act.runOnUiThread(() -> { lSt = "banner FAIL " + cut(String.valueOf(error)); lpBannerFailed = true; refreshBanner(); }); }
+                    @Override public void onAdLoaded(LevelPlayAdInfo info) { act.runOnUiThread(() -> { bannerSt = "loaded"; bannerTries = 0; dbg("Banner loaded"); updateBannerVisibility(); }); }
+                    @Override public void onAdLoadFailed(LevelPlayAdError error) { act.runOnUiThread(() -> {
+                        bannerSt = "FAIL " + cut(String.valueOf(error)); dbg("Banner " + bannerSt);
+                        lpBannerFailed = true; refreshBanner();
+                        if (bannerTries++ < 6) new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> { lpBannerFailed = false; refreshBanner(); }, 20000);
+                    }); }
                     @Override public void onAdDisplayed(LevelPlayAdInfo info) {}
                     @Override public void onAdDisplayFailed(LevelPlayAdInfo info, LevelPlayAdError error) {}
                     @Override public void onAdClicked(LevelPlayAdInfo info) {}
