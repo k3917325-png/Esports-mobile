@@ -1714,7 +1714,7 @@ function runRpAmt(){ const v = Number(tv("runRp")); return v>0 ? Math.round(v) :
 function claimRun(){
   if(!earnOk()) return earnBlockMsg();
   if(!G || !G.eligible || G.claimed) return;
-  const btn = $("#boostBtn"); if(btn){ btn.disabled = true; btn.textContent = "..."; }
+  const btn = $("#boostBtn"); if(btn){ btn.disabled = true; btn.textContent = "⏳ Ad load ho raha hai..."; }
   const amt = runRpAmt();
   watchAd("Ad khatam hone par "+amt+" RP milega", ()=>{
     if(!G || G.claimed) return; G.claimed = true;

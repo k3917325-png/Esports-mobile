@@ -36,7 +36,8 @@ class AdHub {
         if (!debug) return;
         try { new android.app.AlertDialog.Builder(act).setTitle("Ad debug").setMessage(m).setPositiveButton("OK", null).show(); } catch (Throwable ignored) {}
     }
-    private String stat() { return "LevelPlay: " + lSt; }
+    private long initAt = 0;
+    private String stat() { return "LevelPlay: " + lSt + "\nconfigured=" + configured + " on=" + on + " lpOn=" + lpOn + "\ninitStarted=" + lpInitStarted + " ready=" + lpReady + (initAt > 0 ? " (" + ((System.currentTimeMillis() - initAt) / 1000) + "s)" : "") + "\nrewardedAd ready=" + (lpAd != null && lpAd.isAdReady()); }
 
     // ---- LevelPlay state ----
     private boolean lpInitStarted = false, lpReady = false, lpBannerFailed = false, lpEarned = false;
@@ -73,7 +74,7 @@ class AdHub {
     private String rewardedUnit() { return lpRewardedId.isEmpty() ? act.getString(R.string.levelplay_rewarded_id) : lpRewardedId; }
     private String bannerUnit() { return lpBannerId.isEmpty() ? act.getString(R.string.levelplay_banner_id) : lpBannerId; }
 
-    private boolean lpUsable() { return configured && on && lpOn && !appKey().isEmpty() && !rewardedUnit().isEmpty(); }
+    private boolean lpUsable() { return on && lpOn && !appKey().isEmpty() && !rewardedUnit().isEmpty(); }
 
     /** Loads both up front so the fallback is ready the moment LevelPlay has no ad. */
     private void apply() {
@@ -92,15 +93,29 @@ class AdHub {
     // ================= rewarded =================
     void showRewarded(final String id) {
         if (lpUsable() && lpReady && lpAd != null && lpAd.isAdReady()) { dbg("Ad: LEVELPLAY"); showLp(id); return; }                       // 1) LevelPlay
-        dbgDialog("NO AD\n\n" + stat() + "\n\nLevelPlay key set=" + (!appKey().isEmpty()) + "\nrewarded unit=" + rewardedUnit() + "\nbanner unit=" + bannerUnit());
         retryAll();
-        cb.done(id, false);
+        if (lpUsable() && !lpInitStarted) initLevelPlay();
+        waitForAd(id, 0);
+    }
+
+    /** The ad may still be starting up / loading: check every 500 ms for up to 10 s before giving up. */
+    private void waitForAd(final String id, final int tries) {
+        if (lpUsable() && lpReady && lpAd != null && lpAd.isAdReady()) { dbg("Ad: LEVELPLAY"); showLp(id); return; }
+        if (tries >= 20) {
+            dbgDialog("NO AD\n\n" + stat() + "\n\nLevelPlay key set=" + (!appKey().isEmpty()) + "\nrewarded unit=" + rewardedUnit() + "\nbanner unit=" + bannerUnit());
+            retryAll();
+            cb.done(id, false);
+            return;
+        }
+        if (tries > 0 && tries % 6 == 0) { if (lpReady) loadLp(); else if (!lpInitStarted) initLevelPlay(); }
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> waitForAd(id, tries + 1), 500);
     }
 
     // ---------- LevelPlay ----------
     private void initLevelPlay() {
         if (lpInitStarted) { if (lpReady) loadLp(); return; }
-        lpInitStarted = true;
+        lpInitStarted = true; initAt = System.currentTimeMillis();
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> { if (!lpReady && lpInitStarted && lSt.equals("-")) { lSt = "init TIMEOUT (25s, no reply)"; lpInitStarted = false; } }, 25000);
         try {
             LevelPlayInitRequest req = new LevelPlayInitRequest.Builder(appKey()).build();
             LevelPlay.init(act.getApplicationContext(), req, new LevelPlayInitListener() {
