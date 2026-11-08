@@ -161,6 +161,7 @@ class AdHub {
         String want = bannerNetwork();
         if (want.equals(bannerNet) && (bannerView != null || want.isEmpty())) { updateBannerVisibility(); return; }
         removeBanner();
+        if ("loaded".equals(bannerSt)) bannerSt = "-";
         bannerNet = want;
         dbg("Banner: " + (want.isEmpty() ? "NONE" : want.toUpperCase()));
         if (want.isEmpty()) { updateBannerVisibility(); return; }
@@ -194,8 +195,34 @@ class AdHub {
         holder.removeAllViews(); bannerView = null; bannerNet = "";
     }
 
+    private android.widget.TextView dbgStrip;
+
+    /** Why there is no banner right now (shown in the debug strip). */
+    private String bannerWhy() {
+        if (!bannerOn) return "OFF (admin Banner switch)";
+        if (!on) return "OFF (admin Ads master switch)";
+        if (!lpOn) return "OFF (admin LevelPlay switch)";
+        if (!lpReady) return "waiting for LevelPlay init (" + lSt + ")";
+        if (bannerUnit().isEmpty()) return "no banner unit id";
+        return "-".equals(bannerSt) ? (bannerView != null ? "loading..." : "not started") : bannerSt;
+    }
+
     private void updateBannerVisibility() {
-        holder.setVisibility(bannerWanted && bannerView != null ? View.VISIBLE : View.GONE);
+        boolean loaded = "loaded".equals(bannerSt) && bannerView != null;
+        boolean strip = debug && bannerWanted && !loaded;
+        try {
+            if (strip) {
+                if (dbgStrip == null) {
+                    dbgStrip = new android.widget.TextView(act);
+                    dbgStrip.setTextColor(0xFFFFFFFF); dbgStrip.setBackgroundColor(0xCC7F1D1D); dbgStrip.setTextSize(11); dbgStrip.setPadding(16, 8, 16, 8);
+                }
+                dbgStrip.setText("📢 Banner: " + bannerWhy() + "\nunit=" + bannerUnit() + " tries=" + bannerTries);
+                if (dbgStrip.getParent() == null) holder.addView(dbgStrip, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT));
+            } else if (dbgStrip != null && dbgStrip.getParent() != null) {
+                holder.removeView(dbgStrip);
+            }
+        } catch (Throwable ignored) {}
+        holder.setVisibility(bannerWanted && (bannerView != null || strip) ? View.VISIBLE : View.GONE);
     }
 
     void pause() {}
