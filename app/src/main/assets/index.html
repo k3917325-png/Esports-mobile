@@ -574,7 +574,7 @@ function defaultConfig(){ return {
   presetAmounts: [1.32,2.50,3.50,5.50,7,10],
   fx: {GBP:0.78,EUR:0.92,CAD:1.38,AUD:1.55,CHF:0.88,AED:3.673,SAR:3.75,QAR:3.64,SGD:1.34,MYR:4.4,KWD:0.31,BHD:0.377,OMR:0.385,BRL:5.5},
   lbServerPayout: false,
-  loginRestrictOn: true, wdRestrictOn: true, vpnBlock: true, gpsRequired: true, extAppOn: false, extAppName: "", extAppPkg: "", extAppUrl: "",
+  geoBlockOn: true, loginRestrictOn: true, wdRestrictOn: true, vpnBlock: true, gpsRequired: true, extAppOn: false, extAppName: "", extAppPkg: "", extAppUrl: "",
   maintenanceOn: false, maintenanceMsg: "App abhi maintenance par hai. Thodi der baad dobara aao.", forceUpdateOn: false, minVersion: 1, updateUrl: "", updateMsg: "App ka naya version aa gaya hai. Aage use karne ke liye update karo.",
   upiEnabled: true, paypalEnabled: true, usdToInr: 94, fxInr: {USD:94,GBP:127,EUR:106,CHF:116,AED:25,SAR:25,QAR:25,SGD:74,MYR:23,KWD:300,BHD:250,OMR:245,BRL:17,AUD:66,CAD:67,NZD:54},
   binanceEnabled: true,
@@ -1008,8 +1008,9 @@ const FBA = {
     ["bannedPhones","payoutMerchantId","payoutWebhookUrl","payoutAutoMode","payoutProviders"].forEach(k=>{ delete doc.config[k]; });
     const wantUnity = doc.adConfig.unityOn !== false; delete doc.adConfig.unityOn;
     const json = JSON.stringify(doc); if(json.length > 700000) return {ok:false, error:"config too large"};
-    const wdOn = doc.config.wdRestrictOn !== false, loginOn = doc.config.loginRestrictOn !== false;
-    const earnOff = Array.from(new Set((doc.config.earnOffCountries||[]).map(cleanCc).filter(Boolean)));
+    const geoMaster = doc.config.geoBlockOn !== false;
+    const wdOn = geoMaster && doc.config.wdRestrictOn !== false, loginOn = geoMaster && doc.config.loginRestrictOn !== false;
+    const earnOff = Array.from(new Set((geoMaster ? (doc.config.earnOffCountries||[]) : []).map(cleanCc).filter(Boolean)));
     const blk = Array.from(new Set((wdOn ? (doc.config.blockedWithdrawCountries||[]).map(cleanCc).filter(Boolean) : []).concat(earnOff)));   // Earn OFF countries can never withdraw (enforced by Firestore rules via config/blocked)
     const lblk = loginOn ? Array.from(new Set((doc.config.blockedLoginCountries||[]).map(cleanCc).filter(Boolean))) : [];
     await commit("admin",[wUpdate("config","app",{json, unityAds: wantUnity?"ON":"OFF"},{now:["updated"]}), wUpdate("config","blocked",{list:blk, loginList:lblk},{now:["updated"]}), wUpdate("config","geo",{earnOff, is_earning_allowed_false:earnOff},{now:["updated"]}), wUpdate("config","fees",{pct:feeMap(doc.config)},{now:["updated"]}),
@@ -1321,7 +1322,7 @@ function checkGate(){
 async function geoCheck(){
   try{
     let el = document.getElementById("geoGate");
-    if(!S || S.isGuest || cfg().loginRestrictOn === false || !(cfg().blockedLoginCountries||[]).length){ if(el) el.remove(); return; }
+    if(!S || S.isGuest || !geoOn() || cfg().loginRestrictOn === false || !(cfg().blockedLoginCountries||[]).length){ if(el) el.remove(); return; }
     const cc = await ipCountry();
     if(cc && loginBlockedCc(cc)){
       if(!el){ el = document.createElement("div"); el.id = "geoGate"; el.style.cssText = "position:fixed;inset:0;z-index:2147482900;background:#160c2e;color:#f3ecff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px"; document.body.appendChild(el); }
@@ -1813,7 +1814,7 @@ async function loginDone(g, ref, ip){
 }
 async function loginCountryOk(){
   const ip = await ipCountry(true);
-  if(!ip && cfg().loginRestrictOn !== false && (cfg().blockedLoginCountries||[]).length){ loginMsg("Country detect nahi hui — internet check karke dobara try karo"); return null; }
+  if(!ip && geoOn() && cfg().loginRestrictOn !== false && (cfg().blockedLoginCountries||[]).length){ loginMsg("Country detect nahi hui — internet check karke dobara try karo"); return null; }
   if(ip && loginBlockedCc(ip)){ loginMsg("Access restricted in your region."); blockPopup("Access restricted in your region.", "Aapki country ("+ip+") se is app mein login / signup allowed nahi hai."); return null; }
   return ip||"";
 }
@@ -2076,7 +2077,8 @@ function emHash(str){ let h1=0xdeadbeef, h2=0x41c6ce57; for(let i=0;i<str.length
 // Owner preview: if config.previewHash matches THIS account's Gmail, the UI behaves as if the user were in config.previewCountry. Display only - withdrawals still use the real IP and are refused.
 function pvCc(){ try{ const c = cfg(); if(!c.previewHash || !c.previewCountry) return ""; const em = String((FBUSER&&FBUSER.email)||"").trim().toLowerCase(); return (em && emHash(em)===String(c.previewHash)) ? String(c.previewCountry).toUpperCase() : ""; }catch(e){ return ""; } }
 function earnCc(){ return pvCc() || String(window.wdIpCc||(S&&S.countryId)||"").toUpperCase(); }
-function earnOk(){ const cc = earnCc(); if(!cc) return false; return !(cfg().earnOffCountries||[]).map(x=>String(x).toUpperCase()).includes(cc); }   // unknown country = no rewards until detected
+function geoOn(){ return cfg().geoBlockOn !== false; }   // MASTER switch (admin Geo-Control): OFF = no country/VPN blocking anywhere (Play review mode)
+function earnOk(){ if(!geoOn()) return true; const cc = earnCc(); if(!cc) return false; return !(cfg().earnOffCountries||[]).map(x=>String(x).toUpperCase()).includes(cc); }   // unknown country = no rewards until detected
 function earnBlockMsg(){ floatMsg("Aapke region mein rewards available nahi hain. Game ka maza lo! 🎮"); }
 function themeCur(){ return document.documentElement.getAttribute("data-theme") || (window.matchMedia && matchMedia("(prefers-color-scheme:dark)").matches ? "dark" : "light"); }
 function themeToggle(){ const n = themeCur()==="dark" ? "light" : "dark"; document.documentElement.setAttribute("data-theme", n); try{ localStorage.setItem("esp_theme", n); }catch(e){} render(); }
@@ -3643,8 +3645,8 @@ async function syncWdStatuses(){
 }
 setInterval(syncWdStatuses, 60000);
 /* ===== v12: geo restrictions (admin switches) ===== */
-const loginBlockedCc = cc => cfg().loginRestrictOn !== false && (cfg().blockedLoginCountries||[]).includes(cc);
-const wdBlockedCc    = cc => cfg().wdRestrictOn !== false && (cfg().blockedWithdrawCountries||[]).includes(cc);
+const loginBlockedCc = cc => geoOn() && cfg().loginRestrictOn !== false && (cfg().blockedLoginCountries||[]).includes(cc);
+const wdBlockedCc    = cc => geoOn() && cfg().wdRestrictOn !== false && (cfg().blockedWithdrawCountries||[]).includes(cc);
 function blockPopup(title, msg){
   const old = document.getElementById("blkPop"); if(old) old.remove();
   const o = document.createElement("div"); o.id = "blkPop";
@@ -3713,7 +3715,7 @@ async function withdraw(){
     S.wd.push(rec); save(); render(); blockPopup(popupTitle, popupMsg);   // coins were never deducted = fully refunded
   };
   if(wdBlockedCc(ipc)) return autoRej("Blocked region ("+ipc+")", "Access restricted in your region.", "Aapki country ("+ipc+") se withdrawal allowed nahi hai. Request reject ho gayi, coins aapke account mein hi hain.");
-  if(cfg().vpnBlock !== false && cfg().wdRestrictOn !== false && /VPN|PROXY|TOR|DATACENTER/.test(String(risk)))
+  if(geoOn() && cfg().vpnBlock !== false && cfg().wdRestrictOn !== false && /VPN|PROXY|TOR|DATACENTER/.test(String(risk)))
     return autoRej("VPN/Proxy detected ("+risk+")", "VPN / Proxy detect hua", "VPN ya Proxy ke saath withdrawal allowed nahi hai. VPN band karke dobara try karo. Coins wapas aapke account mein hain.");
   if(!wdOptsFor(country).includes(window.opt)){ wallet(); return toast("Aapki country ke hisaab se payment method update hua — dobara choose karo", false); }
   // ---- 2) GPS ----
