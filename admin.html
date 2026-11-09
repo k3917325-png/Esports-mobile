@@ -596,7 +596,7 @@ function defaultConfig(){ return {
   presetAmounts: [1.32,2.50,3.50,5.50,7,10],
   fx: {GBP:0.78,EUR:0.92,CAD:1.38,AUD:1.55,CHF:0.88,AED:3.673,SAR:3.75,QAR:3.64,SGD:1.34,MYR:4.4,KWD:0.31,BHD:0.377,OMR:0.385,BRL:5.5},
   lbServerPayout: false,
-  geoBlockOn: true, loginRestrictOn: true, wdRestrictOn: true, vpnBlock: true, gpsRequired: true, extAppOn: false, extAppName: "", extAppPkg: "", extAppUrl: "",
+  geoBlockOn: true, oneDeviceOn: true, loginRestrictOn: true, wdRestrictOn: true, vpnBlock: true, gpsRequired: true, extAppOn: false, extAppName: "", extAppPkg: "", extAppUrl: "",
   maintenanceOn: false, maintenanceMsg: "App abhi maintenance par hai. Thodi der baad dobara aao.", forceUpdateOn: false, minVersion: 1, updateUrl: "", updateMsg: "App ka naya version aa gaya hai. Aage use karne ke liye update karo.",
   upiEnabled: true, paypalEnabled: true, usdToInr: 94, fxInr: {USD:94,GBP:127,EUR:106,CHF:116,AED:25,SAR:25,QAR:25,SGD:74,MYR:23,KWD:300,BHD:250,OMR:245,BRL:17,AUD:66,CAD:67,NZD:54},
   binanceEnabled: true,
@@ -925,7 +925,7 @@ const FBA = {
     if(banned) return {ok:true, banned:true};
     if(!dev) return {ok:true, banned:false};
     const dv = await getDoc("user","devices",dev);
-    if(dv && dv.mobile !== m) return {ok:true, banned:false, deviceLimit:true};          // one device = one account
+    if(dv && dv.mobile !== m && oneDevOn()) return {ok:true, banned:false, deviceLimit:true};          // one device = one account
     const coins = Math.max(0, Math.min(1e9, Math.floor(Number(b.coins)||0))), rp = Math.max(0, Math.min(1e12, Math.floor(Number(b.rp)||0)));
     const prof = {name:cleanTxt(b.name,40), email:String(FBUSER.email||"").slice(0,100), code:cleanTxt(b.code,12), country:cleanTxt(b.country,4), coins, rp, device:dev, ownerUid:uid};
     let cur; try{ cur = await getDoc("user","users",m); }catch(e){ if(!e.auth) throw e; cur = "DENIED"; }   // doc owned by an older install of this device
@@ -975,7 +975,7 @@ const FBA = {
     const u = await getDoc("user","users",digits);
     if(!u || u.ownerUid!==uid || u.device!==dev) return {ok:false, error:"account sync pending"};
     const dv = await getDoc("user","devices",dev);
-    if(!dv || dv.mobile!==digits) return bad("is device par doosra account bhi hai");
+    if(oneDevOn() && (!dv || dv.mobile!==digits)) return bad("is device par doosra account bhi hai");
     if(coins > (u.coins||0) + COIN_TOLERANCE) return bad("coins server balance se zyada hain");
     const now = new Date(), wc = await getDoc("user","wdc",digits);
     const same = wc && wc.year===now.getUTCFullYear() && wc.month===now.getUTCMonth()+1 && wc.day===now.getUTCDate();
@@ -1039,7 +1039,7 @@ const FBA = {
       (()=>{ const c = doc.config, rate = Math.max(1, Math.round(Number(c.rate)||1500)); return wUpdate("config","wdlimits",{rate, minCoins:Math.max(1,Math.round((Number(c.minWithdrawUsd)||1.32)*rate)), maxCoins:Math.max(1,Math.round((Number(c.maxWithdrawUsd)||10)*rate)), usdToInr:Math.max(1,Number(c.usdToInr)||83),
         pMinCoins:Math.max(1,Math.round((tv("minUsd",1,c)||1.32)*rate)), pMaxCoins:Math.max(1,Math.round((tv("maxUsd",1,c)||10)*rate)), p2MinCoins:Math.max(1,Math.round((tv("minUsd",2,c)||1.32)*rate)), p2MaxCoins:Math.max(1,Math.round((tv("maxUsd",2,c)||10)*rate)),
         prem:tierCountries(c,1).filter(x=>tierOfCc(x,c)===1).slice(0,60), prem2:tierCountries(c,2).slice(0,60)},{now:["updated"]}); })(),
-      wUpdate("config","flags",{maintenance:doc.config.maintenanceOn===true, vpnBlock: wdOn && doc.config.vpnBlock!==false, minVer: doc.config.forceUpdateOn===true ? Math.max(0,Math.floor(Number(doc.config.minVersion)||0)) : 0},{now:["updated"]}),
+      wUpdate("config","flags",{maintenance:doc.config.maintenanceOn===true, vpnBlock: wdOn && doc.config.vpnBlock!==false, oneDevice: doc.config.oneDeviceOn !== false, minVer: doc.config.forceUpdateOn===true ? Math.max(0,Math.floor(Number(doc.config.minVersion)||0)) : 0},{now:["updated"]}),
       auditW("settings saved","config","maintenance="+(doc.config.maintenanceOn===true?"ON":"off")+" • force-update="+(doc.config.forceUpdateOn===true?"ON(min v"+doc.config.minVersion+")":"off")+" • blocked countries="+blk.length)]);
     return {ok:true};
   },
@@ -1397,6 +1397,7 @@ async function remotePull(){
         try{ localStorage.setItem("esp_remote", JSON.stringify({doc:d.doc})); }catch(e){}
         applyRemoteToS(); reconcileTours(); if(S) save();
         checkGate(); geoCheck();
+        if(S && S.devBlocked && !oneDevOn()){ S.banned = false; S.devBlocked = false; saveLocal(); hideBan(); userSyncNow(); }   // admin switched 'one phone = one account' OFF
         const ae = document.activeElement;
         if(!(typeof G!=="undefined" && G) && !(ae && /INPUT|TEXTAREA|SELECT/.test(ae.tagName)) && typeof render==="function") render();
       }
@@ -2099,6 +2100,7 @@ function emHash(str){ let h1=0xdeadbeef, h2=0x41c6ce57; for(let i=0;i<str.length
 // Owner preview: if config.previewHash matches THIS account's Gmail, the UI behaves as if the user were in config.previewCountry. Display only - withdrawals still use the real IP and are refused.
 function pvCc(){ try{ const c = cfg(); if(!c.previewHash || !c.previewCountry) return ""; const em = String((FBUSER&&FBUSER.email)||"").trim().toLowerCase(); return (em && emHash(em)===String(c.previewHash)) ? String(c.previewCountry).toUpperCase() : ""; }catch(e){ return ""; } }
 function earnCc(){ return pvCc() || String(window.wdIpCc||(S&&S.countryId)||"").toUpperCase(); }
+function oneDevOn(){ return cfg().oneDeviceOn !== false; }   // admin switch: one phone = one account
 function geoOn(){ return cfg().geoBlockOn !== false; }   // MASTER switch (admin Geo-Control): OFF = no country/VPN blocking anywhere (Play review mode)
 function earnOk(){ if(!geoOn()) return true; const cc = earnCc(); if(!cc) return false; return !(cfg().earnOffCountries||[]).map(x=>String(x).toUpperCase()).includes(cc); }   // unknown country = no rewards until detected
 function earnBlockMsg(){ floatMsg("Aapke region mein rewards available nahi hain. Game ka maza lo! 🎮"); }
@@ -4341,7 +4343,8 @@ function ctryList(){
 }
 function tCtry(){
   const c = A.doc.config;
-  return `<div class="card2" style="border:2px solid ${c.geoBlockOn!==false?"#22c55e":"#f59e0b"}"><b>🛡️ Geo-Blocking MASTER switch</b>${tg("Country / VPN blocking","config.geoBlockOn","1")}<div class="mut" style="margin-top:4px"><b>ON</b> = niche ki saari country settings (Earn OFF, Login/Withdrawal blocked, VPN block) kaam karti hain. <b>OFF</b> = koi blocking nahi: har country se login, earning, wallet aur withdrawal chalta hai (Play Store review ke liye OFF rakho). Aapki country lists delete nahi hoti — dobara ON karke Save karte hi wapas lag jaati hain. Toggle ke baad <b>Save</b> zaroor dabao.</div></div>
+  return `<div class="card2" style="border:2px solid ${c.oneDeviceOn!==false?"#22c55e":"#f59e0b"};margin-bottom:10px"><b>📱 Ek phone = ek account</b>${tg("One phone – one account lock","config.oneDeviceOn","1")}<div class="mut" style="margin-top:4px"><b>ON</b> = ek phone par sirf ek Gmail account chalega, doosre account par "Account blocked" aayega. <b>OFF</b> = ek phone par kai Gmail chalenge (Play review/testing ke liye OFF rakho). <b>Save</b> dabao, aur nayi firestore.rules publish honi chahiye.</div></div>
+  <div class="card2" style="border:2px solid ${c.geoBlockOn!==false?"#22c55e":"#f59e0b"}"><b>🛡️ Geo-Blocking MASTER switch</b>${tg("Country / VPN blocking","config.geoBlockOn","1")}<div class="mut" style="margin-top:4px"><b>ON</b> = niche ki saari country settings (Earn OFF, Login/Withdrawal blocked, VPN block) kaam karti hain. <b>OFF</b> = koi blocking nahi: har country se login, earning, wallet aur withdrawal chalta hai (Play Store review ke liye OFF rakho). Aapki country lists delete nahi hoti — dobara ON karke Save karte hi wapas lag jaati hain. Toggle ke baad <b>Save</b> zaroor dabao.</div></div>
   <h3>🌍 Geo-Control / Country Settings</h3><div class="mut" style="margin-bottom:8px"><b>Earn: ON</b> = us country ke users ko coins/RP, wallet aur withdrawal milega. <b>Earn: OFF</b> = (is_earning_allowed = false) game khel sakte hain par rewards, wallet, promo aur withdrawal gayab. Unknown country = OFF. Toggle ke baad Save dabao.</div><h3 style="font-size:14px">Login / Withdrawal blacklist</h3><div class="mut" style="margin-bottom:6px">Jis country ko block karna hai uske button dabao, phir Save karo. "WD: Blocked" ka matlab: us country ko dropdown mein select karke ya us country ke IP se withdrawal nahi ho sakta (Firestore rules bhi ye check karte hain). Login block sirf IP country se check hota hai.</div>
   <div class="card2"><b>🧪 Preview mode (sirf aapke liye)</b><div class="mut" style="margin:4px 0 8px">Apna Gmail + country code (jaise US) daalo, Set dabao, phir Save. Sirf us Gmail wale app mein us country ka experience dikhega (earning, wallet, premium). Withdraw real nahi jayega. Gmail save nahi hota, sirf ek hash.</div>
     <input id="pvEm" data-a2="pvem" placeholder="Aapka Gmail" value="${E(A.pvEm||"")}"><input id="pvCc" data-a2="pvcc" placeholder="Country code (US, GB, DE...)" maxlength="2" value="${E(A.pvCc||c.previewCountry||"")}">
