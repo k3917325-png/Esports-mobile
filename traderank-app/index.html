@@ -304,6 +304,16 @@ h4{color:#e8e3ff;font-size:16px;font-weight:800;padding:14px 16px 6px}
 .ni i{font-size:21px}
 .ni.on{color:#fff;background:linear-gradient(145deg,#7a2cf0,#4a1cc0);box-shadow:0 0 14px rgba(120,60,255,.6)}
 
+
+#gearBtn{position:absolute;right:4px;bottom:4px;z-index:7;width:26px;height:26px;border-radius:8px;border:1px solid rgba(255,255,255,.25);background:rgba(20,24,45,.85);color:#fff;font-size:15px;line-height:1;padding:0;cursor:pointer}
+#cset{display:none;position:absolute;top:44px;left:6px;z-index:27;width:min(480px,94%);max-height:calc(100% - 52px);overflow-y:auto;background:#1c1f26;border:1px solid #2d3340;border-radius:14px;padding:10px;box-shadow:0 8px 24px rgba(0,0,0,.6)}
+#cset.open{display:block}
+.cgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;margin-bottom:8px}
+.cgrid label{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;background:#262a33;border:1px solid #2d3340;border-radius:10px;padding:5px 8px}
+.cgrid input[type=color]{width:42px;height:30px;border:0;border-radius:6px;background:none;padding:0;flex:none}
+.cpre{display:flex;gap:6px;overflow-x:auto;margin-bottom:8px;scrollbar-width:none}
+.cpre button{flex:none;border:1px solid #2d3340;border-radius:10px;padding:6px 10px;color:#fff;font-size:12px;background:#262a33;display:flex;align-items:center;gap:6px}
+.cpre i{display:inline-block;width:10px;height:14px;border-radius:2px}
 </style>
 </head>
 <body class="home">
@@ -339,6 +349,13 @@ h4{color:#e8e3ff;font-size:16px;font-weight:800;padding:14px 16px 6px}
   <div class="chwrap">
     <canvas id="ch"></canvas>
     <div id="tvWrap"><iframe id="tv"></iframe></div>
+    <button id="gearBtn" title="Chart colors">⚙</button>
+    <div id="cset">
+      <div class="th"><b style="font-size:15px">🎨 Chart Colors</b><button class="ghost" id="csClose">✕</button></div>
+      <div class="cgrid" id="cGrid"></div>
+      <div class="cpre" id="cPre"></div>
+      <div class="tf"><button class="ghost" id="csReset">↺ Default</button><button class="ghost on" id="csDone">✔ Done</button></div>
+    </div>
 
     <div class="ord">
       <div class="r">
@@ -736,12 +753,23 @@ function fmtT(t){
   const d=new Date(LOAD+(t-LOAD)*10),p=n=>String(n).padStart(2,'0');
   return tf*10>=86400000?d.getDate()+' '+MON[d.getMonth()]:p(d.getHours())+':'+p(d.getMinutes());
 }
+/* ---- chart colors (user badal sakta hai, phone mein save hota hai) ---- */
+const TH_DEF={up:'#1fb97a',dn:'#e5384f',wu:null,wd:null,bg:'#131829',grid:'#1a2036',ma:'#9aa3c7'};
+var TH=(function(){let c=null;try{c=JSON.parse(localStorage.getItem('ts_chartcol')||'null')}catch(_){}return Object.assign({},TH_DEF,c||{})})();
+const hexRGB=h=>{h=String(h||'#000').replace('#','');if(h.length===3)h=h.split('').map(x=>x+x).join('');const n=parseInt(h,16)||0;return[n>>16&255,n>>8&255,n&255]};
+const rgba=(h,a)=>{const[r,g,b]=hexRGB(h);return `rgba(${r},${g},${b},${a})`};
+const lumOf=h=>{const[r,g,b]=hexRGB(h);return(0.299*r+0.587*g+0.114*b)/255};
+const mixHex=(h,t,k)=>{const A=hexRGB(h),B=hexRGB(t);return '#'+A.map((v,i)=>Math.round(v+(B[i]-v)*k).toString(16).padStart(2,'0')).join('')};
+const axText=()=>lumOf(TH.bg)>.55?'#4a5068':'#9aa3c7';
+const axBand=()=>lumOf(TH.bg)>.55?mixHex(TH.bg,'#000000',.06):mixHex(TH.bg,'#000000',.25);
 function drawChart(){
   if(view!=='sim'||!candles.length)return;
   const cv=$('ch'),dpr=window.devicePixelRatio||1,w=cv.clientWidth,h=cv.clientHeight;
   if(!w||!h)return;
   cv.width=w*dpr;cv.height=h*dpr;
   const g=cv.getContext('2d');g.scale(dpr,dpr);
+  g.fillStyle=TH.bg;g.fillRect(0,0,w,h);
+  const AXC=axText();
   const len=candles.length;
   visN=Math.max(15,Math.min(220,visN));
   off=Math.max(-30,Math.min(len-4,off));
@@ -758,12 +786,12 @@ function drawChart(){
   g.font='10px system-ui';g.textAlign='left';
   for(let i=1;i<=6;i++){
     const val=mn+(mx-mn)*i/7,yy=y(val);
-    g.strokeStyle='#1a2036';g.lineWidth=1;g.beginPath();g.moveTo(0,yy);g.lineTo(w-AXW,yy);g.stroke();
-    g.fillStyle='#9aa3c7';g.fillText(px(val),w-AXW+6,yy+3);
+    g.strokeStyle=TH.grid;g.lineWidth=1;g.beginPath();g.moveTo(0,yy);g.lineTo(w-AXW,yy);g.stroke();
+    g.fillStyle=AXC;g.fillText(px(val),w-AXW+6,yy+3);
   }
   for(let i=i0;i<=i1;i++){
-    const c=candles[i],x=X(i),col=c.c>=c.o?'#1fb97a':'#e5384f';
-    g.strokeStyle=col;g.fillStyle=col;g.lineWidth=1;
+    const c=candles[i],x=X(i),upc=c.c>=c.o,col=upc?TH.up:TH.dn,wk=(upc?TH.wu:TH.wd)||col;
+    g.strokeStyle=wk;g.fillStyle=col;g.lineWidth=1;
     g.beginPath();g.moveTo(x,y(c.h));g.lineTo(x,y(c.l));g.stroke();
     g.fillRect(x-cw*.33,y(Math.max(c.o,c.c)),cw*.66,Math.max(1.5,Math.abs(y(c.o)-y(c.c))));
   }
@@ -772,11 +800,11 @@ function drawChart(){
     let s=0;for(let k=i-19;k<=i;k++)s+=candles[k].c;
     const x=X(i),yy=y(s/20);first?g.moveTo(x,yy):g.lineTo(x,yy);first=false;
   }
-  g.strokeStyle='#9aa3c7';g.lineWidth=1.3;g.stroke();
+  g.strokeStyle=TH.ma;g.lineWidth=1.3;g.stroke();
   VW={left,cw,mn,mx,H,base:candles[0].id};
   if(ind.vol){
     let vm=1;for(let i=i0;i<=i1;i++)vm=Math.max(vm,candles[i].v);
-    for(let i=i0;i<=i1;i++){const c=candles[i],bh=c.v/vm*H*0.16;g.fillStyle=c.c>=c.o?'rgba(31,185,122,.28)':'rgba(229,56,79,.28)';g.fillRect(X(i)-cw*.33,H-bh,cw*.66,bh)}
+    for(let i=i0;i<=i1;i++){const c=candles[i],bh=c.v/vm*H*0.16;g.fillStyle=rgba(c.c>=c.o?TH.up:TH.dn,.28);g.fillRect(X(i)-cw*.33,H-bh,cw*.66,bh)}
   }
   if(ind.ema){
     const kk=2/51;let e=candles[0].c,started=false;g.beginPath();
@@ -802,11 +830,11 @@ function drawChart(){
   pos.forEach(p=>{
     const pl=(p.side==='B'?bid()-p.entry:p.entry-ask())*p.lots*S.cs;
     line(p.entry,'#f5b53d',(p.side==='B'?'BUY ':'SELL ')+money(pl));
-    line(p.sl,'#e5384f','SL '+px(p.sl));line(p.tp,'#1fb97a','TP '+px(p.tp));
+    line(p.sl,TH.dn,'SL '+px(p.sl));line(p.tp,TH.up,'TP '+px(p.tp));
   });
   const lc=candles[len-1],cy=y(mid);
-  g.strokeStyle=lc.c>=lc.o?'#1fb97a':'#e5384f';g.lineWidth=1;g.setLineDash([2,3]);g.beginPath();g.moveTo(0,cy);g.lineTo(w-AXW,cy);g.stroke();g.setLineDash([]);
-  g.fillStyle=lc.c>=lc.o?'#1fb97a':'#e5384f';g.fillRect(w-AXW,cy-8,AXW-2,28);
+  g.strokeStyle=lc.c>=lc.o?TH.up:TH.dn;g.lineWidth=1;g.setLineDash([2,3]);g.beginPath();g.moveTo(0,cy);g.lineTo(w-AXW,cy);g.stroke();g.setLineDash([]);
+  g.fillStyle=lc.c>=lc.o?TH.up:TH.dn;g.fillRect(w-AXW,cy-8,AXW-2,28);
   g.fillStyle='#fff';g.font='bold 10px system-ui';g.fillText(px(mid),w-AXW+5,cy+3);
   {
     const rem=Math.max(0,(tf-(Date.now()-lc.t))*10),s=Math.floor(rem/1000),p2=n=>String(n).padStart(2,'0');
@@ -814,14 +842,14 @@ function drawChart(){
     g.font='10px system-ui';g.fillText(txt,w-AXW+5,cy+16);
   }
   // time axis (neeche)
-  g.fillStyle='#0f1424';g.fillRect(0,H,w-AXW,18);
+  g.fillStyle=axBand();g.fillRect(0,H,w-AXW,18);
   g.font='10px system-ui';g.textAlign='center';
   const stp=Math.max(1,Math.ceil(80/cw));
   for(let i=i0;i<=i1;i++){
     if(i%stp)continue;
     const x=X(i);if(x<24||x>w-AXW-24)continue;
     g.strokeStyle='rgba(255,255,255,.05)';g.lineWidth=1;g.beginPath();g.moveTo(x,0);g.lineTo(x,H);g.stroke();
-    g.fillStyle='#9aa3c7';g.fillText(fmtT(candles[i].t),x,h-5);
+    g.fillStyle=AXC;g.fillText(fmtT(candles[i].t),x,h-5);
   }
   g.textAlign='left';
 }
@@ -1497,6 +1525,32 @@ function updateHome(){
 }
 renderHome();
 
+/* ---- Chart colors panel ---- */
+(function(){
+  const ROWS=[['up','Candle UP (body)'],['dn','Candle DOWN (body)'],['wu','Wick UP (batti)'],['wd','Wick DOWN (batti)'],['bg','Background'],['grid','Grid lines'],['ma','MA line']];
+  const PRE=[
+    ['Default',{up:'#1fb97a',dn:'#e5384f',wu:null,wd:null,bg:'#131829',grid:'#1a2036',ma:'#9aa3c7'}],
+    ['TradingView',{up:'#26a69a',dn:'#ef5350',wu:null,wd:null,bg:'#131722',grid:'#1e222d',ma:'#f5b53d'}],
+    ['Neon',{up:'#00e5ff',dn:'#ff2bd6',wu:null,wd:null,bg:'#0a0620',grid:'#1c1240',ma:'#ffe600'}],
+    ['Light',{up:'#089981',dn:'#f23645',wu:null,wd:null,bg:'#ffffff',grid:'#e0e3eb',ma:'#2962ff'}],
+    ['Mono',{up:'#e6e9f5',dn:'#5b6385',wu:null,wd:null,bg:'#0b0e1a',grid:'#1a2036',ma:'#f5b53d'}],
+    ['Blue/Orange',{up:'#2f8cff',dn:'#ff8a1f',wu:null,wd:null,bg:'#0d1117',grid:'#1b2230',ma:'#c9d1d9'}]
+  ];
+  const val=k=>TH[k]||(k==='wu'?TH.up:k==='wd'?TH.dn:'#000000');
+  function save(){try{localStorage.setItem('ts_chartcol',JSON.stringify(TH))}catch(_){}}
+  function apply(){const w=document.querySelector('.chwrap');if(w)w.style.background=TH.bg;render()}
+  function build(){
+    $('cGrid').innerHTML=ROWS.map(([k,n])=>`<label>${n}<input type="color" data-k="${k}" value="${val(k)}"></label>`).join('');
+    $('cPre').innerHTML=PRE.map(([n,c],i)=>`<button data-i="${i}"><i style="background:${c.up}"></i><i style="background:${c.dn}"></i>${n}</button>`).join('');
+  }
+  $('gearBtn').onclick=()=>{build();$('cset').classList.toggle('open')};
+  const close=()=>$('cset').classList.remove('open');
+  $('csClose').onclick=close;$('csDone').onclick=close;
+  $('cGrid').addEventListener('input',e=>{const k=e.target.dataset.k;if(!k)return;TH[k]=e.target.value;save();apply()});
+  $('cPre').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;Object.assign(TH,PRE[+b.dataset.i][1]);save();build();apply()});
+  $('csReset').onclick=()=>{Object.assign(TH,TH_DEF);save();build();apply()};
+  apply();
+})();
 </script>
 </body>
 </html>
