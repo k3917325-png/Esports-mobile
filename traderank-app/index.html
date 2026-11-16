@@ -1116,7 +1116,7 @@ window.addEventListener('fb-auth',async e=>{
 });
 
 /* ================= REMOTE CONFIG (admin panel) + LOGIN GATE + REWARDED ADS ================= */
-const CFG_DEF={loginRequired:true,adNetwork:'unity',rewardAmount:1000,dailyAdLimit:20,testAds:false,unity:{appKey:'',adUnitId:''},admob:{rewardedUnitId:''}};
+const CFG_DEF={loginRequired:true,internetRequired:true,adNetwork:'unity',rewardAmount:1000,dailyAdLimit:20,testAds:false,unity:{appKey:'',adUnitId:''},admob:{rewardedUnitId:''}};
 let appCfg=(()=>{let c=null;try{c=JSON.parse(localStorage.getItem('ts_cfg')||'null')}catch(_){}return Object.assign({},CFG_DEF,c||{})})();
 let cfgAt=0,adBusy=false;
 function tradePnl(){return Math.round((bal-10000-(acct.bonus||0))*100)/100}   // leaderboard sirf trading profit se (ad bonus alag)
@@ -1226,6 +1226,7 @@ function setNet(ok){
 async function probeNet(){
   if(probing)return;probing=true;
   try{
+    if(appCfg.internetRequired===false){setNet(true);return}   // admin ne internet-check OFF kiya (sirf testing)
     if(!navigator.onLine){probeFail=2;setNet(false);return}
     if(!fbOn()){setNet(true);return}            // Firebase config nahi (preview/dev): sirf navigator.onLine dekho
     const c=new AbortController(),t=setTimeout(()=>c.abort(),6000);
@@ -1237,7 +1238,7 @@ async function probeNet(){
   }finally{probing=false}
 }
 window.addEventListener('online',probeNet);
-window.addEventListener('offline',()=>{probeFail=2;setNet(false)});
+window.addEventListener('offline',()=>{if(appCfg.internetRequired===false)return;probeFail=2;setNet(false)});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')probeNet()});
 $('offRetry').onclick=async()=>{const b=$('offRetry');b.textContent='Check ho raha hai…';probeFail=1;await probeNet();b.textContent='🔄 Dobara try karo'};
 setInterval(probeNet,15000);
