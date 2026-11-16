@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TradeRank Admin</title>
+<style>
+:root{--bg:#0b0e1a;--card:#131829;--line:#232a42;--txt:#e6e9f5;--mut:#7d86a6;--buy:#1fb97a;--sell:#e5384f;--acc:#f5b53d;--blue:#2962ff}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;font-size:14px;min-height:100vh}
+.pos{color:var(--buy)}.neg{color:var(--sell)}
+.wrap{max-width:900px;margin:auto;padding:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+h1{font-size:20px}
+.mut{color:var(--mut);font-size:12px}
+input,select{width:100%;background:#0b0e1a;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:11px;font-size:15px}
+.btn{border:0;border-radius:10px;padding:11px 14px;font-size:14px;font-weight:700;cursor:pointer;background:#2a3050;color:#fff}
+.btn.pr{background:var(--blue)}
+.btn.rd{background:#8a1c2c}
+.btn.gr{background:#12633f}
+.btn.sm{padding:7px 10px;font-size:12px}
+.row{display:flex;gap:8px;align-items:center}
+.col{display:flex;flex-direction:column;gap:10px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
+@media(min-width:600px){.stats{grid-template-columns:repeat(4,1fr)}}
+.st{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center}
+.st span{display:block;color:var(--mut);font-size:11px;margin-bottom:3px}
+.st b{font-size:18px}
+.tools{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:12px}
+@media(min-width:600px){.tools{grid-template-columns:2fr 1fr auto auto}}
+.pl{display:flex;gap:12px;align-items:center;padding:12px 4px;border-top:1px solid var(--line)}
+.pl:first-child{border-top:0}
+.av{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;flex:none}
+.inf{flex:1;min-width:0}
+.inf b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.inf span{color:var(--mut);font-size:11px;display:block}
+.rt{text-align:right;flex:none}
+.rt b{display:block;font-size:15px}
+.acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.ban{background:#3a1018;color:#ff8a9a;font-size:10px;padding:2px 7px;border-radius:8px;margin-left:6px;font-weight:700}
+.err{color:var(--sell);font-size:13px;min-height:16px}
+.guide{line-height:1.7;font-size:13px;color:#c9d0e8}
+.guide code{background:#1f2540;padding:1px 6px;border-radius:5px}
+.tg{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line);cursor:pointer}
+.tg b{display:block;font-size:14px}
+.tg input{width:26px;height:26px;accent-color:var(--blue);flex:none}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fl{display:block;color:var(--mut);font-size:11px;margin:10px 0 4px}
+.netbox{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:12px}
+.netbox.on{border-color:var(--blue);background:#0f1730}
+.netbox h4{font-size:13px;display:flex;justify-content:space-between;align-items:center}
+.netbox h4 em{font-style:normal;font-size:10px;background:var(--blue);color:#fff;border-radius:8px;padding:2px 7px;display:none}
+.netbox.on h4 em{display:inline-block}
+.okmsg{color:var(--buy)}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<script>
+/* ===== FIREBASE CONFIG =====
+   Yahan WAHI config paste karo jo trading-simulator.html mein hai.
+   window.FIREBASE_CONFIG={apiKey:"...",authDomain:"...",projectId:"...",appId:"..."}; */
+window.FIREBASE_CONFIG={apiKey:"AIzaSyCC8y_IV3V35XrQwUJEXZxNcNyOY01t9fA",authDomain:"traderank-bb288.firebaseapp.com",projectId:"traderank-bb288",storageBucket:"traderank-bb288.firebasestorage.app",messagingSenderId:"967513327255",appId:"1:967513327255:web:fac3c5356be053733bcbd2"};
+</script>
+
+<div class="wrap">
+
+  <!-- SETUP (config nahi hai) -->
+  <div id="setup" class="card" hidden>
+    <h1>⚙️ Setup baaki hai</h1>
+    <p class="guide" style="margin-top:8px">Is file ke upar <code>window.FIREBASE_CONFIG</code> mein apna Firebase config paste karo (wahi jo app mein dala hai), phir file ko host karo.</p>
+  </div>
+
+  <!-- ADMIN LOGIN -->
+  <div id="login" class="card col" hidden>
+    <h1>🛡 Admin Login</h1>
+    <span class="mut">Sirf admin account se login hoga.</span>
+    <input id="lEmail" type="email" placeholder="Admin email" autocomplete="email">
+    <input id="lPw" type="password" placeholder="Password" autocomplete="current-password">
+    <div id="lErr" class="err"></div>
+    <button class="btn pr" id="lBtn">Login</button>
+    <div class="guide">
+      <b>Admin kaise banayein?</b><br>
+      1) App mein ya Firebase Authentication mein ek account banao.<br>
+      2) Firebase Console → Authentication → Users se uska <b>UID</b> copy karo.<br>
+      3) Firestore Database mein collection <code>admins</code> banao, document ID = wahi UID (koi bhi field, jaise <code>role: "admin"</code>).<br>
+      4) Ab us email/password se yahan login karo.
+    </div>
+  </div>
+
+  <!-- PANEL -->
+  <div id="panel" hidden>
+    <div class="top">
+      <div><h1>🛡 TradeRank Admin</h1><span class="mut" id="who"></span></div>
+      <button class="btn sm" id="logout">Logout</button>
+    </div>
+
+    <!-- APP SETTINGS -->
+    <div class="card" id="cfgCard">
+      <div class="top" style="margin-bottom:4px"><b style="font-size:16px">⚙️ App Settings</b><span class="mut" id="cfgSt"></span></div>
+
+      <label class="tg"><div><b>🔐 Login compulsory</b><span class="mut">OFF karoge to bina login ke app chalega (testing ke liye). Play Store release se pehle ON karo.</span></div><input type="checkbox" id="cLogin"></label>
+      <label class="tg"><div><b>🧪 Test ads (nakli ad)</b><span class="mut">ON: asli ad ki jagah 5 second ka nakli ad. Sirf testing ke liye.</span></div><input type="checkbox" id="cTest"></label>
+
+      <div class="g2" style="margin-top:6px">
+        <div><label class="fl">Reward ($ per ad)</label><input id="cReward" type="number" min="1" inputmode="numeric"></div>
+        <div><label class="fl">Ads per user per din</label><input id="cLimit" type="number" min="1" inputmode="numeric"></div>
+      </div>
+
+      <label class="fl">Active ad network</label>
+      <select id="cNet">
+        <option value="unity">Unity LevelPlay</option>
+        <option value="admob">Google AdMob</option>
+      </select>
+
+      <div class="netbox" id="boxUnity">
+        <h4>Unity LevelPlay <em>ACTIVE</em></h4>
+        <label class="fl">App Key</label><input id="cUKey" placeholder="LevelPlay dashboard se App Key" autocomplete="off">
+        <label class="fl">Rewarded Ad Unit ID</label><input id="cUUnit" placeholder="LevelPlay Rewarded Ad Unit ID" autocomplete="off">
+      </div>
+      <div class="netbox" id="boxAdmob">
+        <h4>Google AdMob <em>ACTIVE</em></h4>
+        <label class="fl">Rewarded Ad Unit ID</label><input id="cAUnit" placeholder="ca-app-pub-xxxxxxxx/yyyyyyyy" autocomplete="off">
+        <span class="mut" style="display:block;margin-top:6px">AdMob <b>App ID</b> (ca-app-pub-…~…) app ke AndroidManifest mein rehta hai, yahan nahi. Testing ke liye Google ka test unit: <code>ca-app-pub-3940256099942544/5224354917</code></span>
+      </div>
+
+      <button class="btn pr" id="cSave" style="width:100%;margin-top:14px">💾 Save settings</button>
+      <div class="mut" style="margin-top:8px">Naya setting app mein agli baar khulne par (ya 30 minute baad) lagta hai.</div>
+    </div>
+
+    <div class="stats">
+      <div class="st"><span>Kul Players</span><b id="sTotal">-</b></div>
+      <div class="st"><span>Loaded ke Trades</span><b id="sTrades">-</b></div>
+      <div class="st"><span>Blocked Users</span><b id="sBan">-</b></div>
+      <div class="st"><span>Best Profit</span><b id="sBest" class="pos">-</b></div>
+    </div>
+
+    <div class="tools">
+      <input id="q" placeholder="🔍 Naam ya UID dhoondo">
+      <select id="sort">
+        <option value="pnl-desc">Profit: zyada → kam</option>
+        <option value="pnl-asc">Profit: kam → zyada</option>
+        <option value="trades-desc">Sabse zyada trades</option>
+        <option value="t-desc">Haal hi mein active</option>
+      </select>
+      <button class="btn" id="refresh">↻ Refresh</button>
+      <button class="btn" id="csv">⬇ CSV</button>
+    </div>
+
+    <div class="card" style="padding:6px 12px">
+      <div id="list"></div>
+      <div id="empty" class="mut" style="text-align:center;padding:16px" hidden>Koi player nahi mila</div>
+    </div>
+    <button class="btn" id="more" style="width:100%" hidden>Aur load karo</button>
+    <div class="mut" style="text-align:center;padding:14px" id="note"></div>
+  </div>
+</div>
+
+<script type="module">
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const cfg=window.FIREBASE_CONFIG;
+if(!cfg){$('setup').hidden=false}
+else{
+  try{
+    const B='https://www.gstatic.com/firebasejs/10.12.2/';
+    const [A,Au,Fs]=await Promise.all([import(B+'firebase-app.js'),import(B+'firebase-auth.js'),import(B+'firebase-firestore.js')]);
+    const app=A.initializeApp(cfg),auth=Au.getAuth(app),db=Fs.getFirestore(app);
+    let rows=[],lim=200,hasMore=false;
+
+    const money=n=>(n<0?'-$':'$')+Math.abs(Math.round(n)).toLocaleString('en-US');
+    const fmtD=t=>t&&t.toDate?t.toDate().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}):'-';
+
+    $('lBtn').onclick=async()=>{
+      $('lErr').textContent='';
+      try{await Au.signInWithEmailAndPassword(auth,$('lEmail').value.trim(),$('lPw').value)}
+      catch(e){$('lErr').textContent=(e.code||e.message||'Error').replace('auth/','')}
+    };
+    $('logout').onclick=()=>Au.signOut(auth);
+
+    Au.onAuthStateChanged(auth,async u=>{
+      $('login').hidden=true;$('panel').hidden=true;
+      if(!u){$('login').hidden=false;return}
+      try{
+        const a=await Fs.getDoc(Fs.doc(db,'admins',u.uid));
+        if(!a.exists()){
+          await Au.signOut(auth);
+          $('login').hidden=false;$('lErr').textContent='Yeh account admin nahi hai.';
+          return;
+        }
+      }catch(e){await Au.signOut(auth);$('login').hidden=false;$('lErr').textContent='Admin check fail: '+(e.code||e.message);return}
+      $('who').textContent='Logged in: '+(u.email||u.uid);
+      $('panel').hidden=false;
+      loadSettings();
+      load();
+    });
+
+    /* ---- App Settings (Firestore: config/app) ---- */
+    const DEF={loginRequired:true,testAds:false,rewardAmount:1000,dailyAdLimit:20,adNetwork:'unity',unity:{appKey:'',adUnitId:''},admob:{rewardedUnitId:''}};
+    function netUI(){const a=$('cNet').value==='admob';$('boxUnity').classList.toggle('on',!a);$('boxAdmob').classList.toggle('on',a)}
+    function fillSettings(c){
+      c=Object.assign({},DEF,c||{});
+      $('cLogin').checked=c.loginRequired!==false;
+      $('cTest').checked=!!c.testAds;
+      $('cReward').value=c.rewardAmount;
+      $('cLimit').value=c.dailyAdLimit;
+      $('cNet').value=c.adNetwork==='admob'?'admob':'unity';
+      $('cUKey').value=(c.unity&&c.unity.appKey)||'';
+      $('cUUnit').value=(c.unity&&c.unity.adUnitId)||'';
+      $('cAUnit').value=(c.admob&&c.admob.rewardedUnitId)||'';
+      netUI();
+    }
+    async function loadSettings(){
+      $('cfgSt').textContent='Load ho raha hai…';
+      try{
+        const s=await Fs.getDoc(Fs.doc(db,'config','app'));
+        fillSettings(s.exists()?s.data():null);
+        $('cfgSt').textContent=s.exists()?'':'Abhi kuch save nahi hai (default dikh rahe hain)';
+      }catch(e){$('cfgSt').textContent='Error: '+(e.code||e.message)}
+    }
+    $('cNet').addEventListener('change',netUI);
+    $('cSave').onclick=async()=>{
+      const reward=Math.round(+$('cReward').value),limit=Math.round(+$('cLimit').value),net=$('cNet').value;
+      const key=$('cUKey').value.trim(),unit=$('cUUnit').value.trim(),aunit=$('cAUnit').value.trim(),test=$('cTest').checked;
+      const st=$('cfgSt');
+      if(!(reward>=1&&reward<=1000000)){st.textContent='Reward 1 se 10,00,000 ke beech rakho';return}
+      if(!(limit>=1&&limit<=200)){st.textContent='Daily limit 1 se 200 ke beech rakho';return}
+      const missing=net==='unity'?(!key||!unit):!aunit;
+      if(missing&&!test&&!confirm('Chune hue network ke ID khaali hain, isliye asli ads fail honge. Phir bhi save karein?'))return;
+      const data={loginRequired:$('cLogin').checked,testAds:test,rewardAmount:reward,dailyAdLimit:limit,adNetwork:net,
+        unity:{appKey:key,adUnitId:unit},admob:{rewardedUnitId:aunit},updated:Fs.serverTimestamp()};
+      $('cSave').disabled=true;st.textContent='Save ho raha hai…';
+      try{await Fs.setDoc(Fs.doc(db,'config','app'),data,{merge:true});st.innerHTML='<span class="okmsg">✔ Save ho gaya</span>'}
+      catch(e){st.textContent='Save fail: '+(e.code||e.message)}
+      $('cSave').disabled=false;
+    };
+
+    async function load(){
+      $('note').textContent='Load ho raha hai…';
+      const [f,d]=$('sort').value.split('-');
+      try{
+        const q=Fs.query(Fs.collection(db,'players'),Fs.orderBy(f,d),Fs.limit(lim));
+        const s=await Fs.getDocs(q);
+        rows=s.docs.map(x=>({id:x.id,...x.data()}));
+        hasMore=rows.length>=lim;
+        try{const c=await Fs.getCountFromServer(Fs.collection(db,'players'));$('sTotal').textContent=c.data().count.toLocaleString('en-US')}catch(_){$('sTotal').textContent=rows.length}
+        $('note').textContent='';
+        render();
+      }catch(e){$('note').textContent='Error: '+(e.code||e.message)}
+    }
+
+    function render(){
+      const t=$('q').value.trim().toLowerCase();
+      const v=t?rows.filter(r=>(r.name||'').toLowerCase().includes(t)||r.id.toLowerCase().includes(t)):rows;
+      $('sTrades').textContent=rows.reduce((a,r)=>a+(r.trades||0),0).toLocaleString('en-US');
+      $('sBan').textContent=rows.filter(r=>r.banned).length;
+      const best=rows.reduce((m,r)=>Math.max(m,r.pnl||0),0);
+      $('sBest').textContent=money(best);
+      $('empty').hidden=v.length>0;
+      $('more').hidden=!hasMore;
+      $('list').innerHTML=v.map(r=>{
+        const nm=r.name||'Trader',h=[...nm].reduce((a,c)=>a+c.charCodeAt(0),0)%360,pnl=r.pnl||0,w=r.trades?Math.round((r.wins||0)/r.trades*100):0;
+        return `<div class="pl" data-id="${esc(r.id)}">
+          <div class="av" style="background:hsl(${h},55%,38%)">${esc(nm[0]||'T')}</div>
+          <div class="inf">
+            <b>${esc(nm)}${r.banned?'<span class="ban">BLOCKED</span>':''}</b>
+            <span>UID: ${esc(r.id.slice(0,10))}… • Joined ${fmtD(r.joined)}</span>
+            <span>${r.trades||0} trades • Win ${w}% • Last active ${fmtD(r.t)}</span>
+            <span>Ad bonus ${money(r.bonus||0)} • Ads: ${r.adsCount||0} (${esc(r.adsDay||'-')})</span>
+            <div class="acts">
+              <button class="btn sm ${r.banned?'gr':'rd'}" data-a="ban">${r.banned?'Unblock':'Block'}</button>
+              <button class="btn sm" data-a="reset">Reset stats</button>
+              <button class="btn sm" data-a="rename">Rename</button>
+              <button class="btn sm rd" data-a="del">Delete</button>
+            </div>
+          </div>
+          <div class="rt"><b class="${pnl>=0?'pos':'neg'}">${pnl>=0?'+':''}${money(pnl)}</b></div>
+        </div>`;
+      }).join('');
+    }
+
+    $('list').addEventListener('click',async e=>{
+      const b=e.target.closest('button[data-a]');if(!b)return;
+      const id=b.closest('.pl').dataset.id,r=rows.find(x=>x.id===id),ref=Fs.doc(db,'players',id);
+      try{
+        if(b.dataset.a==='ban'){
+          const nb=!r.banned;
+          if(!confirm((nb?'Block':'Unblock')+' karna hai: '+(r.name||id)+' ?'))return;
+          await Fs.updateDoc(ref,{banned:nb});r.banned=nb;
+        }else if(b.dataset.a==='reset'){
+          if(!confirm('Is player ke stats (profit, trades, wins) 0 karne hain?'))return;
+          await Fs.updateDoc(ref,{pnl:0,trades:0,wins:0});r.pnl=0;r.trades=0;r.wins=0;
+        }else if(b.dataset.a==='rename'){
+          const n=(prompt('Naya naam (3-20 akshar):',r.name||'')||'').trim();
+          if(n.length<3||n.length>20)return;
+          await Fs.updateDoc(ref,{name:n});r.name=n;
+        }else if(b.dataset.a==='del'){
+          if(!confirm('PAKKA delete karna hai: '+(r.name||id)+' ?\n(Sirf leaderboard profile hatega. Login account Firebase Authentication mein rahega. Block karna behtar hai.)'))return;
+          await Fs.deleteDoc(ref);rows=rows.filter(x=>x.id!==id);
+        }
+        render();
+      }catch(err){alert('Fail: '+(err.code||err.message))}
+    });
+
+    $('q').addEventListener('input',render);
+    $('sort').addEventListener('change',()=>{lim=200;load()});
+    $('refresh').onclick=()=>load();
+    $('more').onclick=()=>{lim+=200;load()};
+    $('csv').onclick=()=>{
+      const head=['uid','name','pnl','trades','wins','blocked'];
+      const lines=[head.join(',')].concat(rows.map(r=>[r.id,'"'+String(r.name||'').replace(/"/g,'""')+'"',r.pnl||0,r.trades||0,r.wins||0,r.banned?1:0].join(',')));
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/csv'}));
+      a.download='players.csv';a.click();
+    };
+  }catch(e){
+    $('setup').hidden=false;
+    $('setup').innerHTML='<h1>⚠️ Firebase load nahi hua</h1><p class="guide" style="margin-top:8px">Internet check karo, ya config galat hai. Error: '+esc(e.message||e)+'</p>';
+  }
+}
+</script>
+</body>
+</html>
