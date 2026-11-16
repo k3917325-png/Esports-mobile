@@ -316,6 +316,8 @@ h4{color:#e8e3ff;font-size:16px;font-weight:800;padding:14px 16px 6px}
 .cpre i{display:inline-block;width:10px;height:14px;border-radius:2px}
 
 #adTop{display:none;height:50px;flex:none;align-items:center;justify-content:center;background:#0a0720;color:#6f68a8;font-size:12px;border-bottom:1px solid rgba(130,100,255,.25);letter-spacing:.3px}
+#feedMsg{display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:8;background:rgba(10,12,24,.92);border:1px solid #2d3340;border-radius:12px;padding:14px 18px;color:#e6e9f5;font-size:13px;text-align:center;max-width:80%;align-items:center;justify-content:center}
+.t:disabled{opacity:.35}
 </style>
 </head>
 <body class="home">
@@ -337,21 +339,22 @@ h4{color:#e8e3ff;font-size:16px;font-weight:800;padding:14px 16px 6px}
   </div>
 
   <div id="tabs">
-    <button class="ghost on" data-tf="6000">1m</button>
-    <button class="ghost" data-tf="18000">3m</button>
-    <button class="ghost" data-tf="30000">5m</button>
-    <button class="ghost" data-tf="90000">15m</button>
-    <button class="ghost" data-tf="360000">1h</button>
-    <button class="ghost" data-tf="1080000">3h</button>
-    <button class="ghost" data-tf="8640000">1D</button>
-    <button class="ghost" data-tf="17280000">2D</button>
-    <button class="ghost" data-tf="60480000">7D</button>
+    <button class="ghost on" data-tf="60000">1m</button>
+    <button class="ghost" data-tf="180000">3m</button>
+    <button class="ghost" data-tf="300000">5m</button>
+    <button class="ghost" data-tf="900000">15m</button>
+    <button class="ghost" data-tf="3600000">1h</button>
+    <button class="ghost" data-tf="10800000">3h</button>
+    <button class="ghost" data-tf="86400000">1D</button>
+    <button class="ghost" data-tf="172800000">2D</button>
+    <button class="ghost" data-tf="604800000">7D</button>
     <button class="ghost" data-tf="live" style="grid-column:span 2">🔴 Live</button>
   </div>
   <div class="chwrap">
     <canvas id="ch"></canvas>
     <div id="tvWrap"><iframe id="tv"></iframe></div>
     <button id="gearBtn" title="Chart colors">⚙</button>
+    <div id="feedMsg"></div>
     <div id="cset">
       <div class="th"><b style="font-size:15px">🎨 Chart Colors</b><button class="ghost" id="csClose">✕</button></div>
       <div class="cgrid" id="cGrid"></div>
@@ -503,7 +506,7 @@ Object.values(CFG).forEach(c=>{c.p=c.mid;c.open=c.mid-c.chg});
 const GROUP={crypto:['BTC','ETH','SOL','XRP','DOGE','BNB','TRX'],fx:['XAU','EUR']};
 let wlGroup='crypto';
 let S=CFG.XAU,sym='XAU',mid=S.mid,bal=10000,pos=[],idn=1,closed=[];
-let tf=6000,candles=[],view='sim',posSig='',off=0,visN=60,yScale=1,yShift=0;
+let tf=60000,candles=[],view='sim',posSig='',off=0,visN=60,yScale=1,yShift=0;
 const $=id=>document.getElementById(id);
 const f2=n=>n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 const money=n=>(n<0?'-$':'$')+f2(Math.abs(n));
@@ -753,8 +756,8 @@ $('dUndo').onclick=()=>{const a=DR[dkey()];if(a&&a.length)a.pop();drawChart()};
 $('dClear').onclick=()=>{DR[dkey()]=[];drawChart()};
 const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function fmtT(t){
-  const d=new Date(LOAD+(t-LOAD)*10),p=n=>String(n).padStart(2,'0');
-  return tf*10>=86400000?d.getDate()+' '+MON[d.getMonth()]:p(d.getHours())+':'+p(d.getMinutes());
+  const d=new Date(t),p=n=>String(n).padStart(2,'0');
+  return tf>=86400000?d.getDate()+' '+MON[d.getMonth()]:p(d.getHours())+':'+p(d.getMinutes());
 }
 /* ---- chart colors (user badal sakta hai, phone mein save hota hai) ---- */
 const TH_DEF={up:'#1fb97a',dn:'#e5384f',wu:null,wd:null,bg:'#131829',grid:'#1a2036',ma:'#9aa3c7'};
@@ -840,7 +843,7 @@ function drawChart(){
   g.fillStyle=lc.c>=lc.o?TH.up:TH.dn;g.fillRect(w-AXW,cy-8,AXW-2,28);
   g.fillStyle='#fff';g.font='bold 10px system-ui';g.fillText(px(mid),w-AXW+5,cy+3);
   {
-    const rem=Math.max(0,(tf-(Date.now()-lc.t))*10),s=Math.floor(rem/1000),p2=n=>String(n).padStart(2,'0');
+    const rem=Math.max(0,tf-(Date.now()-lc.t)),s=Math.floor(rem/1000),p2=n=>String(n).padStart(2,'0');
     const txt=s>=86400?Math.floor(s/86400)+'d '+p2(Math.floor(s%86400/3600))+'h':(s>=3600?p2(Math.floor(s/3600))+':':'')+p2(Math.floor(s%3600/60))+':'+p2(s%60);
     g.font='10px system-ui';g.fillText(txt,w-AXW+5,cy+16);
   }
@@ -1378,12 +1381,178 @@ probeNet();
 seedCandles();
 setInterval(()=>{
   if(!netOk)return;                              // net nahi to prices bhi ruk jayein
-  mid+=rnd()*S.vol+(Math.random()<.02?rnd()*S.vol*5:0);
-  updCandle();checkHits();render();
-  Object.keys(CFG).forEach(k=>{const c=CFG[k];if(k===sym)c.p=mid;else c.p+=rnd()*c.vol*0.8});
+  if(window.FEED_SIM)mid+=rnd()*S.vol+(Math.random()<.02?rnd()*S.vol*5:0);
+  updCandle();if(window.FEED_SIM||isLive(sym))checkHits();render();
+  if(window.FEED_SIM)Object.keys(CFG).forEach(k=>{const c=CFG[k];if(k===sym)c.p=mid;else c.p+=rnd()*c.vol*0.8});
   updateHome();
 },700);
 render();
+</script>
+<script>
+/* ===== REAL market feed (Binance + Kraken, public APIs, bina key) =====
+   Candles + live price asli market se aate hain. Agar feed na mile to us symbol par trading band (nakli price par trade nahi). */
+const FEED_SIM=!!window.FEED_SIM;                 // sirf testing/preview: purana nakli price engine
+const PROV={
+  bnS:{kind:'bn',base:['https://api.binance.com','https://data-api.binance.vision'],path:'/api/v3'},
+  bnF:{kind:'bn',base:['https://fapi.binance.com'],path:'/fapi/v1'},
+  kr:{kind:'kr',base:['https://api.kraken.com']}
+};
+/* har instrument ke liye source list (pehla chalta hai, fail hone par agla). 3rd item=1 matlab approx (proxy) price */
+const SRC={
+  XAU:[['bnF','XAUUSDT'],['bnS','PAXGUSDT',1]],
+  XAG:[['bnF','XAGUSDT']],
+  OIL:[['bnF','CLUSDT']],
+  EUR:[['kr','EURUSD'],['bnS','EURUSDT',1]],
+  GBP:[['kr','GBPUSD'],['bnS','GBPUSDT',1]],
+  JPY:[['kr','USDJPY']],
+  BTC:[['kr','XBTUSD'],['bnS','BTCUSDT',1]],
+  BTT:[['bnS','BTCUSDT']],
+  ETH:[['kr','ETHUSD'],['bnS','ETHUSDT',1]]
+};
+const FS={};Object.keys(SRC).forEach(k=>FS[k]={i:0,fail:0,state:'wait'});   // state: wait | live | down
+const TFMAP={60000:['1m',1],180000:['1m',3],300000:['5m',1],900000:['15m',1],3600000:['1h',1],10800000:['1h',3],86400000:['1d',1],172800000:['1d',2],604800000:['1w',1]};
+const KRI={'1m':1,'5m':5,'15m':15,'1h':60,'1d':1440,'1w':10080};
+const isLive=k=>FEED_SIM||(FS[k]&&FS[k].state==='live');
+async function jget(url,ms=7000){
+  const ac=new AbortController(),t=setTimeout(()=>ac.abort(),ms);
+  try{const r=await fetch(url,{signal:ac.signal,cache:'no-store'});if(!r.ok)throw new Error('http'+r.status);return await r.json()}
+  finally{clearTimeout(t)}
+}
+async function bnGet(P,path,qs){let err;for(const b of P.base){try{return await jget(b+P.path+path+'?'+qs)}catch(e){err=e}}throw err}
+const curSrc=k=>{const f=FS[k],a=SRC[k];return a&&a[f.i]?a[f.i]:null};
+
+async function rawKlines(k,interval,count){
+  const s=curSrc(k);if(!s)throw new Error('nosrc');const P=PROV[s[0]],sy=s[1];
+  if(P.kind==='bn'){
+    const a=await bnGet(P,'/klines','symbol='+sy+'&interval='+interval+'&limit='+Math.min(1000,count));
+    return a.map(r=>({t:+r[0],o:+r[1],h:+r[2],l:+r[3],c:+r[4],v:Math.round(+r[5])}));
+  }
+  const j=await jget(P.base[0]+'/0/public/OHLC?pair='+sy+'&interval='+KRI[interval]);
+  if(j.error&&j.error.length)throw new Error(j.error[0]);
+  const key=Object.keys(j.result).find(x=>x!=='last');
+  return j.result[key].map(r=>({t:+r[0]*1000,o:+r[1],h:+r[2],l:+r[3],c:+r[4],v:Math.round(+r[6])}));
+}
+function aggregate(rows,f,ms){
+  if(f===1)return rows;
+  const out=[];
+  for(const r of rows){
+    const b=Math.floor(r.t/ms)*ms,l=out[out.length-1];
+    if(l&&l.t===b){l.h=Math.max(l.h,r.h);l.l=Math.min(l.l,r.l);l.c=r.c;l.v+=r.v}else out.push({o:r.o,h:r.h,l:r.l,c:r.c,v:r.v,t:b});
+  }
+  return out;
+}
+async function fetchKlines(k,ms){
+  const m=TFMAP[ms];if(!m)throw new Error('tf');
+  const rows=await rawKlines(k,m[0],Math.min(1000,260*m[1]));
+  const out=aggregate(rows,m[1],ms).filter(r=>isFinite(r.c));
+  if(out.length<5)throw new Error('empty');
+  return out;
+}
+async function fetchPrice(k){
+  const s=curSrc(k);if(!s)throw new Error('nosrc');const P=PROV[s[0]],sy=s[1];
+  if(P.kind==='bn'){const j=await bnGet(P,'/ticker/bookTicker','symbol='+sy);const b=+j.bidPrice,a=+j.askPrice;if(!(b>0&&a>0))throw new Error('px');return(a+b)/2}
+  const j=await jget(P.base[0]+'/0/public/Ticker?pair='+sy);
+  if(j.error&&j.error.length)throw new Error(j.error[0]);
+  const t=j.result[Object.keys(j.result)[0]],b=+t.b[0],a=+t.a[0],c=+t.c[0];
+  return(a>0&&b>0)?(a+b)/2:c;
+}
+function srcFail(k){
+  const f=FS[k];f.fail++;
+  if(f.fail>=3){
+    f.fail=0;
+    if(f.i<SRC[k].length-1){f.i++;f.state='wait';if(k===sym&&view==='sim')seedCandles()}
+    else f.state='down';
+  }
+}
+let loadTok=0;
+async function loadReal(){
+  const tok=++loadTok,k=sym,t=tf;
+  try{
+    const rows=await fetchKlines(k,t);
+    if(tok!==loadTok||k!==sym)return;
+    candles=rows.slice(-250).map((r,i)=>({...r,id:i}));
+    const lastC=candles[candles.length-1];
+    if(!(FS[k].px>0))mid=lastC.c;else mid=FS[k].px;
+    off=0;yScale=1;yShift=0;FS[k].state='live';FS[k].fail=0;
+    render();
+  }catch(e){
+    if(tok!==loadTok)return;
+    srcFail(k);
+    if(FS[k].state==='down'){render();setTimeout(()=>{if(k===sym&&view==='sim'&&FS[k].state==='down'){FS[k].state='wait';FS[k].i=0;seedCandles()}},8000)}
+    else setTimeout(()=>{if(tok===loadTok&&k===sym&&view==='sim')loadReal()},1500);
+  }
+}
+const _seedSim=seedCandles;
+seedCandles=function(){
+  if(FEED_SIM){_seedSim();return}
+  candles=[];
+  try{const cv=$('ch');cv.getContext('2d').clearRect(0,0,cv.width,cv.height)}catch(_){}
+  FS[sym].state=FS[sym].state==='down'?'down':'wait';
+  loadReal();
+};
+const _updSim=updCandle;
+updCandle=function(){
+  if(FEED_SIM){_updSim();return}
+  if(!candles.length||!isLive(sym))return;
+  const n=Date.now(),c=candles[candles.length-1];
+  if(n>=c.t+tf){
+    const t=c.t+tf*Math.floor((n-c.t)/tf);
+    candles.push({o:c.c,h:Math.max(c.c,mid),l:Math.min(c.c,mid),c:mid,t,id:c.id+1,v:0});
+    if(candles.length>260)candles.shift();if(off>0)off++;
+  }else{c.c=mid;c.h=Math.max(c.h,mid);c.l=Math.min(c.l,mid)}
+};
+async function resync(){
+  if(FEED_SIM||view!=='sim'||!candles.length||!isLive(sym)||document.body.className!=='chart')return;
+  const tok=loadTok,k=sym;
+  try{
+    const rows=await fetchKlines(k,tf);
+    if(tok!==loadTok||k!==sym||!candles.length)return;
+    const map=new Map(candles.map(c=>[c.t,c]));
+    rows.slice(-4).forEach(r=>{
+      const c=map.get(r.t);
+      if(c){c.o=r.o;c.h=Math.max(r.h,c.h);c.l=Math.min(r.l,c.l);c.v=r.v}
+      else if(r.t>candles[candles.length-1].t)candles.push({...r,id:candles[candles.length-1].id+1});
+    });
+  }catch(_){}
+}
+/* price poller: chart khula ho to sirf current symbol (1 sec), warna sab (4 sec) */
+async function pollOne(k){
+  if(!SRC[k])return;
+  try{
+    const p=await fetchPrice(k);
+    const f=FS[k];f.px=p;f.fail=0;
+    CFG[k].p=p;
+    if(f.state==='wait'&&k!==sym)f.state='live';
+    if(k===sym&&f.state==='live')mid=p;
+  }catch(e){srcFail(k)}
+}
+let pollN=0;
+setInterval(()=>{
+  if(FEED_SIM||!netOk)return;
+  pollN++;
+  if(document.body.className==='chart'){if(!(curSrc(sym)&&curSrc(sym)[0]==='kr'&&pollN%2))pollOne(sym);if(pollN%30===0)resync()}
+  else if(pollN%4===0)Object.keys(SRC).forEach(pollOne);
+},1000);
+/* din ka open (change % ke liye) */
+async function loadOpens(){
+  if(FEED_SIM)return;
+  for(const k of Object.keys(SRC)){
+    try{const r=await rawKlines(k,'1d',3);const l=r[r.length-1];if(l&&l.o>0){CFG[k].open=l.o}}catch(_){}
+  }
+}
+loadOpens();setInterval(loadOpens,600000);
+/* chart header: LIVE tag + trading guard */
+function feedUI(){
+  const k=sym,ok=isLive(k),st=FS[k]?FS[k].state:'down',s=curSrc(k),approx=s&&s[2];
+  $('symBtn').innerHTML=S.code+(FEED_SIM?'':(ok?' <span style="color:#22e08a;font-size:10px">●'+(approx?'≈':'')+'</span>':' <span style="color:#ff4d6a;font-size:10px">○</span>'));
+  $('buyBtn').disabled=$('sellBtn').disabled=!ok;
+  const m=$('feedMsg');if(m){m.style.display=(!ok&&document.body.className==='chart'&&view==='sim')?'flex':'none';m.textContent=st==='down'?'📡 Live price nahi mil raha. Dobara koshish ho rahi hai…':'⏳ Live chart load ho raha hai…'}
+}
+setInterval(feedUI,500);
+const _openPos=openPos;
+openPos=function(side,price){if(!isLive(sym)){toast('Live price nahi mil raha, trade nahi lag sakta.');return false}return _openPos(side,price)};
+
+seedCandles();
 </script>
 <script type="module">
 let initing=false;
