@@ -211,9 +211,10 @@ h4{padding:12px 16px 6px;color:#999;font-size:13px;font-weight:600}
 <body class="home">
 <div id="app">
   <div class="bar">
-    <button class="ghost on" id="symBtn">☰ GOLD ▾</button>
+    <button class="ghost on" id="symBtn">GOLD</button>
     <button class="ghost" id="tfBtn">1m ▾</button>
     <button class="ghost" id="toolBtn">✏ Tools</button>
+    <button class="ghost" id="exitBtn" style="color:#f23645;border-color:#f23645">⏻ Exit</button>
     <span class="sp"></span>
     <div class="st">
       <div><span>Balance</span><b id="bal">$10,000.00</b></div>
@@ -258,7 +259,7 @@ h4{padding:12px 16px 6px;color:#999;font-size:13px;font-weight:600}
     </div>
 
     <div id="sheet">
-      <div class="sh"><b>Positions</b><span><button class="ghost" id="closeAll">Close all</button> <button class="ghost" id="sheetClose">✕</button></span></div>
+      <div class="sh"><b>Positions</b><button class="ghost" id="closeAll">Close all trade</button><button class="ghost" id="sheetClose">✕</button></div>
       <div id="posList"></div>
       <h3>HISTORY</h3>
       <div id="hist"></div>
@@ -404,7 +405,7 @@ $('lots').addEventListener('input',render);
 function setSym(s){
   if(pos.length){alert('Pehle open positions band karo, phir symbol badlo.');return}
   sym=s;S=CFG[s];mid=S.p;$('lots').value=S.lots.toFixed(2);
-  $('symBtn').textContent='☰ '+S.code+' ▾';
+  $('symBtn').textContent=S.code;
   seedCandles();
   if(view==='live')loadTV();
   render();
@@ -426,7 +427,7 @@ window.pickSym=k=>{
   }
   goChart();
 };
-$('symBtn').onclick=()=>goHome('watch');
+$('exitBtn').onclick=()=>goHome('watch');   // symbol par tap se exit nahi hota, sirf Exit button se
 $('wlClose').onclick=()=>$('wl').classList.remove('open');
 $('wlTabs').addEventListener('click',e=>{
   const b=e.target.closest('button');if(!b)return;
@@ -958,10 +959,11 @@ let authReady=false;
 const sess=()=>{try{return JSON.parse(localStorage.getItem('ts_sess')||'null')}catch(_){return null}};
 const lsKey=()=>LS_PREFIX+((window.FB&&FB.user&&FB.user.uid)||(!authReady&&sess()&&sess().uid)||'guest');
 function lsSave(){
-  try{localStorage.setItem(lsKey(),JSON.stringify({bal,trades:acct.trades,wins:acct.wins,closed:closed.slice(0,8),bonus:acct.bonus||0,adsDay:acct.adsDay||'',adsCount:acct.adsCount||0,dirty:acct.dirty?1:0,pending:acct.pending||0,ts:Date.now()}))}catch(_){}
+  try{localStorage.setItem(lsKey(),JSON.stringify({v:2,bal,trades:acct.trades,wins:acct.wins,closed:closed.slice(0,8),bonus:acct.bonus||0,adsDay:acct.adsDay||'',adsCount:acct.adsCount||0,dirty:acct.dirty?1:0,pending:acct.pending||0,ts:Date.now()}))}catch(_){}
 }
 function lsLoad(){try{return JSON.parse(localStorage.getItem(lsKey())||'null')}catch(_){return null}}
-function lsApply(s){bal=Number.isFinite(+s.bal)&&s.bal!=null?Math.max(0,+s.bal):10000;acct.trades=s.trades||0;acct.wins=s.wins||0;closed=s.closed||[];acct.pending=s.pending||0;acct.dirty=!!s.dirty;acct.bonus=s.bonus||0;acct.adsDay=s.adsDay||'';acct.adsCount=s.adsCount||0}
+function lsApply(s){
+  if(s.v!==2){s={v:2,bal:10000,trades:0,wins:0,closed:[],pending:1,dirty:true,bonus:0,adsDay:s.adsDay||'',adsCount:s.adsCount||0}}/* purane bug wale nakli balance ek baar reset */bal=Number.isFinite(+s.bal)&&s.bal!=null?Math.max(0,+s.bal):10000;acct.trades=s.trades||0;acct.wins=s.wins||0;closed=s.closed||[];acct.pending=s.pending||0;acct.dirty=!!s.dirty;acct.bonus=s.bonus||0;acct.adsDay=s.adsDay||'';acct.adsCount=s.adsCount||0}
 function syncText(){
   if(!isIn())return '';
   return !acct.dirty?'☁️ Sab synced':'⏳ '+(acct.pending||0)+' trade sync baaki'+(navigator.onLine?'':' (offline)');
@@ -1099,7 +1101,7 @@ window.addEventListener('fb-auth',async e=>{
     acct.joined=(d&&d.joined&&d.joined.toDate)?d.joined.toDate():null;
     if(!pos.length){
       if(got&&d){
-        if(!loc||!loc.dirty){bal=Math.max(0,10000+(d.pnl||0)+(d.bonus||0));acct.trades=d.trades||0;acct.wins=d.wins||0;acct.pending=0;acct.dirty=false;closed=(loc&&loc.closed)||[];acct.bonus=d.bonus||0;acct.adsDay=d.adsDay||'';acct.adsCount=d.adsCount||0}
+        if(!loc||(!loc.dirty&&loc.v===2)){bal=Math.max(0,10000+(d.pnl||0)+(d.bonus||0));acct.trades=d.trades||0;acct.wins=d.wins||0;acct.pending=0;acct.dirty=false;closed=(loc&&loc.closed)||[];acct.bonus=d.bonus||0;acct.adsDay=d.adsDay||'';acct.adsCount=d.adsCount||0}
         else{lsApply(loc);acct.dirty=true;if(!acct.pending)acct.pending=1}   // local aage hai: baad mein sync
       }else if(loc){lsApply(loc)}
       else{bal=10000;closed=[];acct.trades=0;acct.wins=0;acct.pending=0;acct.dirty=false;acct.bonus=0;acct.adsDay='';acct.adsCount=0}
