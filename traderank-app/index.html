@@ -436,18 +436,27 @@ $('wlTabs').addEventListener('click',e=>{
 function loadTV(){$('tv').src='https://s.tradingview.com/widgetembed/?symbol='+encodeURIComponent(S.tv)+'&interval=1&theme=dark&style=1&locale=en&allow_symbol_change=0'}
 
 /* ---- trading (SL/TP user khud set karega) ---- */
-function openPos(side,price){pos.push({id:idn++,side,lots:lots(),entry:price,sl:null,tp:null});posSig=''}
+const usedMargin=()=>pos.reduce((a,p)=>a+(p.mg||0),0);
+const freeMargin=()=>bal+float()-usedMargin();
+const needMargin=l=>l*S.cs*mid/S.lev;
+const maxLots=()=>Math.max(0,Math.floor(freeMargin()*S.lev/(S.cs*mid)*100)/100);
+function openPos(side,price){
+  const l=lots(),need=needMargin(l);
+  if(bal<=0.5&&!pos.length){toast('Balance $0 hai. Portfolio mein ad dekho aur $'+Math.max(1,+appCfg.rewardAmount||1000)+' pao.');goHome('port');return false}
+  if(need>freeMargin()){const m=maxLots();toast(m>=0.01?'Margin kam hai. Is balance par max '+m.toFixed(2)+' lot.':'Free margin nahi bachi. Positions band karo ya ad dekho.');return false}
+  pos.push({id:idn++,side,lots:l,entry:price,mg:need,sl:null,tp:null});posSig='';return true
+}
 function closePos(p,price,why){
   const pl=(p.side==='B'?price-p.entry:p.entry-price)*p.lots*S.cs;
-  bal+=pl;closed.unshift({side:p.side,lots:p.lots,entry:p.entry,exit:price,pl,why});
+  bal=Math.max(0,bal+pl);closed.unshift({side:p.side,lots:p.lots,entry:p.entry,exit:price,pl,why});
   acct.trades++;if(pl>0)acct.wins++;
   acct.pending=(acct.pending||0)+1;acct.dirty=true;lsSave();updSyncStatus();
   if(acct.pending>=10)syncNow();
   closed=closed.slice(0,8);pos=pos.filter(x=>x.id!==p.id);
 }
 const float=()=>pos.reduce((a,p)=>a+(p.side==='B'?bid()-p.entry:p.entry-ask())*p.lots*S.cs,0);
-$('sellBtn').onclick=()=>{if(!$('oco').checked&&!confirm('SELL '+lots().toFixed(2)+' lot at '+px(bid())+' ?'))return;openPos('S',bid());render()};
-$('buyBtn').onclick=()=>{if(!$('oco').checked&&!confirm('BUY '+lots().toFixed(2)+' lot at '+px(ask())+' ?'))return;openPos('B',ask());render()};
+$('sellBtn').onclick=()=>{if(!$('oco').checked&&!confirm('SELL '+lots().toFixed(2)+' lot at '+px(bid())+' ?'))return;if(openPos('S',bid()))render()};
+$('buyBtn').onclick=()=>{if(!$('oco').checked&&!confirm('BUY '+lots().toFixed(2)+' lot at '+px(ask())+' ?'))return;if(openPos('B',ask()))render()};
 $('closeAll').onclick=()=>{[...pos].forEach(p=>closePos(p,p.side==='B'?bid():ask(),'Manual'));render()};
 window.cp=id=>{const p=pos.find(x=>x.id===id);if(p){closePos(p,p.side==='B'?bid():ask(),'Manual');render()}};
 function checkHits(){
@@ -785,7 +794,8 @@ function render(){
   const fl=float();
   $('bal').textContent=money(bal);$('eq').textContent=money(bal+fl);
   $('fl').textContent=money(fl);$('fl').className=cls(fl);
-  $('risk').textContent='Margin ≈ '+money(lots()*S.cs*mid/S.lev);
+  if(pos.length&&bal+fl<=0){[...pos].forEach(p=>closePos(p,p.side==='B'?bid():ask(),'Stop-out'));bal=0;acct.dirty=true;lsSave();toast('Stop-out: balance $0. Ad dekhkar $'+Math.max(1,+appCfg.rewardAmount||1000)+' pao.')}
+  {const need=needMargin(lots()),ok=need<=freeMargin();$('risk').textContent='Margin '+money(need)+' • Free '+money(Math.max(0,freeMargin()));$('risk').style.color=ok?'':'#f23645'}
   $('posBtn').textContent='📋 Positions ('+pos.length+')';
   renderPos();
   $('hist').innerHTML=closed.length?`<table class="l"><tr><th>Side</th><th>Lots</th><th>Entry→Exit</th><th>P&amp;L</th></tr>`+
@@ -849,7 +859,6 @@ window.clearDraw=()=>{Object.keys(DR).forEach(k=>delete DR[k]);alert('Saari draw
 window.fsToggle=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen()}catch(e){}};
 function menuHTML(){
   return `<h4>Menu</h4>${acctHTML()}
-  <button class="mi" onclick="resetAcct()">🔄 Account reset ($10,000)</button>
   <button class="mi" onclick="clearDraw()">🧹 Saari drawings hatao</button>
   <button class="mi" onclick="fsToggle()">⛶ Fullscreen on/off</button>
   <div class="note" style="padding:18px 16px">TradeRank (demo): saare prices simulated hain, real market data nahi hai. Real paisa involve nahi hai.</div>`;
@@ -952,7 +961,7 @@ function lsSave(){
   try{localStorage.setItem(lsKey(),JSON.stringify({bal,trades:acct.trades,wins:acct.wins,closed:closed.slice(0,8),bonus:acct.bonus||0,adsDay:acct.adsDay||'',adsCount:acct.adsCount||0,dirty:acct.dirty?1:0,pending:acct.pending||0,ts:Date.now()}))}catch(_){}
 }
 function lsLoad(){try{return JSON.parse(localStorage.getItem(lsKey())||'null')}catch(_){return null}}
-function lsApply(s){bal=+s.bal||10000;acct.trades=s.trades||0;acct.wins=s.wins||0;closed=s.closed||[];acct.pending=s.pending||0;acct.dirty=!!s.dirty;acct.bonus=s.bonus||0;acct.adsDay=s.adsDay||'';acct.adsCount=s.adsCount||0}
+function lsApply(s){bal=Number.isFinite(+s.bal)&&s.bal!=null?Math.max(0,+s.bal):10000;acct.trades=s.trades||0;acct.wins=s.wins||0;closed=s.closed||[];acct.pending=s.pending||0;acct.dirty=!!s.dirty;acct.bonus=s.bonus||0;acct.adsDay=s.adsDay||'';acct.adsCount=s.adsCount||0}
 function syncText(){
   if(!isIn())return '';
   return !acct.dirty?'☁️ Sab synced':'⏳ '+(acct.pending||0)+' trade sync baaki'+(navigator.onLine?'':' (offline)');
@@ -1090,7 +1099,7 @@ window.addEventListener('fb-auth',async e=>{
     acct.joined=(d&&d.joined&&d.joined.toDate)?d.joined.toDate():null;
     if(!pos.length){
       if(got&&d){
-        if(!loc||!loc.dirty){bal=10000+(d.pnl||0)+(d.bonus||0);acct.trades=d.trades||0;acct.wins=d.wins||0;acct.pending=0;acct.dirty=false;closed=(loc&&loc.closed)||[];acct.bonus=d.bonus||0;acct.adsDay=d.adsDay||'';acct.adsCount=d.adsCount||0}
+        if(!loc||!loc.dirty){bal=Math.max(0,10000+(d.pnl||0)+(d.bonus||0));acct.trades=d.trades||0;acct.wins=d.wins||0;acct.pending=0;acct.dirty=false;closed=(loc&&loc.closed)||[];acct.bonus=d.bonus||0;acct.adsDay=d.adsDay||'';acct.adsCount=d.adsCount||0}
         else{lsApply(loc);acct.dirty=true;if(!acct.pending)acct.pending=1}   // local aage hai: baad mein sync
       }else if(loc){lsApply(loc)}
       else{bal=10000;closed=[];acct.trades=0;acct.wins=0;acct.pending=0;acct.dirty=false;acct.bonus=0;acct.adsDay='';acct.adsCount=0}
