@@ -103,6 +103,9 @@ window.FIREBASE_CONFIG={apiKey:"AIzaSyCC8y_IV3V35XrQwUJEXZxNcNyOY01t9fA",authDom
       <label class="tg"><div><b>🔐 Login compulsory</b><span class="mut">OFF karoge to bina login ke app chalega (testing ke liye). Play Store release se pehle ON karo.</span></div><input type="checkbox" id="cLogin"></label>
       <label class="tg"><div><b>🧪 Test ads (nakli ad)</b><span class="mut">ON: asli ad ki jagah 5 second ka nakli ad. Sirf testing ke liye.</span></div><input type="checkbox" id="cTest"></label>
 
+      <label class="tg"><div><b>📢 Banner ad (home ke upar)</b><span class="mut">ON: Home, Markets, Portfolio, Leaders, Menu ke upar chhota banner. Chart screen par nahi aata.</span></div><input type="checkbox" id="cBan"></label>
+      <label class="tg"><div><b>📺 Interstitial ad (Leaderboard)</b><span class="mut">ON: Leaderboard kholne par full-screen ad, lekin sirf tab jab pichhle ad ko "gap" minute ho chuke hon.</span></div><input type="checkbox" id="cInt"></label>
+      <div class="g2" style="margin-top:6px"><div><label class="fl">Interstitial gap (minute)</label><input id="cGap" type="number" min="1" max="120" inputmode="numeric"></div></div>
       <div class="g2" style="margin-top:6px">
         <div><label class="fl">Reward ($ per ad)</label><input id="cReward" type="number" min="1" inputmode="numeric"></div>
         <div><label class="fl">Ads per user per din</label><input id="cLimit" type="number" min="1" inputmode="numeric"></div>
@@ -118,10 +121,14 @@ window.FIREBASE_CONFIG={apiKey:"AIzaSyCC8y_IV3V35XrQwUJEXZxNcNyOY01t9fA",authDom
         <h4>Unity LevelPlay <em>ACTIVE</em></h4>
         <label class="fl">App Key</label><input id="cUKey" placeholder="LevelPlay dashboard se App Key" autocomplete="off">
         <label class="fl">Rewarded Ad Unit ID</label><input id="cUUnit" placeholder="LevelPlay Rewarded Ad Unit ID" autocomplete="off">
+        <label class="fl">Banner Ad Unit ID (home ke upar)</label><input id="cUBan" placeholder="LevelPlay Banner Ad Unit ID" autocomplete="off">
+        <label class="fl">Interstitial Ad Unit ID (Leaderboard)</label><input id="cUInt" placeholder="LevelPlay Interstitial Ad Unit ID" autocomplete="off">
       </div>
       <div class="netbox" id="boxAdmob">
         <h4>Google AdMob <em>ACTIVE</em></h4>
         <label class="fl">Rewarded Ad Unit ID</label><input id="cAUnit" placeholder="ca-app-pub-xxxxxxxx/yyyyyyyy" autocomplete="off">
+        <label class="fl">Banner Ad Unit ID (home ke upar)</label><input id="cABan" placeholder="ca-app-pub-xxxxxxxx/yyyyyyyy" autocomplete="off">
+        <label class="fl">Interstitial Ad Unit ID (Leaderboard)</label><input id="cAInt" placeholder="ca-app-pub-xxxxxxxx/yyyyyyyy" autocomplete="off">
         <span class="mut" style="display:block;margin-top:6px">AdMob <b>App ID</b> (ca-app-pub-…~…) app ke AndroidManifest mein rehta hai, yahan nahi. Testing ke liye Google ka test unit: <code>ca-app-pub-3940256099942544/5224354917</code></span>
       </div>
 
@@ -197,17 +204,20 @@ else{
     });
 
     /* ---- App Settings (Firestore: config/app) ---- */
-    const DEF={loginRequired:true,testAds:false,rewardAmount:1000,dailyAdLimit:20,adNetwork:'unity',unity:{appKey:'',adUnitId:''},admob:{rewardedUnitId:''}};
+    const DEF={loginRequired:true,bannerEnabled:true,interstitialEnabled:true,interstitialGapMin:12,testAds:false,rewardAmount:1000,dailyAdLimit:20,adNetwork:'unity',unity:{appKey:'',adUnitId:''},admob:{rewardedUnitId:''}};
     function netUI(){const a=$('cNet').value==='admob';$('boxUnity').classList.toggle('on',!a);$('boxAdmob').classList.toggle('on',a)}
     function fillSettings(c){
       c=Object.assign({},DEF,c||{});
       $('cLogin').checked=c.loginRequired!==false;
       $('cTest').checked=!!c.testAds;
+      $('cBan').checked=c.bannerEnabled!==false;$('cInt').checked=c.interstitialEnabled!==false;$('cGap').value=c.interstitialGapMin||12;
       $('cReward').value=c.rewardAmount;
       $('cLimit').value=c.dailyAdLimit;
       $('cNet').value=c.adNetwork==='admob'?'admob':'unity';
       $('cUKey').value=(c.unity&&c.unity.appKey)||'';
       $('cUUnit').value=(c.unity&&c.unity.adUnitId)||'';
+      $('cUBan').value=(c.unity&&c.unity.bannerAdUnitId)||'';$('cUInt').value=(c.unity&&c.unity.interstitialAdUnitId)||'';
+      $('cABan').value=(c.admob&&c.admob.bannerUnitId)||'';$('cAInt').value=(c.admob&&c.admob.interstitialUnitId)||'';
       $('cAUnit').value=(c.admob&&c.admob.rewardedUnitId)||'';
       netUI();
     }
@@ -225,11 +235,14 @@ else{
       const key=$('cUKey').value.trim(),unit=$('cUUnit').value.trim(),aunit=$('cAUnit').value.trim(),test=$('cTest').checked;
       const st=$('cfgSt');
       if(!(reward>=1&&reward<=1000000)){st.textContent='Reward 1 se 10,00,000 ke beech rakho';return}
+      const gap=Math.round(+$('cGap').value);
+      if(!(gap>=1&&gap<=120)){st.textContent='Interstitial gap 1 se 120 minute ke beech rakho';return}
       if(!(limit>=1&&limit<=200)){st.textContent='Daily limit 1 se 200 ke beech rakho';return}
       const missing=net==='unity'?(!key||!unit):!aunit;
       if(missing&&!test&&!confirm('Chune hue network ke ID khaali hain, isliye asli ads fail honge. Phir bhi save karein?'))return;
       const data={loginRequired:$('cLogin').checked,testAds:test,rewardAmount:reward,dailyAdLimit:limit,adNetwork:net,
-        unity:{appKey:key,adUnitId:unit},admob:{rewardedUnitId:aunit},updated:Fs.serverTimestamp()};
+        bannerEnabled:$('cBan').checked,interstitialEnabled:$('cInt').checked,interstitialGapMin:gap,
+        unity:{appKey:key,adUnitId:unit,bannerAdUnitId:$('cUBan').value.trim(),interstitialAdUnitId:$('cUInt').value.trim()},admob:{rewardedUnitId:aunit,bannerUnitId:$('cABan').value.trim(),interstitialUnitId:$('cAInt').value.trim()},updated:Fs.serverTimestamp()};
       $('cSave').disabled=true;st.textContent='Save ho raha hai…';
       try{await Fs.setDoc(Fs.doc(db,'config','app'),data,{merge:true});st.innerHTML='<span class="okmsg">✔ Save ho gaya</span>'}
       catch(e){st.textContent='Save fail: '+(e.code||e.message)}

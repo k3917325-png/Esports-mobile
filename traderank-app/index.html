@@ -314,6 +314,8 @@ h4{color:#e8e3ff;font-size:16px;font-weight:800;padding:14px 16px 6px}
 .cpre{display:flex;gap:6px;overflow-x:auto;margin-bottom:8px;scrollbar-width:none}
 .cpre button{flex:none;border:1px solid #2d3340;border-radius:10px;padding:6px 10px;color:#fff;font-size:12px;background:#262a33;display:flex;align-items:center;gap:6px}
 .cpre i{display:inline-block;width:10px;height:14px;border-radius:2px}
+
+#adTop{display:none;height:50px;flex:none;align-items:center;justify-content:center;background:#0a0720;color:#6f68a8;font-size:12px;border-bottom:1px solid rgba(130,100,255,.25);letter-spacing:.3px}
 </style>
 </head>
 <body class="home">
@@ -449,6 +451,7 @@ h4{color:#e8e3ff;font-size:16px;font-weight:800;padding:14px 16px 6px}
 </div>
 
 <div id="home">
+  <div id="adTop"></div>
   <div class="hh">
     <button class="hb" id="hMenu">☰</button>
   </div>
@@ -1242,7 +1245,7 @@ window.addEventListener('fb-auth',async e=>{
 });
 
 /* ================= REMOTE CONFIG (admin panel) + LOGIN GATE + REWARDED ADS ================= */
-const CFG_DEF={loginRequired:true,adNetwork:'unity',rewardAmount:1000,dailyAdLimit:20,testAds:false,unity:{appKey:'',adUnitId:''},admob:{rewardedUnitId:''}};
+const CFG_DEF={loginRequired:true,bannerEnabled:true,interstitialEnabled:true,interstitialGapMin:12,adNetwork:'unity',rewardAmount:1000,dailyAdLimit:20,testAds:false,unity:{appKey:'',adUnitId:'',bannerAdUnitId:'',interstitialAdUnitId:''},admob:{rewardedUnitId:'',bannerUnitId:'',interstitialUnitId:''}};
 let appCfg=(()=>{let c=null;try{c=JSON.parse(localStorage.getItem('ts_cfg')||'null')}catch(_){}return Object.assign({},CFG_DEF,c||{})})();
 let cfgAt=0,adBusy=false;
 function tradePnl(){return Math.round((bal-10000-(acct.bonus||0))*100)/100}   // leaderboard sirf trading profit se (ad bonus alag)
@@ -1452,14 +1455,13 @@ function homeHTML(){
   return `${prof}
   <div class="gl" style="position:relative"><span class="mt">Total Balance</span><div class="big" id="hmEq">${money(bal+fl)}</div>${spark()}</div>
   <div class="row2"><div class="gl gr"><span class="mt">Realized P&amp;L</span><div class="mid ${cls(pnl)}">${sgn(Math.round(pnl))}</div></div><div class="gl bl"><span class="mt">Floating P&amp;L</span><div class="mid ${cls(fl)}" id="hmFl">${money(fl)}</div></div></div>
-  ${adCard()}
-  <div class="tiles"><button class="tile t1" onclick="homeTab='watch';renderHome()"><i>📈</i>Markets</button><button class="tile t2" onclick="homeTab='lb';renderHome()"><i>🏆</i>Leaderboard</button><button class="tile t3" onclick="homeTab='port';renderHome()"><i>💼</i>Portfolio</button><button class="tile t4" onclick="watchAd()"><i>🎁</i>Free ${money(Math.max(1,+appCfg.rewardAmount||1000))}</button></div>`;
+  ${adCard()}`;
 }
 function marketsHTML(){
   return `<div class="ttl">Markets<small>Kisi par tap karo, chart khulega</small></div>`+SECT.map(([n,ks])=>`<div class="hs" onclick="togSec('${n}')"><span class="chev">${closedSec[n]?'›':'⌄'}</span> ${n}</div>`+(closedSec[n]?'':ks.map(rowHTML).join(''))).join('');
 }
 function portTopHTML(fl){
-  return `<div class="pf-hero"><span>Total Equity</span><b id="hEq">${money(bal+fl)}</b><div class="pf-sub"><div><span>Balance</span><b id="hBal">${money(bal)}</b></div><div><span>Floating P&amp;L</span><b id="hFl" class="${cls(fl)}">${money(fl)}</b></div></div>${spark()}</div>${adCard()}`;
+  return `<div class="pf-hero"><span>Total Equity</span><b id="hEq">${money(bal+fl)}</b><div class="pf-sub"><div><span>Balance</span><b id="hBal">${money(bal)}</b></div><div><span>Floating P&amp;L</span><b id="hFl" class="${cls(fl)}">${money(fl)}</b></div></div>${spark()}</div>`;
 }
 const _portHTML=portHTML;
 portHTML=function(){return `<div class="ttl">Portfolio</div>`+_portHTML()};
@@ -1551,6 +1553,70 @@ renderHome();
   $('csReset').onclick=()=>{Object.assign(TH,TH_DEF);save();build();apply()};
   apply();
 })();
+/* ===== Banner (home ke upar) + Interstitial (Leaderboard par, har 12 minute mein ek baar) ===== */
+const netNow=()=>appCfg.adNetwork==='admob'?'admob':'unity';
+const netParams=()=>JSON.stringify((netNow()==='admob'?appCfg.admob:appCfg.unity)||{});
+const hasNative=()=>!!(window.NativeAds&&window.NativeAds.showRewarded);
+const adsPossible=()=>hasNative()||appCfg.testAds||!fbOn();     // web par asli ad nahi chalta, sirf test/preview mein nakli
+let bannerOn=false;
+function syncBanner(){
+  const on=document.body.className==='home'&&appCfg.bannerEnabled!==false&&adsPossible();
+  const slot=$('adTop');if(!slot)return;
+  slot.style.display=on?'flex':'none';
+  slot.textContent=hasNative()?'':'📢 Banner Ad (test)';
+  if(hasNative()&&window.NativeAds.showBanner){
+    try{
+      if(on&&!bannerOn){NativeAds.showBanner(netNow(),netParams());bannerOn=true}
+      else if(!on&&bannerOn){NativeAds.hideBanner();bannerOn=false}
+    }catch(_){}
+  }
+}
+const _renderHome2=renderHome;
+renderHome=function(){_renderHome2();syncBanner()};
+const _goChart2=goChart;
+goChart=function(){_goChart2();syncBanner()};
+
+const INTER_KEY='ts_lastInter';
+let lastInter=0;
+try{lastInter=+localStorage.getItem(INTER_KEY)||0;if(!lastInter){lastInter=Date.now();localStorage.setItem(INTER_KEY,String(lastInter))}}catch(_){lastInter=Date.now()}
+const interGapMs=()=>Math.max(1,+appCfg.interstitialGapMin||12)*60000;
+const interDue=()=>appCfg.interstitialEnabled!==false&&adsPossible()&&Date.now()-lastInter>=interGapMs();
+function markInter(){lastInter=Date.now();try{localStorage.setItem(INTER_KEY,String(lastInter))}catch(_){}}
+function simInter(){
+  return new Promise(res=>{
+    let n=4;const el=$('adSim'),btn=$('adClose'),cnt=$('adCnt');
+    el.classList.add('open');cnt.textContent=n;btn.disabled=true;btn.textContent='Ad chal raha hai…';
+    const iv=setInterval(()=>{n--;cnt.textContent=Math.max(0,n);if(n<=0){clearInterval(iv);btn.disabled=false;btn.textContent='✕ Close'}},1000);
+    btn.onclick=()=>{if(btn.disabled)return;clearInterval(iv);el.classList.remove('open');btn.disabled=false;res('shown')};
+  });
+}
+function nativeInter(){
+  return new Promise(res=>{
+    if(!window.NativeAds.showInterstitial){res('failed');return}
+    const id='i'+Date.now();adReq[id]=res;
+    try{NativeAds.showInterstitial(id,netNow(),netParams())}catch(e){delete adReq[id];res('failed');return}
+    setTimeout(()=>{if(adReq[id]){delete adReq[id];res('failed')}},60000);
+  });
+}
+let interBusy=false;
+async function interThen(go){
+  if(interBusy)return;
+  if(!interDue()){go();return}
+  interBusy=true;
+  let st='failed';
+  try{st=(hasNative()&&!appCfg.testAds)?await nativeInter():await simInter()}catch(_){}
+  interBusy=false;
+  if(st!=='failed')markInter();      // ad aaya hi nahi to user ko rokte nahi
+  go();
+}
+$('hNav').addEventListener('click',e=>{
+  const b=e.target.closest('[data-n="lb"]');if(!b)return;
+  if(homeTab==='lb'||!interDue())return;                 // 12 minute nahi hue: seedha leaderboard
+  e.stopImmediatePropagation();
+  interThen(()=>{homeTab='lb';renderHome()});
+},true);
+const _tileLb=null;
+syncBanner();
 </script>
 </body>
 </html>
