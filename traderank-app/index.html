@@ -561,10 +561,14 @@ const usedMargin=()=>pos.reduce((a,p)=>a+(p.mg||0),0);
 const freeMargin=()=>bal+float()-usedMargin();
 const needMargin=l=>l*S.cs*mid/S.lev;
 const maxLots=()=>Math.max(0,Math.floor(freeMargin()*S.lev/(S.cs*mid)*100)/100);
+const tradesToday=()=>acct.tDay===todayStr()?(acct.tCnt||0):0;
+const tradeLimit=()=>Math.max(1,Math.round(+appCfg.dailyTradeLimit||100));
 function openPos(side,price){
   const l=lots(),need=needMargin(l);
+  if(tradesToday()>=tradeLimit()){toast('Aaj ki limit poori: din mein sirf '+tradeLimit()+' trade. Kal dobara aao.');return false}
   if(bal<=0.5&&!pos.length){toast('Balance $0 hai. Portfolio mein ad dekho aur $'+Math.max(1,+appCfg.rewardAmount||1000)+' pao.');goHome('port');return false}
   if(need>freeMargin()){const m=maxLots();toast(m>=0.01?'Margin kam hai. Is balance par max '+m.toFixed(2)+' lot.':'Free margin nahi bachi. Positions band karo ya ad dekho.');return false}
+  const t=todayStr();if(acct.tDay!==t){acct.tDay=t;acct.tCnt=0}acct.tCnt++;lsSave();
   pos.push({id:idn++,side,lots:l,entry:price,mg:need,sl:null,tp:null});posSig='';return true
 }
 function closePos(p,price,why){
@@ -1091,11 +1095,11 @@ let authReady=false;
 const sess=()=>{try{return JSON.parse(localStorage.getItem('ts_sess')||'null')}catch(_){return null}};
 const lsKey=()=>LS_PREFIX+((window.FB&&FB.user&&FB.user.uid)||(!authReady&&sess()&&sess().uid)||'guest');
 function lsSave(){
-  try{localStorage.setItem(lsKey(),JSON.stringify({v:2,bal,trades:acct.trades,wins:acct.wins,closed:closed.slice(0,8),bonus:acct.bonus||0,adsDay:acct.adsDay||'',adsCount:acct.adsCount||0,dirty:acct.dirty?1:0,pending:acct.pending||0,ts:Date.now()}))}catch(_){}
+  try{localStorage.setItem(lsKey(),JSON.stringify({v:2,bal,trades:acct.trades,wins:acct.wins,closed:closed.slice(0,8),bonus:acct.bonus||0,adsDay:acct.adsDay||'',adsCount:acct.adsCount||0,tDay:acct.tDay||'',tCnt:acct.tCnt||0,dirty:acct.dirty?1:0,pending:acct.pending||0,ts:Date.now()}))}catch(_){}
 }
 function lsLoad(){try{return JSON.parse(localStorage.getItem(lsKey())||'null')}catch(_){return null}}
 function lsApply(s){
-  if(s.v!==2){s={v:2,bal:10000,trades:0,wins:0,closed:[],pending:1,dirty:true,bonus:0,adsDay:s.adsDay||'',adsCount:s.adsCount||0}}/* purane bug wale nakli balance ek baar reset */bal=Number.isFinite(+s.bal)&&s.bal!=null?Math.max(0,+s.bal):10000;acct.trades=s.trades||0;acct.wins=s.wins||0;closed=s.closed||[];acct.pending=s.pending||0;acct.dirty=!!s.dirty;acct.bonus=s.bonus||0;acct.adsDay=s.adsDay||'';acct.adsCount=s.adsCount||0}
+  if(s.v!==2){s={v:2,bal:10000,trades:0,wins:0,closed:[],pending:1,dirty:true,bonus:0,adsDay:s.adsDay||'',adsCount:s.adsCount||0}}/* purane bug wale nakli balance ek baar reset */bal=Number.isFinite(+s.bal)&&s.bal!=null?Math.max(0,+s.bal):10000;acct.trades=s.trades||0;acct.wins=s.wins||0;closed=s.closed||[];acct.pending=s.pending||0;acct.dirty=!!s.dirty;acct.bonus=s.bonus||0;acct.adsDay=s.adsDay||'';acct.adsCount=s.adsCount||0;acct.tDay=s.tDay||'';acct.tCnt=s.tCnt||0}
 function syncText(){
   if(!isIn())return '';
   return !acct.dirty?'☁️ Sab synced':'⏳ '+(acct.pending||0)+' trade sync baaki'+(navigator.onLine?'':' (offline)');
@@ -1160,7 +1164,7 @@ async function loadLB(){
   }
   if(!c)M.textContent='Load ho raha hai…';
   try{
-    const rows=(await FB.top(100)).filter(u=>!u.banned).map(u=>({id:u.id,name:u.name,pnl:u.pnl,trades:u.trades,wins:u.wins}));
+    const rows=(await FB.top(100)).filter(u=>!u.banned&&(appCfg.lbProfitOnly===false||u.pnl>0)).map(u=>({id:u.id,name:u.name,pnl:u.pnl,trades:u.trades,wins:u.wins}));
     let total=(c&&c.total)||rows.length;
     if(!c||!c.tt||Date.now()-c.tt>1800000){try{total=await FB.total();var tt=Date.now()}catch(_){}}else var tt=c.tt;
     try{localStorage.setItem(LBC,JSON.stringify({t:Date.now(),rows,total,tt:tt||0}))}catch(_){}
@@ -1249,7 +1253,7 @@ window.addEventListener('fb-auth',async e=>{
 });
 
 /* ================= REMOTE CONFIG (admin panel) + LOGIN GATE + REWARDED ADS ================= */
-const CFG_DEF={loginRequired:true,bannerEnabled:true,interstitialEnabled:true,interstitialGapMin:12,adNetwork:'unity',rewardAmount:1000,dailyAdLimit:20,testAds:false,unity:{appKey:'',adUnitId:'',bannerAdUnitId:'',interstitialAdUnitId:''},admob:{rewardedUnitId:'',bannerUnitId:'',interstitialUnitId:''}};
+const CFG_DEF={loginRequired:true,bannerEnabled:true,interstitialEnabled:true,interstitialGapMin:12,dailyTradeLimit:100,lbProfitOnly:true,adNetwork:'unity',rewardAmount:1000,dailyAdLimit:20,testAds:false,unity:{appKey:'',adUnitId:'',bannerAdUnitId:'',interstitialAdUnitId:''},admob:{rewardedUnitId:'',bannerUnitId:'',interstitialUnitId:''}};
 let appCfg=(()=>{let c=null;try{c=JSON.parse(localStorage.getItem('ts_cfg')||'null')}catch(_){}return Object.assign({},CFG_DEF,c||{})})();
 let cfgAt=0,adBusy=false;
 function tradePnl(){return Math.round((bal-10000-(acct.bonus||0))*100)/100}   // leaderboard sirf trading profit se (ad bonus alag)
@@ -1789,7 +1793,7 @@ function menuHTML(){
   const nm=userName(),pnl=tradePnl(),fl=float();
   const head=`<div class="heroP"><div class="cw">${isIn()?'<div class="cr">👑</div>':''}<div class="av ${isIn()?'king':''}">${initial(nm)}</div></div><b>${esc(nm)}</b>${isIn()?`<span>${esc(FB.user.email||'')}</span>`:''}<span class="mbadge">Member since - ${sinceTxt()}</span></div>`;
   if(!isIn()&&fbOn())return head+`<div class="gl"><b>Login / Sign up</b>${loginForm()}</div>`;
-  if(isIn()&&Date.now()-rkAt>600000&&navigator.onLine){rkAt=Date.now();FB.rank(tradePnl()).then(r=>{myRk=r;if(homeTab==='menu')renderHome()}).catch(()=>{})}
+  if(isIn()&&!(appCfg.lbProfitOnly!==false&&tradePnl()<=0)&&Date.now()-rkAt>600000&&navigator.onLine){rkAt=Date.now();FB.rank(tradePnl()).then(r=>{myRk=r;if(homeTab==='menu')renderHome()}).catch(()=>{})}
   return head+`<div class="row2"><div class="gl gr"><span class="mt">Balance</span><div class="mid">${money(bal)}</div></div><div class="gl pk"><span class="mt">Realized P&amp;L</span><div class="mid ${cls(pnl)}">${sgn(Math.round(pnl))}</div></div></div>
   <div class="row3"><div class="gl bl"><span class="mt">Rank</span><div class="mid">${myRk?'#'+myRk:'–'}</div></div><div class="gl pk"><span class="mt">Win rate</span><div class="mid">${winRate()}%</div></div><div class="gl gr"><span class="mt">Trades</span><div class="mid">${acct.trades}</div></div></div>
   ${isIn()?`<button class="mi" onclick="editName()">✏️ Username Edit<span class="ch">›</span></button><button class="mi or" onclick="doLogout()">🚪 Logout<span class="ch">›</span></button><button class="mi pk" onclick="delAcct()">🗑 Account Delete<span class="ch">›</span></button>`:''}
@@ -1819,8 +1823,9 @@ function updLB(){
   if(!fbOn()||!fbReady()||!FB.user){el.style.display='none';return}
   el.style.display='flex';
   const pnl=tradePnl(),col=pnl>=0?'pos':'neg';
-  if(Date.now()-rkAt>600000&&navigator.onLine){rkAt=Date.now();FB.rank(pnl).then(r=>{myRk=r}).catch(()=>{})}
-  el.innerHTML=`<div class="me2"><span>🏆 Your Rank: ${myRk?'#'+myRk:'–'}<br><small>${lbTotal?lbTotal.toLocaleString('en-US')+' mein se • ':''}${acct.trades} trades</small></span><b class="${col}">${sgn(Math.round(pnl))}</b></div>`;
+  const noRk=appCfg.lbProfitOnly!==false&&pnl<=0;
+  if(!noRk&&Date.now()-rkAt>600000&&navigator.onLine){rkAt=Date.now();FB.rank(pnl).then(r=>{myRk=r}).catch(()=>{})}
+  el.innerHTML=noRk?`<div class="me2"><span>🏆 Your Rank: –<br><small>Profit karo, tab leaderboard mein aoge • ${acct.trades} trades</small></span><b class="${col}">${sgn(Math.round(pnl))}</b></div>`:`<div class="me2"><span>🏆 Your Rank: ${myRk?'#'+myRk:'–'}<br><small>${lbTotal?lbTotal.toLocaleString('en-US')+' mein se • ':''}${acct.trades} trades</small></span><b class="${col}">${sgn(Math.round(pnl))}</b></div>`;
 }
 function renderHome(){
   const b=$('hBody');
