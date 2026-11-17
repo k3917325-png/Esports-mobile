@@ -1504,13 +1504,14 @@ const FEED_SIM=!!window.FEED_SIM;                 // sirf testing/preview: puran
 const PROV={
   bnS:{kind:'bn',base:['https://api.binance.com','https://data-api.binance.vision'],path:'/api/v3'},
   bnF:{kind:'bn',base:['https://fapi.binance.com'],path:'/fapi/v1'},
-  kr:{kind:'kr',base:['https://api.kraken.com']}
+  kr:{kind:'kr',base:['https://api.kraken.com']},
+  by:{kind:'by',base:['https://api.bybit.com']}
 };
 /* har instrument ke liye source list (pehla chalta hai, fail hone par agla). 3rd item=1 matlab approx (proxy) price */
 const SRC={
-  XAU:[['bnF','XAUUSDT'],['bnS','PAXGUSDT',1]],
-  XAG:[['bnF','XAGUSDT']],
-  OIL:[['bnF','CLUSDT']],
+  XAU:[['bnF','XAUUSDT'],['by','XAUUSDT'],['bnS','PAXGUSDT',1]],
+  XAG:[['bnF','XAGUSDT'],['by','XAGUSDT']],
+  OIL:[['bnF','CLUSDT'],['by','CLUSDT']],
   EUR:[['kr','EURUSD'],['bnS','EURUSDT',1]],
   GBP:[['kr','GBPUSD'],['bnS','GBPUSDT',1]],
   JPY:[['kr','USDJPY']],
@@ -1520,6 +1521,7 @@ const SRC={
 };
 const FS={};Object.keys(SRC).forEach(k=>FS[k]={i:0,fail:0,state:'wait'});   // state: wait | live | down
 const TFMAP={60000:['1m',1],180000:['1m',3],300000:['5m',1],900000:['15m',1],3600000:['1h',1],10800000:['1h',3],86400000:['1d',1],172800000:['1d',2],604800000:['1w',1]};
+const BYI={'1m':'1','5m':'5','15m':'15','1h':'60','1d':'D','1w':'W'};
 const KRI={'1m':1,'5m':5,'15m':15,'1h':60,'1d':1440,'1w':10080};
 const isLive=k=>FEED_SIM||(FS[k]&&FS[k].state==='live');
 async function jget(url,ms=7000){
@@ -1535,6 +1537,11 @@ async function rawKlines(k,interval,count){
   if(P.kind==='bn'){
     const a=await bnGet(P,'/klines','symbol='+sy+'&interval='+interval+'&limit='+Math.min(1000,count));
     return a.map(r=>({t:+r[0],o:+r[1],h:+r[2],l:+r[3],c:+r[4],v:Math.round(+r[5])}));
+  }
+  if(P.kind==='by'){
+    const j=await jget(P.base[0]+'/v5/market/kline?category=linear&symbol='+sy+'&interval='+BYI[interval]+'&limit='+Math.min(1000,count));
+    if(j.retCode!==0)throw new Error('by'+j.retCode);
+    return j.result.list.slice().reverse().map(r=>({t:+r[0],o:+r[1],h:+r[2],l:+r[3],c:+r[4],v:Math.round(+r[5])}));
   }
   const j=await jget(P.base[0]+'/0/public/OHLC?pair='+sy+'&interval='+KRI[interval]);
   if(j.error&&j.error.length)throw new Error(j.error[0]);
@@ -1560,6 +1567,11 @@ async function fetchKlines(k,ms){
 async function fetchPrice(k){
   const s=curSrc(k);if(!s)throw new Error('nosrc');const P=PROV[s[0]],sy=s[1];
   if(P.kind==='bn'){const j=await bnGet(P,'/ticker/bookTicker','symbol='+sy);const b=+j.bidPrice,a=+j.askPrice;if(!(b>0&&a>0))throw new Error('px');return(a+b)/2}
+  if(P.kind==='by'){
+    const j=await jget(P.base[0]+'/v5/market/tickers?category=linear&symbol='+sy);
+    if(j.retCode!==0||!j.result.list.length)throw new Error('by'+j.retCode);
+    const t=j.result.list[0],b=+t.bid1Price,a=+t.ask1Price,c=+t.lastPrice;return(a>0&&b>0)?(a+b)/2:c;
+  }
   const j=await jget(P.base[0]+'/0/public/Ticker?pair='+sy);
   if(j.error&&j.error.length)throw new Error(j.error[0]);
   const t=j.result[Object.keys(j.result)[0]],b=+t.b[0],a=+t.a[0],c=+t.c[0];
@@ -1640,7 +1652,7 @@ function hubSync(){
   const want={bnS:new Map(),bnF:new Map(),kr:new Map()};
   Object.keys(SRC).forEach(k=>{
     const s=curSrc(k);if(!s||FS[k].state==='down')return;
-    const m=want[s[0]],id=s[0]==='kr'?krWs(s[1]):s[1].toLowerCase();
+    const m=want[s[0]];if(!m)return;const id=s[0]==='kr'?krWs(s[1]):s[1].toLowerCase();
     if(!m.has(id))m.set(id,[]);m.get(id).push(k);
   });
   Object.keys(want).forEach(pn=>{
