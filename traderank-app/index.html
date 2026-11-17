@@ -833,11 +833,7 @@ function drawChart(){
     g.strokeStyle=col;g.lineWidth=1;g.setLineDash([5,3]);g.beginPath();g.moveTo(0,yy);g.lineTo(w,yy);g.stroke();g.setLineDash([]);
     g.fillStyle=col;g.fillRect(w-AXW-100,yy-8,100,16);g.fillStyle='#000';g.textAlign='right';g.fillText(txt,w-AXW-4,yy+3);g.textAlign='left';
   };
-  pos.forEach(p=>{
-    const pl=(p.side==='B'?bid()-p.entry:p.entry-ask())*p.lots*S.cs;
-    line(p.entry,'#f5b53d',(p.side==='B'?'BUY ':'SELL ')+money(pl));
-    line(p.sl,TH.dn,'SL '+px(p.sl));line(p.tp,TH.up,'TP '+px(p.tp));
-  });
+  if(window.drawPositions)drawPositions(g,w,y);
   const lc=candles[len-1],cy=y(mid);
   g.strokeStyle=lc.c>=lc.o?TH.up:TH.dn;g.lineWidth=1;g.setLineDash([2,3]);g.beginPath();g.moveTo(0,cy);g.lineTo(w-AXW,cy);g.stroke();g.setLineDash([]);
   g.fillStyle=lc.c>=lc.o?TH.up:TH.dn;g.fillRect(w-AXW,cy-8,AXW-2,28);
@@ -865,6 +861,7 @@ const isPortrait=()=>window.innerHeight>window.innerWidth;
 const cpos=e=>{const r=$('ch').getBoundingClientRect();return isPortrait()?{x:e.clientY-r.top,y:r.right-e.clientX}:{x:e.clientX-r.left,y:e.clientY-r.top}};
 const cwNow=()=>($('ch').clientWidth-AXW)/visN;
 $('ch').addEventListener('pointerdown',e=>{
+  if(window.posDown&&posDown(e))return;
   if(tool&&pts.size===0&&!drawing){
     const p0=cpos(e);
     if(p0.x<$('ch').clientWidth-AXW&&VW){
@@ -880,6 +877,7 @@ $('ch').addEventListener('pointerdown',e=>{
   if(pts.size===1){const t=Date.now();if(t-lastTap<300){off=0;visN=60;yScale=1;yShift=0;drawChart()}lastTap=t}
 });
 $('ch').addEventListener('pointermove',e=>{
+  if(window.posMove&&posMove(e))return;
   if(drawing&&e.pointerId===drawing.pid){drawing.b=toData(cpos(e));drawChart();return}
   if(!pts.has(e.pointerId))return;
   const prev=pts.get(e.pointerId),c=cpos(e),cur={x:c.x,y:c.y,axis:prev.axis};pts.set(e.pointerId,cur);
@@ -895,6 +893,7 @@ $('ch').addEventListener('pointermove',e=>{
   drawChart();
 });
 ['pointerup','pointercancel'].forEach(t=>$('ch').addEventListener(t,e=>{
+  if(window.posUp&&posUp(e))return;
   if(drawing&&e.pointerId===drawing.pid){
     const A=toXY(drawing.a),B=toXY(drawing.b);
     if(Math.hypot(A.x-B.x,A.y-B.y)>8){const d=drawing;delete d.pid;addDrawing(d)}
@@ -1387,6 +1386,99 @@ setInterval(()=>{
   updateHome();
 },700);
 render();
+</script>
+<script>
+/* ===== Chart par position lines: [lots | P&L | ✕], SL/TP ko haath se kheench kar lagao ===== */
+let HIT=[],pdrag=null;
+const plAt=(p,v)=>(p.side==='B'?v-p.entry:p.entry-v)*p.lots*S.cs;
+const fmU=n=>(n>=0?'+':'-')+f2(Math.abs(n))+' USD';
+function pbox(g,rx,yy,parts,col){
+  g.font='bold 11px system-ui';const hh=20;
+  parts.forEach(pt=>pt.w=Math.ceil(g.measureText(pt.t).width)+14);
+  const tw=parts.reduce((a,pt)=>a+pt.w,0),x0=rx-tw;let cx=x0;
+  parts.forEach(pt=>{g.fillStyle=pt.bg;g.fillRect(cx,yy-hh/2,pt.w,hh);pt.x0=cx;cx+=pt.w});
+  g.strokeStyle=col;g.lineWidth=1;g.strokeRect(x0+.5,yy-hh/2+.5,tw-1,hh-1);
+  g.textAlign='center';parts.forEach(pt=>{g.fillStyle=pt.fg;g.fillText(pt.t,pt.x0+pt.w/2,yy+4)});g.textAlign='left';
+  return {x0,y0:yy-hh/2,hh,parts};
+}
+function axTag(g,R,yy,txt,col){g.fillStyle=col;g.fillRect(R,yy-8,AXW-2,16);g.fillStyle='#fff';g.font='bold 10px system-ui';g.textAlign='left';g.fillText(txt,R+5,yy+3)}
+function drawPositions(g,w,y){
+  HIT=[];if(!VW)return;
+  const R=w-AXW,hx=R-26,H=VW.H,dark='rgba(14,17,30,.92)';
+  g.save();g.beginPath();g.rect(0,0,w,H);g.clip();
+  const hline=(yy,col,dash)=>{g.strokeStyle=col;g.lineWidth=1.2;g.setLineDash(dash||[]);g.beginPath();g.moveTo(0,yy);g.lineTo(R,yy);g.stroke();g.setLineDash([])};
+  const dot=(x,yy,col,fill)=>{g.beginPath();g.arc(x,yy,6,0,7);g.fillStyle=fill?col:'#0d1020';g.fill();g.strokeStyle=col;g.lineWidth=2;g.stroke()};
+  const addHit=(b,i,type,id)=>{const pt=b.parts[i];HIT.push({type,id,x:pt.x0-4,y:b.y0-6,w:pt.w+8,h:b.hh+12})};
+  pos.forEach(p=>{
+    const live=p.side==='B'?bid():ask(),pl=plAt(p,live),col=pl>=0?TH.up:TH.dn,ye=y(p.entry);
+    hline(ye,col);
+    const b=pbox(g,hx-14,ye,[{t:p.lots.toFixed(2),bg:col,fg:'#fff'},{t:fmU(pl),bg:dark,fg:col},{t:'✕',bg:dark,fg:'#fff'}],col);
+    addHit(b,2,'close',p.id);
+    axTag(g,R,ye,px(p.entry),col);
+    // SL / TP lines
+    [['sl',TH.dn,'SL'],['tp',TH.up,'TP']].forEach(([k,c,nm])=>{
+      const v=p[k];if(v==null)return;const yy=y(v);
+      hline(yy,c,[]);
+      const bb=pbox(g,hx-14,yy,[{t:nm,bg:c,fg:'#fff'},{t:fmU(plAt(p,v)),bg:dark,fg:c},{t:'✕',bg:dark,fg:'#fff'}],c);
+      addHit(bb,2,'clr_'+k,p.id);
+      axTag(g,R,yy,px(v),c);
+      g.strokeStyle='rgba(255,255,255,.55)';g.lineWidth=1.2;g.beginPath();g.moveTo(hx,ye);g.lineTo(hx,yy);g.stroke();
+      dot(hx,yy,c,true);HIT.push({type:'drag_'+k,id:p.id,x:hx-18,y:yy-18,w:36,h:36});
+    });
+    // naya SL/TP lagane ka handle (entry par)
+    dot(hx,ye,col,false);HIT.push({type:'drag_new',id:p.id,x:hx-18,y:ye-18,w:36,h:36});
+  });
+  // drag ke dauran ghost line + projected P&L
+  if(pdrag){
+    const p=pos.find(x=>x.id===pdrag.id);
+    if(p){
+      const yy=Math.max(4,Math.min(H-4,y(pdrag.p))),ye=y(p.entry),buy=p.side==='B';
+      const kind=pdrag.kind==='new'?((pdrag.p>p.entry)===buy?'tp':'sl'):pdrag.kind;
+      const good=kind==='tp'?(buy?pdrag.p>p.entry:pdrag.p<p.entry):(buy?pdrag.p<p.entry:pdrag.p>p.entry);
+      const c=kind==='tp'?TH.up:TH.dn,v=pdrag.p;
+      hline(yy,c,[4,3]);
+      g.strokeStyle='rgba(255,255,255,.6)';g.lineWidth=1.2;g.beginPath();g.moveTo(hx,ye);g.lineTo(hx,yy);g.stroke();
+      dot(hx,yy,c,true);
+      pbox(g,hx-14,yy,[{t:kind.toUpperCase(),bg:good?c:'#666',fg:'#fff'},{t:good?fmU(plAt(p,v)):'galat side',bg:dark,fg:good?c:'#bbb'}],good?c:'#666');
+      axTag(g,R,yy,px(v),good?c:'#666');
+    }
+  }
+  g.restore();
+}
+function posHit(e){
+  const c=cpos(e);for(let i=HIT.length-1;i>=0;i--){const h=HIT[i];if(c.x>=h.x&&c.x<=h.x+h.w&&c.y>=h.y&&c.y<=h.y+h.h)return h}return null;
+}
+function posDown(e){
+  if(typeof tool!=='undefined'&&tool)return false;
+  const h=posHit(e);if(!h)return false;
+  const p=pos.find(x=>x.id===h.id);if(!p)return false;
+  if(h.type==='close'){closePos(p,p.side==='B'?bid():ask(),'Manual');posSig='';render();return true}
+  if(h.type==='clr_sl'||h.type==='clr_tp'){p[h.type.slice(4)]=null;posSig='';drawChart();return true}
+  if(h.type.startsWith('drag_')){
+    pdrag={id:p.id,kind:h.type.slice(5),pid:e.pointerId,p:toData(cpos(e)).p};
+    try{$('ch').setPointerCapture(e.pointerId)}catch(_){}
+    drawChart();return true;
+  }
+  return false;
+}
+function posMove(e){
+  if(!pdrag||e.pointerId!==pdrag.pid)return false;
+  pdrag.p=toData(cpos(e)).p;drawChart();return true;
+}
+function posUp(e){
+  if(!pdrag||e.pointerId!==pdrag.pid)return false;
+  const d=pdrag;pdrag=null;
+  const p=pos.find(x=>x.id===d.id);
+  if(p){
+    const buy=p.side==='B',v=+d.p.toFixed(S.dp);
+    const kind=d.kind==='new'?((v>p.entry)===buy?'tp':'sl'):d.kind;
+    const ref=buy?bid():ask();
+    const bad=buy?(kind==='sl'?v>=ref:v<=ref):(kind==='sl'?v<=ref:v>=ref);
+    if(bad)toast((kind==='sl'?'Stop Loss':'Take Profit')+' galat side par hai. '+(buy?'BUY':'SELL')+' mein '+(kind==='sl'?(buy?'neeche':'upar'):(buy?'upar':'neeche'))+' lagao.');
+    else{p[kind]=v;posSig=''}
+  }
+  drawChart();return true;
+}
 </script>
 <script>
 /* ===== REAL market feed (Binance + Kraken, public APIs, bina key) =====
