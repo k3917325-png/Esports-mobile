@@ -324,7 +324,7 @@ h4{color:#e8e3ff;font-size:16px;font-weight:800;padding:14px 16px 6px}
 <div id="app">
   <div class="bar">
     <button class="ghost on" id="symBtn">GOLD</button>
-    <button class="ghost" id="tfBtn">1m ▾</button>
+    <button class="ghost" id="tfBtn">5m ▾</button>
     <button class="ghost" id="toolBtn">✏ Tools</button>
     <button class="ghost" id="exitBtn" style="color:#f23645;border-color:#f23645">⏻ Exit</button>
     <span class="sp"></span>
@@ -339,9 +339,8 @@ h4{color:#e8e3ff;font-size:16px;font-weight:800;padding:14px 16px 6px}
   </div>
 
   <div id="tabs">
-    <button class="ghost on" data-tf="60000">1m</button>
     <button class="ghost" data-tf="180000">3m</button>
-    <button class="ghost" data-tf="300000">5m</button>
+    <button class="ghost on" data-tf="300000">5m</button>
     <button class="ghost" data-tf="900000">15m</button>
     <button class="ghost" data-tf="3600000">1h</button>
     <button class="ghost" data-tf="10800000">3h</button>
@@ -506,7 +505,7 @@ Object.values(CFG).forEach(c=>{c.p=c.mid;c.open=c.mid-c.chg});
 const GROUP={crypto:['BTC','ETH','SOL','XRP','DOGE','BNB','TRX'],fx:['XAU','EUR']};
 let wlGroup='crypto';
 let S=CFG.XAU,sym='XAU',mid=S.mid,bal=10000,pos=[],idn=1,closed=[];
-let tf=60000,candles=[],view='sim',posSig='',off=0,visN=60,yScale=1,yShift=0;
+let tf=300000,candles=[],view='sim',posSig='',off=0,visN=60,yScale=1,yShift=0;
 const $=id=>document.getElementById(id);
 const f2=n=>n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 const money=n=>(n<0?'-$':'$')+f2(Math.abs(n));
@@ -768,12 +767,14 @@ const lumOf=h=>{const[r,g,b]=hexRGB(h);return(0.299*r+0.587*g+0.114*b)/255};
 const mixHex=(h,t,k)=>{const A=hexRGB(h),B=hexRGB(t);return '#'+A.map((v,i)=>Math.round(v+(B[i]-v)*k).toString(16).padStart(2,'0')).join('')};
 const axText=()=>lumOf(TH.bg)>.55?'#4a5068':'#9aa3c7';
 const axBand=()=>lumOf(TH.bg)>.55?mixHex(TH.bg,'#000000',.06):mixHex(TH.bg,'#000000',.25);
-function drawChart(){
+let _raf=0;
+function drawChart(){if(_raf)return;_raf=requestAnimationFrame(()=>{_raf=0;drawChartNow()})}   // ek frame mein ek hi baar draw (smooth)
+function drawChartNow(){
   if(view!=='sim'||!candles.length)return;
   const cv=$('ch'),dpr=window.devicePixelRatio||1,w=cv.clientWidth,h=cv.clientHeight;
   if(!w||!h)return;
-  cv.width=w*dpr;cv.height=h*dpr;
-  const g=cv.getContext('2d');g.scale(dpr,dpr);
+  if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(h*dpr)){cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr)}
+  const g=cv.getContext('2d');g.setTransform(dpr,0,0,dpr,0,0);
   g.fillStyle=TH.bg;g.fillRect(0,0,w,h);
   const AXC=axText();
   const len=candles.length;
@@ -1150,7 +1151,7 @@ async function loadLB(){
   const M=$('lbMore'),c=lbCacheGet();
   if(!fbOn()){M.textContent='Koi real user nahi (Firebase setup chahiye)';return}
   if(c&&c.rows)lbShow(c.rows,c.total);                    // pehle saved list turant dikhao
-  if(c&&Date.now()-c.t<60000)return;                       // 60 sec tak naya database read nahi
+  if(c&&Date.now()-c.t<300000)return;                      // 5 minute tak naya database read nahi (kharcha bachao)
   if(!navigator.onLine){M.textContent=c?'Offline: purani list dikh rahi hai':'Offline hai, leaderboard abhi nahi khul sakta';return}
   if(!fbReady()){
     if(!c)M.textContent='Connect ho raha hai…';
@@ -1160,8 +1161,9 @@ async function loadLB(){
   if(!c)M.textContent='Load ho raha hai…';
   try{
     const rows=(await FB.top(100)).filter(u=>!u.banned).map(u=>({id:u.id,name:u.name,pnl:u.pnl,trades:u.trades,wins:u.wins}));
-    let total=rows.length;try{total=await FB.total()}catch(_){}
-    try{localStorage.setItem(LBC,JSON.stringify({t:Date.now(),rows,total}))}catch(_){}
+    let total=(c&&c.total)||rows.length;
+    if(!c||!c.tt||Date.now()-c.tt>1800000){try{total=await FB.total();var tt=Date.now()}catch(_){}}else var tt=c.tt;
+    try{localStorage.setItem(LBC,JSON.stringify({t:Date.now(),rows,total,tt:tt||0}))}catch(_){}
     lbTry=0;lbShow(rows,total);updLB();
   }catch(e){
     if($('lbMore'))$('lbMore').textContent=c?'Network problem: purani list dikh rahi hai':'Network problem, thodi der baad try karo';
@@ -1173,7 +1175,7 @@ function updLB(){
   if(!fbOn()||!fbReady()||!FB.user){el.style.display='none';return}
   el.style.display='flex';
   const pnl=tradePnl(),col=pnl>=0?'pos':'neg',name=FB.user.displayName||'You';
-  if(Date.now()-rkAt>120000&&navigator.onLine){rkAt=Date.now();FB.rank(pnl).then(r=>{myRk=r}).catch(()=>{})}
+  if(Date.now()-rkAt>600000&&navigator.onLine){rkAt=Date.now();FB.rank(pnl).then(r=>{myRk=r}).catch(()=>{})}
   el.innerHTML=`<div class="lrk">#${myRk||'–'}</div><div class="lav" style="background:#2962ff">${esc(name[0]||'Y')}</div><div class="ln"><b>${esc(name)} (You)</b><span>${lbTotal?lbTotal.toLocaleString('en-US')+' mein se • ':''}${acct.trades} trades</span></div><div class="lp"><b class="${col}">${sgn(Math.round(pnl))}</b><span class="${col}">${pnl>=0?'+':''}${(pnl/100).toFixed(1)}%</span></div>`;
 }
 const isIn=()=>!!(window.FB&&FB.user);
@@ -1191,7 +1193,7 @@ function profileHTML(){
   if(!isIn())return `<div class="lbcard"><b>👤 Profile</b><p>Profile dekhne ke liye pehle login karo.</p>${loginForm()}</div>`;
   const u=FB.user,nm=u.displayName||'Trader',pnl=tradePnl(),col=pnl>=0?'pos':'neg',w=acct.trades?Math.round(acct.wins/acct.trades*100):0;
   const since=acct.joined?acct.joined.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}):'-';
-  if(Date.now()-rkAt>120000&&navigator.onLine){rkAt=Date.now();FB.rank(pnl).then(r=>{myRk=r;if(homeTab==='menu')renderHome()}).catch(()=>{})}
+  if(Date.now()-rkAt>600000&&navigator.onLine){rkAt=Date.now();FB.rank(pnl).then(r=>{myRk=r;if(homeTab==='menu')renderHome()}).catch(()=>{})}
   return `<div class="prof"><div class="pav">${esc(nm[0]||'T')}</div><b class="pnm">${esc(nm)}</b><span class="pem">${esc(u.email||'')}</span><span class="pem">Member since ${since}</span><span class="pem" id="syncSt">${syncText()}</span></div>
   <div class="pst"><div><span>Balance</span><b>${money(bal)}</b></div><div><span>Realized P&amp;L</span><b class="${col}">${sgn(Math.round(pnl))}</b></div><div><span>Rank</span><b>${myRk?'#'+myRk:'–'}</b></div><div><span>Trades</span><b>${acct.trades}</b></div><div><span>Win rate</span><b>${w}%</b></div><div><span>Wins</span><b>${acct.wins}</b></div></div>
   <button class="mi" onclick="editName()">✏️ Username badlo</button><button class="mi" onclick="doLogout()">🚪 Logout</button><button class="mi" style="color:#ff8a9a" onclick="delAcct()">🗑 Account delete karo</button>`;
@@ -1379,7 +1381,7 @@ probeNet();
 
 seedCandles();
 setInterval(()=>{
-  if(!netOk)return;                              // net nahi to prices bhi ruk jayein
+  if(document.hidden||!netOk)return;             // app chhupa ho ya net nahi: kuch mat karo (battery + data bachao)
   if(window.FEED_SIM)mid+=rnd()*S.vol+(Math.random()<.02?rnd()*S.vol*5:0);
   updCandle();if(window.FEED_SIM||isLive(sym))checkHits();render();
   if(window.FEED_SIM)Object.keys(CFG).forEach(k=>{const c=CFG[k];if(k===sym)c.p=mid;else c.p+=rnd()*c.vol*0.8});
@@ -1607,23 +1609,67 @@ async function resync(){
     });
   }catch(_){}
 }
-/* price poller: chart khula ho to sirf current symbol (1 sec), warna sab (4 sec) */
+/* ===== Live price hub: WebSocket (har user ke paas 3 chhote connection), REST sirf backup ===== */
+function setPx(k,p){
+  if(!(p>0))return;const f=FS[k];f.px=p;f.ts=Date.now();f.fail=0;CFG[k].p=p;
+  if(f.state==='wait'&&k!==sym)f.state='live';
+  if(k===sym&&f.state==='live')mid=p;
+}
+const krWs=pair=>{let a=pair.slice(0,3),b=pair.slice(3);if(a==='XBT')a='BTC';return a+'/'+b};
+const HUB={bnS:{c:null,key:'',n:0,t:0},bnF:{c:null,key:'',n:0,t:0},kr:{c:null,key:'',n:0,t:0}};
+function hubClose(pn){const h=HUB[pn];if(h.c){try{h.c.onclose=null;h.c.close()}catch(_){}h.c=null}clearTimeout(h.t);h.key=''}
+function hubSync(){
+  if(FEED_SIM||typeof WebSocket==='undefined')return;
+  if(document.hidden||!netOk){Object.keys(HUB).forEach(hubClose);return}
+  const want={bnS:new Map(),bnF:new Map(),kr:new Map()};
+  Object.keys(SRC).forEach(k=>{
+    const s=curSrc(k);if(!s||FS[k].state==='down')return;
+    const m=want[s[0]],id=s[0]==='kr'?krWs(s[1]):s[1].toLowerCase();
+    if(!m.has(id))m.set(id,[]);m.get(id).push(k);
+  });
+  Object.keys(want).forEach(pn=>{
+    const m=want[pn],h=HUB[pn],key=[...m.keys()].sort().join(',');
+    if(!m.size){hubClose(pn);return}
+    if(h.c&&h.key===key&&h.c.readyState<=1)return;
+    hubClose(pn);h.key=key;
+    try{
+      let ws;
+      if(pn==='kr'){
+        ws=new WebSocket('wss://ws.kraken.com/v2');
+        ws.onopen=()=>{h.n=0;ws.send(JSON.stringify({method:'subscribe',params:{channel:'ticker',symbol:[...m.keys()]}}))};
+        ws.onmessage=e=>{try{
+          const j=JSON.parse(e.data);if(j.channel!=='ticker'||!j.data)return;
+          j.data.forEach(d=>{const ks=m.get(d.symbol);if(!ks)return;const b=+d.bid,a=+d.ask,p=(b>0&&a>0)?(a+b)/2:+d.last;ks.forEach(k=>setPx(k,p))});
+        }catch(_){}};
+      }else{
+        const base=pn==='bnF'?'wss://fstream.binance.com':'wss://stream.binance.com:9443';
+        ws=new WebSocket(base+'/stream?streams='+[...m.keys()].map(x=>x+'@bookTicker').join('/'));
+        ws.onopen=()=>{h.n=0};
+        ws.onmessage=e=>{try{
+          const d=JSON.parse(e.data).data;if(!d)return;const ks=m.get(String(d.s).toLowerCase());if(!ks)return;
+          const b=+d.b,a=+d.a;ks.forEach(k=>setPx(k,(a+b)/2));
+        }catch(_){}};
+      }
+      ws.onclose=()=>{if(h.c!==ws)return;h.c=null;h.key='';const d=Math.min(60000,2000*Math.pow(2,h.n++));h.t=setTimeout(hubSync,d)};
+      ws.onerror=()=>{try{ws.close()}catch(_){}};
+      h.c=ws;
+    }catch(_){}
+  });
+}
+document.addEventListener('visibilitychange',()=>{hubSync();if(!document.hidden&&view==='sim'&&document.body.className==='chart')resync()});
+window.addEventListener('online',hubSync);
+/* REST backup: sirf us symbol ke liye jiska WebSocket price (5 sec se zyada) nahi aaya */
 async function pollOne(k){
   if(!SRC[k])return;
-  try{
-    const p=await fetchPrice(k);
-    const f=FS[k];f.px=p;f.fail=0;
-    CFG[k].p=p;
-    if(f.state==='wait'&&k!==sym)f.state='live';
-    if(k===sym&&f.state==='live')mid=p;
-  }catch(e){srcFail(k)}
+  try{setPx(k,await fetchPrice(k))}catch(e){srcFail(k)}
 }
 let pollN=0;
 setInterval(()=>{
-  if(FEED_SIM||!netOk)return;
-  pollN++;
-  if(document.body.className==='chart'){if(!(curSrc(sym)&&curSrc(sym)[0]==='kr'&&pollN%2))pollOne(sym);if(pollN%30===0)resync()}
-  else if(pollN%4===0)Object.keys(SRC).forEach(pollOne);
+  if(FEED_SIM||!netOk||document.hidden)return;
+  pollN++;hubSync();
+  const stale=k=>!FS[k].ts||Date.now()-FS[k].ts>5000;
+  if(document.body.className==='chart'){if(stale(sym)&&pollN%3===0)pollOne(sym);if(pollN%30===0)resync()}
+  else if(pollN%15===0)Object.keys(SRC).forEach(k=>{if(stale(k))pollOne(k)});
 },1000);
 /* din ka open (change % ke liye) */
 async function loadOpens(){
@@ -1634,8 +1680,10 @@ async function loadOpens(){
 }
 loadOpens();setInterval(loadOpens,600000);
 /* chart header: LIVE tag + trading guard */
+let _fsig='';
 function feedUI(){
   const k=sym,ok=isLive(k),st=FS[k]?FS[k].state:'down',s=curSrc(k),approx=s&&s[2];
+  const sig=[k,ok,st,approx,view,document.body.className].join();if(sig===_fsig)return;_fsig=sig;
   $('symBtn').innerHTML=S.code+(FEED_SIM?'':(ok?' <span style="color:#22e08a;font-size:10px">●'+(approx?'≈':'')+'</span>':' <span style="color:#ff4d6a;font-size:10px">○</span>'));
   $('buyBtn').disabled=$('sellBtn').disabled=!ok;
   const m=$('feedMsg');if(m){m.style.display=(!ok&&document.body.className==='chart'&&view==='sim')?'flex':'none';m.textContent=st==='down'?'📡 Live price nahi mil raha. Dobara koshish ho rahi hai…':'⏳ Live chart load ho raha hai…'}
@@ -1730,7 +1778,7 @@ function menuHTML(){
   const nm=userName(),pnl=tradePnl(),fl=float();
   const head=`<div class="heroP"><div class="cw">${isIn()?'<div class="cr">👑</div>':''}<div class="av ${isIn()?'king':''}">${initial(nm)}</div></div><b>${esc(nm)}</b>${isIn()?`<span>${esc(FB.user.email||'')}</span>`:''}<span class="mbadge">Member since - ${sinceTxt()}</span></div>`;
   if(!isIn()&&fbOn())return head+`<div class="gl"><b>Login / Sign up</b>${loginForm()}</div>`;
-  if(isIn()&&Date.now()-rkAt>120000&&navigator.onLine){rkAt=Date.now();FB.rank(tradePnl()).then(r=>{myRk=r;if(homeTab==='menu')renderHome()}).catch(()=>{})}
+  if(isIn()&&Date.now()-rkAt>600000&&navigator.onLine){rkAt=Date.now();FB.rank(tradePnl()).then(r=>{myRk=r;if(homeTab==='menu')renderHome()}).catch(()=>{})}
   return head+`<div class="row2"><div class="gl gr"><span class="mt">Balance</span><div class="mid">${money(bal)}</div></div><div class="gl pk"><span class="mt">Realized P&amp;L</span><div class="mid ${cls(pnl)}">${sgn(Math.round(pnl))}</div></div></div>
   <div class="row3"><div class="gl bl"><span class="mt">Rank</span><div class="mid">${myRk?'#'+myRk:'–'}</div></div><div class="gl pk"><span class="mt">Win rate</span><div class="mid">${winRate()}%</div></div><div class="gl gr"><span class="mt">Trades</span><div class="mid">${acct.trades}</div></div></div>
   ${isIn()?`<button class="mi" onclick="editName()">✏️ Username Edit<span class="ch">›</span></button><button class="mi or" onclick="doLogout()">🚪 Logout<span class="ch">›</span></button><button class="mi pk" onclick="delAcct()">🗑 Account Delete<span class="ch">›</span></button>`:''}
@@ -1760,7 +1808,7 @@ function updLB(){
   if(!fbOn()||!fbReady()||!FB.user){el.style.display='none';return}
   el.style.display='flex';
   const pnl=tradePnl(),col=pnl>=0?'pos':'neg';
-  if(Date.now()-rkAt>120000&&navigator.onLine){rkAt=Date.now();FB.rank(pnl).then(r=>{myRk=r}).catch(()=>{})}
+  if(Date.now()-rkAt>600000&&navigator.onLine){rkAt=Date.now();FB.rank(pnl).then(r=>{myRk=r}).catch(()=>{})}
   el.innerHTML=`<div class="me2"><span>🏆 Your Rank: ${myRk?'#'+myRk:'–'}<br><small>${lbTotal?lbTotal.toLocaleString('en-US')+' mein se • ':''}${acct.trades} trades</small></span><b class="${col}">${sgn(Math.round(pnl))}</b></div>`;
 }
 function renderHome(){
