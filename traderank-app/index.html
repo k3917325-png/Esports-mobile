@@ -316,7 +316,7 @@ h4{color:#e8e3ff;font-size:16px;font-weight:800;padding:14px 16px 6px}
 .cpre i{display:inline-block;width:10px;height:14px;border-radius:2px}
 
 #adTop{display:none;height:50px;flex:none;align-items:center;justify-content:center;background:#0a0720;color:#6f68a8;font-size:12px;border-bottom:1px solid rgba(130,100,255,.25);letter-spacing:.3px}
-#feedMsg{display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:8;background:rgba(10,12,24,.92);border:1px solid #2d3340;border-radius:12px;padding:14px 18px;color:#e6e9f5;font-size:13px;text-align:center;max-width:80%;align-items:center;justify-content:center}
+#feedMsg{display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:8;background:rgba(10,12,24,.92);border:1px solid #2d3340;border-radius:12px;padding:14px 18px;color:#e6e9f5;font-size:13px;text-align:center;max-width:80%;align-items:center;justify-content:center;white-space:pre-line}
 .t:disabled{opacity:.35}
 </style>
 </head>
@@ -1586,6 +1586,7 @@ async function loadReal(){
     render();
   }catch(e){
     if(tok!==loadTok)return;
+    const c0=curSrc(k);FS[k].err=(c0?c0[1]+': ':'')+(e&&e.name==='AbortError'?'timeout':(e&&e.message)||'error');
     srcFail(k);
     if(FS[k].state==='down'){render();setTimeout(()=>{if(k===sym&&view==='sim'&&FS[k].state==='down'){FS[k].state='wait';FS[k].i=0;seedCandles()}},8000)}
     else setTimeout(()=>{if(tok===loadTok&&k===sym&&view==='sim')loadReal()},1500);
@@ -1701,7 +1702,7 @@ function feedUI(){
   const sig=[k,ok,st,approx,view,document.body.className].join();if(sig===_fsig)return;_fsig=sig;
   $('symBtn').innerHTML=S.code+(FEED_SIM?'':(ok?' <span style="color:#22e08a;font-size:10px">●'+(approx?'≈':'')+'</span>':' <span style="color:#ff4d6a;font-size:10px">○</span>'));
   $('buyBtn').disabled=$('sellBtn').disabled=!ok;
-  const m=$('feedMsg');if(m){m.style.display=(!ok&&document.body.className==='chart'&&view==='sim')?'flex':'none';m.textContent=st==='down'?'📡 Live price nahi mil raha. Dobara koshish ho rahi hai…':'⏳ Live chart load ho raha hai…'}
+  const m=$('feedMsg');if(m){m.style.display=(!ok&&document.body.className==='chart'&&view==='sim')?'flex':'none';m.textContent=st==='down'?'📡 Live price nahi mil raha. Dobara koshish ho rahi hai…'+(FS[sym]&&FS[sym].err?'\n('+FS[sym].err+')':''):'⏳ Live chart load ho raha hai…'}
 }
 setInterval(feedUI,500);
 const _openPos=openPos;
