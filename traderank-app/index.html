@@ -812,9 +812,11 @@ function drawShape(g,d,w){
       g.fillStyle='#fff';g.textAlign='center';lines.forEach((t,i)=>g.fillText(t,x+tw/2,yy+14+i*14));g.textAlign='left';
     };
     const cx=G.x0+G.ww/2;
+    if(sel===d){
     bub(cx,G.yt+(G.yt<A.y?-26:6),['Target: '+px(Math.abs(dT))+' ('+pc(dT)+'%)  Amount: '+amt(dT)],cu);
     bub(cx,G.ys+(G.ys>A.y?6:-26),['Stop: '+px(Math.abs(dS))+' ('+pc(dS)+'%)  Amount: '+amt(dS)],cd);
     bub(cx,A.y-43,['Open PnL: '+money(open)+', Qty: '+L.toFixed(2),'Risk/reward ratio: '+rr.toFixed(2)],open>=0?cu:cd);
+    }
     g.fillStyle=CC;
   }
   else if(d.type==='elliott'){
@@ -839,7 +841,7 @@ function drawShape(g,d,w){
 }
 function showHint(k){
   const h=$('toolHint');if(!k){h.style.display='none';return}
-  h.textContent=TNAME[k]+(k==='elliott'?': 6 point (0-5) ek ek karke tap karo'+(multi?' ('+multi.pts.length+'/6)':''):': ungli kheencho')+'   ✕ '+(k==='elliott'?'done/cancel':'cancel');h.style.display='block';
+  h.textContent=TNAME[k]+(k==='elliott'?': 6 point (0-5) ek ek karke tap karo'+(multi?' ('+multi.pts.length+'/6)':''):(k==='long'||k==='short')?': chart par ek tap karo (ya kheencho)':': ungli kheencho')+'   ✕ '+(k==='elliott'?'done/cancel':'cancel');h.style.display='block';
 }
 function endTool(){tool=null;drawing=null;multi=null;showHint(null)}
 function renderTools(){
@@ -939,6 +941,7 @@ function drawChartNow(){
     [[up,'#6aa7ff'],[lo,'#6aa7ff'],[mi,'#4a5aa0']].forEach(([arr,col])=>{g.beginPath();arr.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]));g.strokeStyle=col;g.lineWidth=1.1;g.stroke()});
   }
   ((DR[dkey()]||[]).concat(drawing?[drawing]:[]).concat(multi&&multi.pts.length?[multi]:[])).forEach(d=>drawShape(g,d,w));
+  (DR[dkey()]||[]).forEach(d=>{if(d.type==='long'||d.type==='short'){const R=w-AXW;[[d.tp,d.cu||TH.up],[d.sl,d.cd||TH.dn]].forEach(([v,c])=>{const yy=toXY({x:d.a.x,p:v}).y;if(yy>4&&yy<VW.H-4)axTag(g,R,yy,px(v),c)})}});
   drawHandles(g);
   g.font='10px system-ui';
   const line=(v,col,txt)=>{
@@ -1031,7 +1034,9 @@ $('ch').addEventListener('pointermove',e=>{
   }
   if(drawing&&e.pointerId===drawing.pid){
     const A=toXY(drawing.a),B=toXY(drawing.b);
+    const isP=drawing.type==='long'||drawing.type==='short';
     if(Math.hypot(A.x-B.x,A.y-B.y)>8){const d=drawing;delete d.pid;addDrawing(d)}
+    else if(isP){const d=drawing;delete d.pid;const up=toData({x:A.x,y:A.y-VW.H*0.16});d.b={x:d.a.x+Math.max(8,Math.round(visN*0.18)),p:up.p};fixPos(d);addDrawing(d)}
     endTool();drawChart();return;
   }
   pts.delete(e.pointerId);g0=null;
