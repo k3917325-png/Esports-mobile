@@ -1429,6 +1429,17 @@ function drawPositions(g,w,y){
     });
     // naya SL/TP lagane ka handle (entry par)
     dot(hx,ye,col,false);HIT.push({type:'drag_new',id:p.id,x:hx-18,y:ye-18,w:36,h:36});
+    // handle ke paas TP / SL ka naam (jo abhi set nahi hai), taaki user ko pata chale kis taraf kheenchna hai
+    const buy=p.side==='B';
+    [['tp',buy?-30:30],['sl',buy?30:-30]].forEach(([k,dy])=>{
+      if(p[k]!=null)return;const yy=ye+dy;if(yy<10||yy>H-10)return;
+      const c=k==='tp'?TH.up:TH.dn,txt=k.toUpperCase()+(dy<0?'  ▲':'  ▼');
+      g.font='bold 11px system-ui';const tw=Math.ceil(g.measureText(txt).width)+14,tx=hx-12-tw;
+      g.fillStyle=rgba(c,.28);g.fillRect(tx,yy-9,tw,18);g.strokeStyle=c;g.lineWidth=1;g.strokeRect(tx+.5,yy-8.5,tw-1,17);
+      g.fillStyle='#fff';g.textAlign='left';g.fillText(txt,tx+7,yy+4);
+      g.strokeStyle=rgba(c,.6);g.setLineDash([3,3]);g.beginPath();g.moveTo(hx,ye);g.lineTo(hx,yy);g.stroke();g.setLineDash([]);
+      HIT.push({type:'drag_new',id:p.id,x:tx-4,y:yy-14,w:tw+8,h:28});
+    });
   });
   // drag ke dauran ghost line + projected P&L
   if(pdrag){
