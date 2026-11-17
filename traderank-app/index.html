@@ -175,8 +175,19 @@ h4{padding:12px 16px 6px;color:#999;font-size:13px;font-weight:600}
 .pr{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #1d1d1d}
 .pr span{display:block;color:#999;font-size:12px}
 .mi{display:block;width:calc(100% - 32px);margin:10px 16px 0;text-align:left;padding:16px;border-radius:12px;background:#161616;border:0;color:#fff;font-size:15px}
-#tools{display:none;position:absolute;top:44px;left:6px;z-index:26;width:min(470px,94%);max-height:calc(100% - 52px);overflow-y:auto;background:#1c1f26;border:1px solid #2d3340;border-radius:14px;padding:10px;box-shadow:0 8px 24px rgba(0,0,0,.6)}
-#tools.open{display:block}
+#tools{display:none;position:absolute;top:44px;left:6px;z-index:26;width:min(520px,96%);max-height:calc(100% - 52px);flex-direction:column;background:#1c1f26;border:1px solid #2d3340;border-radius:14px;padding:10px;box-shadow:0 8px 24px rgba(0,0,0,.6)}
+#tools.open{display:flex}
+#tools .th,#tools .tt,#tools .tf{flex:none}
+#tools .tg{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#tools .tt button{white-space:nowrap;flex:none;padding:7px 12px;font-size:13px}
+#tools .tf{display:flex;gap:8px;margin-top:8px}
+#tools .tf button{flex:1}
+#dtb{display:none;position:absolute;top:6px;left:50%;transform:translateX(-50%);z-index:27;background:#1c1f26;border:1px solid #2d3340;border-radius:12px;padding:5px 8px;gap:8px;align-items:center;box-shadow:0 6px 18px rgba(0,0,0,.6);font-size:11px;color:#9aa3c7;white-space:nowrap}
+#dtb.on{display:flex}
+#dtb .sw{width:26px;height:26px}
+#dtb b{color:#e6e9f5;font-size:12px}
+#dtb button{background:#262a33;border:1px solid #2d3340;color:#e6e9f5;border-radius:8px;padding:4px 9px;font-size:13px}
+#dtb label.cl{display:flex;flex-direction:column;align-items:center;gap:1px;font-size:9px}
 .tsec{grid-column:1/-1;font-size:11px;letter-spacing:.5px;color:#8a93b8;margin:6px 0 0}
 .swr{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;margin:4px 0}
 .sw{width:30px;height:30px;border-radius:50%;border:2px solid #2d3340;cursor:pointer;position:relative;overflow:hidden;display:inline-block}
@@ -396,12 +407,12 @@ h4{color:#e8e3ff;font-size:16px;font-weight:800;padding:14px 16px 6px}
       <button class="ghost on" data-t="fav">Favorites</button>
       <button class="ghost" data-t="tools">Tools</button>
       <button class="ghost" data-t="trend">Trend tools</button>
-      <button class="ghost" data-t="fib">Gann and Fibonacci</button>
-      <button class="ghost" data-t="ind">Indicators</button>
+      <button class="ghost" data-t="fib">Gann &amp; Fibonacci</button>
     </div>
     <div class="tg" id="toolGrid"></div>
     <div class="tf"><button class="ghost" id="dUndo">↶ Undo</button><button class="ghost" id="dClear">🗑 Sab hatao</button></div>
   </div>
+  <div id="dtb"></div>
   <div id="toolHint"></div>
 
   <div id="wl">
@@ -713,13 +724,62 @@ const TOOLS={
 };
 TOOLS.trend.push(['long',TOOLS.fav[5][1],'Long position','FORECASTING AND MEASUREMENT'],['short',TOOLS.fav[6][1],'Short position','FORECASTING AND MEASUREMENT']);
 const TNAME={};Object.values(TOOLS).flat().forEach(t=>TNAME[t[0]]=t[2].replace(/ \(.*/,''));
-const DR={};let tool=null,drawing=null,multi=null,toolTab='fav';
+const DR={};let tool=null,drawing=null,multi=null,sel=null,hdrag=null,tapSt=null,toolTab='fav';
 const DCOLS=['#f5b53d','#1fb97a','#e5384f','#2fc4c4','#6aa7ff','#c77dff','#ffffff','#ff8a3d'];
 let dcol=(()=>{try{return localStorage.getItem('ts_dcol')||'#f5b53d'}catch(_){return '#f5b53d'}})();
 const dkey=()=>sym+'_'+tf;
-const addDrawing=d=>{d.col=d.col||dcol;(DR[dkey()]=DR[dkey()]||[]).push(d)};
+const addDrawing=d=>{d.col=d.col||dcol;(DR[dkey()]=DR[dkey()]||[]).push(d);sel=d;updDtb()};
 function toXY(pt){const i=pt.x-VW.base;return{x:(i-VW.left)*VW.cw+VW.cw/2,y:VW.H-(pt.p-VW.mn)/(VW.mx-VW.mn)*VW.H}}
 function toData(c){return{x:VW.base+VW.left+(c.x-VW.cw/2)/VW.cw,p:VW.mn+(VW.H-c.y)/VW.H*(VW.mx-VW.mn)}}
+function posGeo(d){
+  const A=toXY(d.a),W=Math.max(30,toXY({x:d.b.x,p:d.a.p}).x-A.x);
+  return{x0:A.x,ww:W,yt:toXY({x:d.a.x,p:d.tp}).y,ys:toXY({x:d.a.x,p:d.sl}).y};
+}
+function fixPos(d){if(d.type!=='long'&&d.type!=='short')return;const dp=Math.abs(d.b.p-d.a.p),lg=d.type==='long';d.tp=lg?d.a.p+dp:d.a.p-dp;d.sl=lg?d.a.p-dp:d.a.p+dp}
+function handlesOf(d){
+  const A=toXY(d.a),B=toXY(d.b);
+  if(d.type==='long'||d.type==='short'){const G=posGeo(d);return[{k:'tp',x:G.x0,y:G.yt},{k:'sl',x:G.x0,y:G.ys},{k:'w',x:G.x0+G.ww,y:A.y},{k:'mv',x:G.x0,y:A.y,round:1}]}
+  if(d.type==='elliott')return(d.pts||[]).map((q,i)=>{const P=toXY(q);return{k:'p'+i,x:P.x,y:P.y,round:1}});
+  if(d.type==='hray')return[{k:'a',x:A.x,y:A.y,round:1}];
+  return[{k:'a',x:A.x,y:A.y,round:1},{k:'b',x:B.x,y:B.y,round:1}];
+}
+function segD(px,py,x1,y1,x2,y2){const dx=x2-x1,dy=y2-y1,l=dx*dx+dy*dy;let t=l?((px-x1)*dx+(py-y1)*dy)/l:0;t=Math.max(0,Math.min(1,t));return Math.hypot(px-x1-t*dx,py-y1-t*dy)}
+function hitDraw(d,x,y){
+  const A=toXY(d.a),B=toXY(d.b),T=16;
+  if(d.type==='trend')return segD(x,y,A.x,A.y,B.x,B.y)<=T;
+  if(d.type==='hray')return Math.abs(y-A.y)<=T&&x>=A.x-T;
+  if(d.type==='rect')return x>=Math.min(A.x,B.x)-T&&x<=Math.max(A.x,B.x)+T&&y>=Math.min(A.y,B.y)-T&&y<=Math.max(A.y,B.y)+T;
+  if(d.type==='fib'){const y2=toXY({x:d.a.x,p:d.b.p}).y;return x>=Math.min(A.x,B.x)-T&&y>=Math.min(A.y,y2)-T&&y<=Math.max(A.y,y2)+T}
+  if(d.type==='elliott'){const P=(d.pts||[]).map(toXY);for(let i=0;i<P.length;i++){if(Math.hypot(x-P[i].x,y-P[i].y)<=T)return true;if(i&&segD(x,y,P[i-1].x,P[i-1].y,P[i].x,P[i].y)<=T)return true}return false}
+  if(d.type==='long'||d.type==='short'){const G=posGeo(d);return x>=G.x0-T&&x<=G.x0+G.ww+T&&y>=Math.min(G.yt,G.ys)-T&&y<=Math.max(G.yt,G.ys)+T}
+  return false;
+}
+function dragHandle(d,k,c){
+  const q=toData(c);
+  if(d.type==='long'||d.type==='short'){
+    if(k==='tp')d.tp=q.p;else if(k==='sl')d.sl=q.p;else if(k==='w')d.b={x:Math.max(d.a.x+1,q.x),p:d.a.p};
+    else if(k==='mv'){const dx=q.x-d.a.x,dp=q.p-d.a.p;d.a={x:q.x,p:q.p};d.b={x:d.b.x+dx,p:q.p};d.tp+=dp;d.sl+=dp}
+  }else if(d.type==='elliott'){const i=+k.slice(1);d.pts[i]=q;if(i===0)d.a=q}
+  else if(k==='a')d.a=q;else d.b=q;
+}
+function drawHandles(g){
+  if(!sel||!(DR[dkey()]||[]).includes(sel))return;
+  handlesOf(sel).forEach(h=>{
+    g.lineWidth=2;g.strokeStyle='#2b6bff';g.fillStyle='rgba(10,14,30,.85)';g.beginPath();
+    if(h.round)g.arc(h.x,h.y,7,0,7);else g.rect(h.x-7,h.y-7,14,14);g.fill();g.stroke();
+  });
+}
+function updDtb(){
+  const el=$('dtb');if(!el)return;
+  if(!sel||!(DR[dkey()]||[]).includes(sel)){sel=null;el.classList.remove('on');el.innerHTML='';return}
+  const pos=sel.type==='long'||sel.type==='short';
+  const cin=(lab,key,def)=>`<label class="cl">${lab}<span class="sw" style="background:${sel[key]||def}"><input type="color" value="${sel[key]||def}" oninput="dtbCol('${key}',this)"></span></label>`;
+  el.innerHTML=`<b>${TNAME[sel.type]||''}</b>`+cin(pos?'Entry':'Color','col','#f5b53d')+(pos?cin('TP','cu',TH.up)+cin('SL','cd',TH.dn):'')+`<button onclick="dtbDel()">🗑</button><button onclick="dtbDone()">✕</button>`;
+  el.classList.add('on');
+}
+window.dtbCol=(k,inp)=>{if(!sel)return;sel[k]=inp.value;inp.parentNode.style.background=inp.value;drawChart()};
+window.dtbDel=()=>{const a=DR[dkey()];if(a&&sel){const i=a.indexOf(sel);if(i>=0)a.splice(i,1)}sel=null;updDtb();drawChart()};
+window.dtbDone=()=>{sel=null;updDtb();drawChart()};
 function drawShape(g,d,w){
   const A=toXY(d.a),B=toXY(d.b),R=w-AXW,H=VW.H;
   g.save();g.beginPath();g.rect(0,0,R,H);g.clip();
@@ -736,18 +796,26 @@ function drawShape(g,d,w){
   else if(d.type==='vline'){seg(A.x,0,A.x,H)}
   else if(d.type==='rect'){g.fillStyle=rgba(CC,.13);g.fillRect(A.x,A.y,dx,dy);g.strokeRect(A.x,A.y,dx,dy);g.fillStyle=CC;dot(A);dot(B)}
   else if(d.type==='long'||d.type==='short'){
-    const lg=d.type==='long',dp=Math.abs(d.b.p-d.a.p),tp=lg?d.a.p+dp:d.a.p-dp,sl=lg?d.a.p-dp:d.a.p+dp;
-    const yt=toXY({x:d.a.x,p:tp}).y,ys=toXY({x:d.a.x,p:sl}).y,x0=Math.min(A.x,B.x),ww=Math.max(24,Math.abs(dx));
-    g.fillStyle=rgba(TH.up,.22);g.fillRect(x0,Math.min(A.y,yt),ww,Math.abs(yt-A.y));
-    g.fillStyle=rgba(TH.dn,.22);g.fillRect(x0,Math.min(A.y,ys),ww,Math.abs(ys-A.y));
-    g.lineWidth=1.2;g.strokeStyle=CC;seg(x0,A.y,x0+ww,A.y);
-    g.strokeStyle=TH.up;seg(x0,yt,x0+ww,yt);g.strokeStyle=TH.dn;seg(x0,ys,x0+ww,ys);
-    g.font='bold 10px system-ui';g.textAlign='left';
-    const pc=v=>(v>=0?'+':'')+(v/d.a.p*100).toFixed(2)+'%';
-    g.fillStyle='#fff';g.fillText((lg?'LONG ':'SHORT ')+px(d.a.p),x0+4,A.y-3);
-    g.fillStyle=TH.up;g.fillText('TP '+px(tp)+' ('+pc(tp-d.a.p)+')',x0+4,yt+(yt<A.y?-3:11));
-    g.fillStyle=TH.dn;g.fillText('SL '+px(sl)+' ('+pc(sl-d.a.p)+')',x0+4,ys+(ys<A.y?-3:11));
-    g.fillStyle=CC;dot(A);
+    const G=posGeo(d),lg=d.type==='long',L=lots(),cs=S.cs;
+    const cu=d.cu||TH.up,cd=d.cd||TH.dn;
+    g.fillStyle=rgba(cu,.22);g.fillRect(G.x0,Math.min(A.y,G.yt),G.ww,Math.abs(G.yt-A.y));
+    g.fillStyle=rgba(cd,.22);g.fillRect(G.x0,Math.min(A.y,G.ys),G.ww,Math.abs(G.ys-A.y));
+    g.lineWidth=1.2;g.strokeStyle=CC;seg(G.x0,A.y,G.x0+G.ww,A.y);
+    g.strokeStyle=cu;seg(G.x0,G.yt,G.x0+G.ww,G.yt);g.strokeStyle=cd;seg(G.x0,G.ys,G.x0+G.ww,G.ys);
+    const dT=d.tp-d.a.p,dS=d.sl-d.a.p,pc=v=>Math.abs(v/d.a.p*100).toFixed(3);
+    const amt=v=>money(Math.abs(v)*L*cs);
+    const rr=Math.abs(dS)>0?Math.abs(dT/dS):0;
+    const dir=lg?1:-1,open=(mid-d.a.p)*dir*L*cs;
+    const bub=(cx,yy,lines,col)=>{
+      g.font='bold 11px system-ui';const tw=Math.max(...lines.map(t=>g.measureText(t).width))+14,hh=lines.length*14+6,x=Math.max(2,Math.min(R-tw-2,cx-tw/2));
+      g.fillStyle=col;g.beginPath();g.roundRect?g.roundRect(x,yy,tw,hh,6):g.rect(x,yy,tw,hh);g.fill();
+      g.fillStyle='#fff';g.textAlign='center';lines.forEach((t,i)=>g.fillText(t,x+tw/2,yy+14+i*14));g.textAlign='left';
+    };
+    const cx=G.x0+G.ww/2;
+    bub(cx,G.yt+(G.yt<A.y?-26:6),['Target: '+px(Math.abs(dT))+' ('+pc(dT)+'%)  Amount: '+amt(dT)],cu);
+    bub(cx,G.ys+(G.ys>A.y?6:-26),['Stop: '+px(Math.abs(dS))+' ('+pc(dS)+'%)  Amount: '+amt(dS)],cd);
+    bub(cx,A.y-43,['Open PnL: '+money(open)+', Qty: '+L.toFixed(2),'Risk/reward ratio: '+rr.toFixed(2)],open>=0?cu:cd);
+    g.fillStyle=CC;
   }
   else if(d.type==='elliott'){
     const P=(d.pts||[d.a]).map(toXY);
@@ -784,7 +852,7 @@ window.setDcol=(c,keep)=>{dcol=c;try{localStorage.setItem('ts_dcol',c)}catch(_){
 window.recolorLast=()=>{const a=DR[dkey()];if(a&&a.length){a[a.length-1].col=dcol;drawChart()}else toast('Is chart par abhi koi drawing nahi hai')};
 window.recolorAll=()=>{(DR[dkey()]||[]).forEach(d=>d.col=dcol);drawChart()};
 window.togInd=k=>{ind[k]=!ind[k];renderTools();drawChart()};
-window.pickTool=k=>{tool=k;$('tools').classList.remove('open');$('tabs').classList.remove('open');showHint(k)};
+window.pickTool=k=>{tool=k;sel=null;updDtb();$('tools').classList.remove('open');$('tabs').classList.remove('open');showHint(k)};
 $('toolBtn').onclick=()=>{renderTools();$('tools').classList.toggle('open')};
 $('toolClose').onclick=()=>$('tools').classList.remove('open');
 $('toolHint').onclick=()=>{if(multi&&multi.pts.length>=2)addDrawing(multi);endTool();drawChart()};
@@ -813,6 +881,7 @@ let _raf=0;
 function drawChart(){if(_raf)return;_raf=requestAnimationFrame(()=>{_raf=0;drawChartNow()})}   // ek frame mein ek hi baar draw (smooth)
 function drawChartNow(){
   if(view!=='sim'||!candles.length)return;
+  if(sel&&!(DR[dkey()]||[]).includes(sel)){sel=null;updDtb()}
   const cv=$('ch'),dpr=window.devicePixelRatio||1,w=cv.clientWidth,h=cv.clientHeight;
   if(!w||!h)return;
   if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(h*dpr)){cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr)}
@@ -870,6 +939,7 @@ function drawChartNow(){
     [[up,'#6aa7ff'],[lo,'#6aa7ff'],[mi,'#4a5aa0']].forEach(([arr,col])=>{g.beginPath();arr.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]));g.strokeStyle=col;g.lineWidth=1.1;g.stroke()});
   }
   ((DR[dkey()]||[]).concat(drawing?[drawing]:[]).concat(multi&&multi.pts.length?[multi]:[])).forEach(d=>drawShape(g,d,w));
+  drawHandles(g);
   g.font='10px system-ui';
   const line=(v,col,txt)=>{
     if(v==null)return;const yy=y(v);
@@ -916,18 +986,25 @@ $('ch').addEventListener('pointerdown',e=>{
         if(multi.pts.length>=6){addDrawing(multi);endTool()}else showHint('elliott');
       }
       else if(tool==='hline'||tool==='vline'){addDrawing({type:tool,a,b:a});endTool()}
-      else drawing={type:tool,a,b:a,pid:e.pointerId};
+      else{drawing={type:tool,a,b:a,pid:e.pointerId};fixPos(drawing)}
       if(tool==='elliott'){drawChart();return}
       drawChart();return;
     }
   }
+  if(sel&&!tool&&pts.size===0&&VW){
+    const p0=cpos(e),hh=handlesOf(sel).find(h=>Math.hypot(h.x-p0.x,h.y-p0.y)<=22);
+    if(hh){hdrag={d:sel,k:hh.k,pid:e.pointerId};try{$('ch').setPointerCapture(e.pointerId)}catch(_){}return}
+  }
+  tapSt=(!tool&&pts.size===0)?{x:e.clientX,y:e.clientY,id:e.pointerId,c:cpos(e)}:null;
   {const p=cpos(e);pts.set(e.pointerId,{x:p.x,y:p.y,axis:p.x>$('ch').clientWidth-AXW})}g0=null;
   try{$('ch').setPointerCapture(e.pointerId)}catch(_){}
   if(pts.size===1){const t=Date.now();if(t-lastTap<300){off=0;visN=60;yScale=1;yShift=0;drawChart()}lastTap=t}
 });
 $('ch').addEventListener('pointermove',e=>{
   if(window.posMove&&posMove(e))return;
-  if(drawing&&e.pointerId===drawing.pid){drawing.b=toData(cpos(e));drawChart();return}
+  if(drawing&&e.pointerId===drawing.pid){drawing.b=toData(cpos(e));fixPos(drawing);drawChart();return}
+  if(hdrag&&e.pointerId===hdrag.pid){dragHandle(hdrag.d,hdrag.k,cpos(e));drawChart();return}
+  if(tapSt&&Math.hypot(e.clientX-tapSt.x,e.clientY-tapSt.y)>8)tapSt=null;
   if(!pts.has(e.pointerId))return;
   const prev=pts.get(e.pointerId),c=cpos(e),cur={x:c.x,y:c.y,axis:prev.axis};pts.set(e.pointerId,cur);
   if(pts.size===1){
@@ -943,6 +1020,15 @@ $('ch').addEventListener('pointermove',e=>{
 });
 ['pointerup','pointercancel'].forEach(t=>$('ch').addEventListener(t,e=>{
   if(window.posUp&&posUp(e))return;
+  if(hdrag&&e.pointerId===hdrag.pid){hdrag=null;drawChart();return}
+  if(tapSt&&e.type==='pointerup'&&e.pointerId===tapSt.id&&!tool&&VW){
+    const c=tapSt.c;tapSt=null;
+    if(c.x<$('ch').clientWidth-AXW){
+      const L=DR[dkey()]||[];let f=null;
+      for(let i=L.length-1;i>=0;i--)if(hitDraw(L[i],c.x,c.y)){f=L[i];break}
+      if(f!==sel){sel=f;updDtb();drawChart()}
+    }
+  }
   if(drawing&&e.pointerId===drawing.pid){
     const A=toXY(drawing.a),B=toXY(drawing.b);
     if(Math.hypot(A.x-B.x,A.y-B.y)>8){const d=drawing;delete d.pid;addDrawing(d)}
