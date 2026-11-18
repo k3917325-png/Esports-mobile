@@ -1667,8 +1667,8 @@ async function jget(url,ms=7000){
 async function bnGet(P,path,qs){let err;for(const b of P.base){try{return await jget(b+P.path+path+'?'+qs)}catch(e){err=e}}throw err}
 const curSrc=k=>{const f=FS[k],a=SRC[k];return a&&a[f.i]?a[f.i]:null};
 
-async function rawKlines(k,interval,count){
-  const s=curSrc(k);if(!s)throw new Error('nosrc');const P=PROV[s[0]],sy=s[1];
+async function rawKlines(k,interval,count,idx){
+  const s=idx==null?curSrc(k):SRC[k][idx];if(!s)throw new Error('nosrc');const P=PROV[s[0]],sy=s[1];
   if(P.kind==='bn'){
     const a=await bnGet(P,'/klines','symbol='+sy+'&interval='+interval+'&limit='+Math.min(1000,count));
     return a.map(r=>({t:+r[0],o:+r[1],h:+r[2],l:+r[3],c:+r[4],v:Math.round(+r[5])}));
@@ -1692,9 +1692,9 @@ function aggregate(rows,f,ms){
   }
   return out;
 }
-async function fetchKlines(k,ms){
+async function fetchKlines(k,ms,idx){
   const m=TFMAP[ms];if(!m)throw new Error('tf');
-  const rows=await rawKlines(k,m[0],Math.min(1000,260*m[1]));
+  const rows=await rawKlines(k,m[0],Math.min(1000,260*m[1]),idx);
   const out=aggregate(rows,m[1],ms).filter(r=>isFinite(r.c));
   if(out.length<5)throw new Error('empty');
   return out;
@@ -1724,7 +1724,21 @@ let loadTok=0;
 async function loadReal(){
   const tok=++loadTok,k=sym,t=tf;
   try{
-    const rows=await fetchKlines(k,t);
+    const n=SRC[k].length;let rows;
+    if(n>1&&!FEED_SIM){
+      // sab sources ek saath try karo; priority wala jeete, par 3 sec se zyada na ruko
+      const w=await new Promise((resolve,reject)=>{
+        const res=new Array(n);let grace=false,fin=false;
+        const check=()=>{
+          if(fin)return;
+          for(let i=0;i<n;i++){const q=res[i];if(!q){if(!grace)return;continue}if(q.v){fin=true;resolve({i,v:q.v});return}}
+          if(res.filter(Boolean).length===n){fin=true;reject(res[0].e||new Error('error'))}
+        };
+        setTimeout(()=>{grace=true;check()},3000);
+        for(let i=0;i<n;i++)fetchKlines(k,t,i).then(v=>{res[i]={v};check()},e=>{res[i]={e};check()});
+      });
+      FS[k].i=w.i;rows=w.v;
+    }else rows=await fetchKlines(k,t);
     if(tok!==loadTok||k!==sym)return;
     candles=rows.slice(-250).map((r,i)=>({...r,id:i}));
     const lastC=candles[candles.length-1];
@@ -1733,8 +1747,8 @@ async function loadReal(){
     render();
   }catch(e){
     if(tok!==loadTok)return;
-    const c0=curSrc(k);FS[k].err=(c0?c0[1]+': ':'')+(e&&e.name==='AbortError'?'timeout':(e&&e.message)||'error');
-    srcFail(k);
+    const c0=curSrc(k);FS[k].err=(SRC[k].length>1?SRC[k].map(x=>x[1]).join('/')+': ':c0?c0[1]+': ':'')+(e&&e.name==='AbortError'?'timeout':(e&&e.message)||'error');
+    if(SRC[k].length>1&&!FEED_SIM){FS[k].state='down';FS[k].i=0;FS[k].fail=0}else srcFail(k);
     if(FS[k].state==='down'){render();setTimeout(()=>{if(k===sym&&view==='sim'&&FS[k].state==='down'){FS[k].state='wait';FS[k].i=0;seedCandles()}},8000)}
     else setTimeout(()=>{if(tok===loadTok&&k===sym&&view==='sim')loadReal()},1500);
   }
