@@ -175,13 +175,13 @@ h4{padding:12px 16px 6px;color:#999;font-size:13px;font-weight:600}
 .pr{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #1d1d1d}
 .pr span{display:block;color:#999;font-size:12px}
 .mi{display:block;width:calc(100% - 32px);margin:10px 16px 0;text-align:left;padding:16px;border-radius:12px;background:#161616;border:0;color:#fff;font-size:15px}
-#tools{display:none;position:absolute;top:44px;left:6px;z-index:26;width:min(520px,96%);max-height:calc(100% - 52px);flex-direction:column;background:#1c1f26;border:1px solid #2d3340;border-radius:14px;padding:10px;box-shadow:0 8px 24px rgba(0,0,0,.6)}
+#tools{display:none;position:absolute;top:44px;left:6px;z-index:26;max-width:calc(100% - 12px);align-items:center;gap:2px;background:#1c1f26;border:1px solid #2d3340;border-radius:12px;padding:4px 6px;box-shadow:0 8px 24px rgba(0,0,0,.6)}
 #tools.open{display:flex}
-#tools .th,#tools .tt,#tools .tf{flex:none}
-#tools .tg{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
-#tools .tt button{white-space:nowrap;flex:none;padding:7px 12px;font-size:13px}
-#tools .tf{display:flex;gap:8px;margin-top:8px}
-#tools .tf button{flex:1}
+#tools .gp{color:#5b647f;font-size:18px;padding:0 4px;letter-spacing:-2px}
+#tools .ib{display:flex;gap:2px}
+#tools .ib1{background:transparent;border:0;color:#d5d9e8;border-radius:9px;min-width:42px;height:40px;display:flex;align-items:center;justify-content:center;font-size:18px;padding:0 4px}
+#tools .ib1.act,#tools .ib1:active{background:#2b3140;color:#f5b53d}
+#tools .sp{width:1px;height:26px;background:#2d3340;margin:0 4px}
 #dtb{display:none;position:absolute;top:6px;left:50%;transform:translateX(-50%);z-index:27;background:#1c1f26;border:1px solid #2d3340;border-radius:12px;padding:5px 8px;gap:8px;align-items:center;box-shadow:0 6px 18px rgba(0,0,0,.6);font-size:11px;color:#9aa3c7;white-space:nowrap}
 #dtb.on{display:flex}
 #dtb .sw{width:26px;height:26px}
@@ -402,15 +402,12 @@ h4{color:#e8e3ff;font-size:16px;font-weight:800;padding:14px 16px 6px}
   </div>
 
   <div id="tools">
-    <div class="th"><b style="font-size:16px">Drawings</b><button class="ghost" id="toolClose">✕</button></div>
-    <div class="tt" id="toolTabs">
-      <button class="ghost on" data-t="fav">Favorites</button>
-      <button class="ghost" data-t="tools">Tools</button>
-      <button class="ghost" data-t="trend">Trend tools</button>
-      <button class="ghost" data-t="fib">Gann &amp; Fibonacci</button>
-    </div>
-    <div class="tg" id="toolGrid"></div>
-    <div class="tf"><button class="ghost" id="dUndo">↶ Undo</button><button class="ghost" id="dClear">🗑 Sab hatao</button></div>
+    <span class="gp">⋮</span>
+    <div class="ib" id="toolGrid"></div>
+    <span class="sp"></span>
+    <button class="ib1" id="dUndo" title="Undo">↶</button>
+    <button class="ib1" id="dClear" title="Sab hatao">🗑</button>
+    <button class="ib1" id="toolClose" title="Band">✕</button>
   </div>
   <div id="dtb"></div>
   <div id="toolHint"></div>
@@ -716,15 +713,18 @@ const AXW=64,LOAD=Date.now();
 let VW=null;
 const ind={ma:true,ema:false,bb:false,vol:true};
 const IND=[['ma','MA 20'],['ema','EMA 50'],['bb','Bollinger Bands'],['vol','Volume']];
-const SVG=i=>`<svg viewBox="0 0 28 20" width="30" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">${i}</svg>`;
-const TOOLS={
-  trend:[['trend','╱','Trendline','TREND TOOLS'],['hray','⊸','Horizontal ray','TREND TOOLS'],['rect','▭','Rectangle','GEOMETRIC SHAPES']],
-  fib:[['fib','≡','Fib retracement','GANN AND FIBONACCI'],['elliott',SVG('<path d="M2 17 7 9 11 13 18 3 21 8 26 2"/>'),'Elliott impulse wave (1·2·3·4·5)','PATTERNS']],
-  fav:[['trend','╱','Trendline','TREND TOOLS'],['hray','⊸','Horizontal ray','TREND TOOLS'],['fib','≡','Fib retracement','GANN AND FIBONACCI'],['rect','▭','Rectangle','GEOMETRIC SHAPES'],['elliott',SVG('<path d="M2 17 7 9 11 13 18 3 21 8 26 2"/>'),'Elliott impulse wave (1·2·3·4·5)','PATTERNS'],['long',SVG('<path d="M3 4h22M3 10h22M3 16h22"/><text x="12" y="13" font-size="7" fill="currentColor" stroke="none">L</text>'),'Long position','FORECASTING AND MEASUREMENT'],['short',SVG('<path d="M3 4h22M3 10h22M3 16h22"/><text x="12" y="13" font-size="7" fill="currentColor" stroke="none">S</text>'),'Short position','FORECASTING AND MEASUREMENT']]
-};
-TOOLS.trend.push(['long',TOOLS.fav[5][1],'Long position','FORECASTING AND MEASUREMENT'],['short',TOOLS.fav[6][1],'Short position','FORECASTING AND MEASUREMENT']);
-const TNAME={};Object.values(TOOLS).flat().forEach(t=>TNAME[t[0]]=t[2].replace(/ \(.*/,''));
-const DR={};let tool=null,drawing=null,multi=null,sel=null,hdrag=null,tapSt=null,toolTab='fav';
+const SVG=i=>`<svg viewBox="0 0 30 24" width="30" height="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${i}</svg>`;
+const TOOLS=[
+  ['long',SVG('<path d="M10 5h16M4 12h22M10 19h16"/><circle cx="6" cy="5" r="2.2"/><circle cx="6" cy="19" r="2.2"/><text x="14" y="16" font-size="7" fill="currentColor" stroke="none">L</text>'),'Long position'],
+  ['rect',SVG('<rect x="6" y="5" width="18" height="14"/><circle cx="6" cy="5" r="2.2"/><circle cx="24" cy="5" r="2.2"/><circle cx="6" cy="19" r="2.2"/><circle cx="24" cy="19" r="2.2"/>'),'Rectangle'],
+  ['trend',SVG('<path d="M7 18 23 6"/><circle cx="6" cy="19" r="2.2"/><circle cx="24" cy="5" r="2.2"/>'),'Trendline'],
+  ['hray',SVG('<path d="M8 12h20"/><circle cx="6" cy="12" r="2.2"/>'),'Horizontal ray'],
+  ['fib',SVG('<path d="M4 5h22M4 11h22M4 17h22"/><circle cx="26" cy="5" r="2.2"/><circle cx="4" cy="17" r="2.2"/>'),'Fib retracement'],
+  ['short',SVG('<path d="M10 5h16M4 12h22M10 19h16"/><circle cx="6" cy="5" r="2.2"/><circle cx="6" cy="19" r="2.2"/><text x="14" y="16" font-size="7" fill="currentColor" stroke="none">S</text>'),'Short position'],
+  ['elliott',SVG('<path d="M4 18 9 10 13 14 20 5 23 10 27 4"/><circle cx="4" cy="18" r="2"/><circle cx="9" cy="10" r="2"/><circle cx="13" cy="14" r="2"/><circle cx="20" cy="5" r="2"/><circle cx="23" cy="10" r="2"/>'),'Elliott impulse wave']
+];
+const TNAME={};TOOLS.forEach(t=>TNAME[t[0]]=t[2]);
+const DR={};let tool=null,drawing=null,multi=null,sel=null,hdrag=null,tapSt=null;
 const DCOLS=['#f5b53d','#1fb97a','#e5384f','#2fc4c4','#6aa7ff','#c77dff','#ffffff','#ff8a3d'];
 let dcol=(()=>{try{return localStorage.getItem('ts_dcol')||'#f5b53d'}catch(_){return '#f5b53d'}})();
 const dkey=()=>sym+'_'+tf;
@@ -777,7 +777,7 @@ function updDtb(){
   el.innerHTML=`<b>${TNAME[sel.type]||''}</b>`+cin(pos?'Entry':'Color','col','#f5b53d')+(pos?cin('TP','cu',TH.up)+cin('SL','cd',TH.dn):'')+`<button onclick="dtbDel()">🗑</button><button onclick="dtbDone()">✕</button>`;
   el.classList.add('on');
 }
-window.dtbCol=(k,inp)=>{if(!sel)return;sel[k]=inp.value;inp.parentNode.style.background=inp.value;drawChart()};
+window.dtbCol=(k,inp)=>{if(!sel)return;if(k==='col')setDcol(inp.value,1);sel[k]=inp.value;inp.parentNode.style.background=inp.value;drawChart()};
 window.dtbDel=()=>{const a=DR[dkey()];if(a&&sel){const i=a.indexOf(sel);if(i>=0)a.splice(i,1)}sel=null;updDtb();drawChart()};
 window.dtbDone=()=>{sel=null;updDtb();drawChart()};
 function drawShape(g,d,w){
@@ -845,10 +845,7 @@ function showHint(k){
 }
 function endTool(){tool=null;drawing=null;multi=null;showHint(null)}
 function renderTools(){
-  const g=$('toolGrid');
-  if(toolTab==='ind')g.innerHTML=IND.map(([k,n])=>`<div class="tc ${ind[k]?'act':''}" onclick="togInd('${k}')"><i>${ind[k]?'☑':'☐'}</i>${n}</div>`).join('');
-  else if(toolTab==='tools')g.innerHTML=`<div class="tsec">DRAWING COLOR</div><div class="swr">${DCOLS.map(c=>`<span class="sw ${c===dcol?'on':''}" style="background:${c}" onclick="setDcol('${c}')"></span>`).join('')}<label class="sw cust" style="background:conic-gradient(red,yellow,lime,aqua,blue,magenta,red)"><input type="color" value="${dcol}" oninput="setDcol(this.value,1)"></label></div><div class="tsec">Naya drawing is color mein banega. Pehle se bani drawing ka color badalna ho to neeche dabao.</div><div class="tc" style="grid-column:1/-1" onclick="recolorLast()"><i>🎨</i>Last drawing par ye color lagao</div><div class="tc" style="grid-column:1/-1" onclick="recolorAll()"><i>🖌</i>Is chart ki saari drawings par lagao</div>`;
-  else{let last='';g.innerHTML=TOOLS[toolTab].map(([k,ic,n,sec])=>{const h=(toolTab==='fav'&&sec!==last)?`<div class="tsec">${sec}</div>`:'';last=sec;return h+`<div class="tc ${tool===k?'act':''}" onclick="pickTool('${k}')"><i>${ic}</i>${n}</div>`}).join('')}
+  $('toolGrid').innerHTML=TOOLS.map(([k,ic,n])=>`<button class="ib1 ${tool===k?'act':''}" title="${n}" onclick="pickTool('${k}')">${ic}</button>`).join('');
 }
 window.setDcol=(c,keep)=>{dcol=c;try{localStorage.setItem('ts_dcol',c)}catch(_){}if(!keep)renderTools()};
 window.recolorLast=()=>{const a=DR[dkey()];if(a&&a.length){a[a.length-1].col=dcol;drawChart()}else toast('Is chart par abhi koi drawing nahi hai')};
@@ -858,11 +855,6 @@ window.pickTool=k=>{tool=k;sel=null;updDtb();$('tools').classList.remove('open')
 $('toolBtn').onclick=()=>{renderTools();$('tools').classList.toggle('open')};
 $('toolClose').onclick=()=>$('tools').classList.remove('open');
 $('toolHint').onclick=()=>{if(multi&&multi.pts.length>=2)addDrawing(multi);endTool();drawChart()};
-$('toolTabs').addEventListener('click',e=>{
-  const b=e.target.closest('button');if(!b)return;
-  document.querySelectorAll('#toolTabs button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
-  toolTab=b.dataset.t;renderTools();
-});
 $('dUndo').onclick=()=>{const a=DR[dkey()];if(a&&a.length)a.pop();drawChart()};
 $('dClear').onclick=()=>{DR[dkey()]=[];drawChart()};
 const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
