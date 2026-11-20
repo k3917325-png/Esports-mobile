@@ -1464,7 +1464,7 @@ window.addEventListener('fb-auth',async e=>{
 });
 
 /* ================= REMOTE CONFIG (admin panel) + LOGIN GATE + REWARDED ADS ================= */
-const CFG_DEF={loginRequired:true,bannerEnabled:true,interstitialEnabled:true,interstitialGapMin:12,dailyTradeLimit:100,maxOpenPos:3,lbProfitOnly:true,adNetwork:'unity',rewardAmount:1000,dailyAdLimit:20,testAds:false,unity:{appKey:'',adUnitId:'',bannerAdUnitId:'',interstitialAdUnitId:''},admob:{rewardedUnitId:'',bannerUnitId:'',interstitialUnitId:''}};
+const CFG_DEF={loginRequired:true,bannerEnabled:true,interstitialEnabled:true,interstitialGapMin:12,dailyTradeLimit:100,maxOpenPos:3,lbProfitOnly:true,adNetwork:'unity',rewardAmount:1000,dailyAdLimit:20,testAds:false,unity:{appKey:'',adUnitId:'',bannerAdUnitId:'',interstitialAdUnitId:''},admob:{rewardedUnitId:'',bannerUnitId:'ca-app-pub-3940256099942544/6300978111',interstitialUnitId:''}};
 let appCfg=(()=>{let c=null;try{c=JSON.parse(localStorage.getItem('ts_cfg')||'null')}catch(_){}return Object.assign({},CFG_DEF,c||{})})();
 let cfgAt=0,adBusy=false;
 function tradePnl(){return Math.round((bal-10000-(acct.bonus||0))*100)/100}   // leaderboard sirf trading profit se (ad bonus alag)
