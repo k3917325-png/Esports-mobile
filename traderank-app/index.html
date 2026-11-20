@@ -859,10 +859,17 @@ function posFills(g,d,R,H){
   g.save();g.beginPath();g.rect(0,0,R,H);g.clip();
     g.fillStyle=rgba(cu,.22);g.fillRect(G.x0,Math.min(A.y,G.yt),G.ww,Math.abs(G.yt-A.y));
     g.fillStyle=rgba(cd,.22);g.fillRect(G.x0,Math.min(A.y,G.ys),G.ww,Math.abs(G.ys-A.y));
-    {const cy=toXY({x:d.a.x,p:mid}).y,pr=(mid-d.a.p)*(lg?1:-1);
-     // live: entry se current price tak ka hissa gehra rang
-     if(pr>0){const e=Math.max(Math.min(cy,Math.max(A.y,G.yt)),Math.min(A.y,G.yt));g.fillStyle=rgba(cu,.5);g.fillRect(G.x0,Math.min(A.y,e),G.ww,Math.abs(e-A.y))}
-     else if(pr<0){const e=Math.max(Math.min(cy,Math.max(A.y,G.ys)),Math.min(A.y,G.ys));g.fillStyle=rgba(cd,.5);g.fillRect(G.x0,Math.min(A.y,e),G.ww,Math.abs(e-A.y))}}
+    {
+     // entry ke baad price kahan tak gaya (high/low) - dono taraf gehra rang wahan tak
+     const e0=Math.round(d.a.x);let hi=Math.max(d.hi!=null?d.hi:d.a.p,mid),lo=Math.min(d.lo!=null?d.lo:d.a.p,mid);
+     for(let i=candles.length-1;i>=0;i--){const c=candles[i];if(c.id<=e0)break;if(c.id>d.b.x+0.5)continue;if(c.h>hi)hi=c.h;if(c.l<lo)lo=c.l}
+     d.hi=hi;d.lo=lo;
+     const zone=(tgt,col)=>{
+       const up=tgt>d.a.p,ext=up?Math.min(hi,tgt):Math.max(lo,tgt);
+       if(up?ext>d.a.p:ext<d.a.p){const ye=toXY({x:d.a.x,p:ext}).y;g.fillStyle=rgba(col,.5);g.fillRect(G.x0,Math.min(A.y,ye),G.ww,Math.abs(ye-A.y))}
+     };
+     zone(d.tp,cu);zone(d.sl,cd);
+    }
   g.restore();
 }
 function drawZones(g,w){
