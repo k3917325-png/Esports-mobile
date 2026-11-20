@@ -1474,7 +1474,7 @@ async function loadCfg(){
   try{
     const c=await FB.config();
     if(c){appCfg=Object.assign({},CFG_DEF,c);try{localStorage.setItem('ts_cfg',JSON.stringify(appCfg))}catch(_){}}
-    cfgAt=Date.now();applyGate();if(homeTab==='port')renderHome();
+    cfgAt=Date.now();applyGate();if(homeTab==='port')renderHome();if(typeof syncBanner==='function')syncBanner();
   }catch(_){/* offline/error: purani saved settings se chalao */}
 }
 function applyGate(){
@@ -2121,7 +2121,7 @@ const netNow=()=>appCfg.adNetwork==='admob'?'admob':'unity';
 const netParams=()=>JSON.stringify((netNow()==='admob'?appCfg.admob:appCfg.unity)||{});
 const hasNative=()=>!!(window.NativeAds&&window.NativeAds.showRewarded);
 const adsPossible=()=>hasNative()||appCfg.testAds||!fbOn();     // web par asli ad nahi chalta, sirf test/preview mein nakli
-let bannerOn=false;
+let bannerOn=false,bannerKey='';
 function syncBanner(){
   const on=document.body.className==='home'&&appCfg.bannerEnabled!==false;   // sirf Home/Markets/Portfolio/Leaders/Menu par; chart par kabhi nahi
   const slot=$('adTop');if(!slot)return;
@@ -2129,7 +2129,8 @@ function syncBanner(){
   slot.textContent=hasNative()?'':'📢 Banner Ad';
   if(hasNative()&&window.NativeAds.showBanner){
     try{
-      if(on&&!bannerOn){NativeAds.showBanner(netNow(),netParams());bannerOn=true}
+      const key=netNow()+'|'+netParams();
+      if(on&&(!bannerOn||bannerKey!==key)){if(bannerOn)NativeAds.hideBanner();NativeAds.showBanner(netNow(),netParams());bannerOn=true;bannerKey=key}
       else if(!on&&bannerOn){NativeAds.hideBanner();bannerOn=false}
     }catch(_){}
   }
