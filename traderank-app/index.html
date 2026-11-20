@@ -184,6 +184,14 @@ h4{padding:12px 16px 6px;color:#999;font-size:13px;font-weight:600}
 #tools .ib1 svg{width:28px;height:22px}
 #tools .ib1.act{color:#2962ff;background:transparent}
 #tools .ib1:active{opacity:.6}
+#dset{display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:30;background:#1c1f26;border:1px solid #2d3340;border-radius:14px;padding:12px;width:min(360px,94%);max-height:94%;overflow-y:auto;box-shadow:0 10px 30px rgba(0,0,0,.7)}
+#dset.on{display:block}
+#dset h4{margin:0 0 8px;font-size:14px;color:#e6e9f5;display:flex;justify-content:space-between;align-items:center}
+#dset .gr{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#dset label{display:flex;flex-direction:column;gap:3px;font-size:11px;color:#9aa3c7}
+#dset input,#dset select{background:#12151c;border:1px solid #2d3340;border-radius:8px;color:#fff;padding:8px;font-size:14px;width:100%;box-sizing:border-box}
+#dset .note{font-size:11px;color:#7d86a8;margin-top:8px}
+#dset button{background:#f5b53d;color:#000;border:0;border-radius:8px;padding:6px 12px;font-weight:700}
 #dtb{display:none;position:absolute;top:6px;left:50%;transform:translateX(-50%);z-index:27;background:#1c1f26;border:1px solid #2d3340;border-radius:12px;padding:5px 8px;gap:8px;align-items:center;box-shadow:0 6px 18px rgba(0,0,0,.6);font-size:11px;color:#9aa3c7;white-space:nowrap}
 #dtb.on{display:flex}
 #dtb .sw{width:26px;height:26px}
@@ -408,6 +416,7 @@ h4{color:#e8e3ff;font-size:16px;font-weight:800;padding:14px 16px 6px}
     <div class="ib" id="toolGrid"></div>
   </div>
   <div id="dtb"></div>
+  <div id="dset"></div>
   <div id="toolHint"></div>
 
   <div id="wl">
@@ -783,7 +792,8 @@ function xTag(g,x1,x2,h,txt,col){
 function drawCross(g,w,h){
   if(!VW)return;
   const R=w-AXW;
-  const pt=drawing&&(drawing.type==='long'||drawing.type==='short')?drawing.a:(tool==='elliott'&&multi&&multi.pts.length?multi.pts[multi.pts.length-1]:null);
+  const isPs=drawing&&(drawing.type==='long'||drawing.type==='short');
+  const pt=drawing?(isPs?drawing.a:drawing.b):(tool==='elliott'&&multi&&multi.pts.length?multi.pts[multi.pts.length-1]:null);
   if(pt){
     const P=toXY(pt);g.save();g.beginPath();g.rect(0,0,R,VW.H);g.clip();
     g.strokeStyle='#3b6bff';g.lineWidth=1;g.setLineDash([6,5]);g.beginPath();g.moveTo(0,P.y);g.lineTo(R,P.y);g.moveTo(P.x,0);g.lineTo(P.x,VW.H);g.stroke();g.setLineDash([]);
@@ -799,12 +809,44 @@ function drawCross(g,w,h){
 }
 function updDtb(){
   const el=$('dtb');if(!el)return;
+  if(!sel||!(DR[dkey()]||[]).includes(sel))closeSet();
   if(!sel||!(DR[dkey()]||[]).includes(sel)){sel=null;el.classList.remove('on');el.innerHTML='';return}
   const pos=sel.type==='long'||sel.type==='short';
   const cin=(lab,key,def)=>`<label class="cl">${lab}<span class="sw" style="background:${sel[key]||def}"><input type="color" value="${sel[key]||def}" oninput="dtbCol('${key}',this)"></span></label>`;
-  el.innerHTML=`<b>${TNAME[sel.type]||''}</b>`+cin(pos?'Entry':'Color','col','#f5b53d')+(pos?cin('TP','cu',TH.up)+cin('SL','cd',TH.dn):'')+`<button onclick="dtbDel()">🗑</button><button onclick="dtbDone()">✕</button>`;
+  el.innerHTML=`<b>${TNAME[sel.type]||''}</b>`+cin(pos?'Entry':'Color','col','#f5b53d')+(pos?cin('TP','cu',TH.up)+cin('SL','cd',TH.dn):'')+`<button onclick="openSet()">⚙</button><button onclick="dtbDel()">🗑</button><button onclick="dtbDone()">✕</button>`;
   el.classList.add('on');
 }
+function setFields(d){
+  const pos=d.type==='long'||d.type==='short',pr=v=>(+v).toFixed(S.dp);
+  if(pos){
+    const rr=Math.abs(d.a.p-d.sl)>0?Math.abs(d.tp-d.a.p)/Math.abs(d.a.p-d.sl):0;
+    return[['en','Entry price',pr(d.a.p)],['tp','Target (TP) price',pr(d.tp)],['sl','Stop (SL) price',pr(d.sl)],['lo','Lots (quantity)',(d.lots||lots())],['rr','Risk/Reward ratio',rr.toFixed(2)]];
+  }
+  return[['lw','Line thickness',d.lw||1.6]];
+}
+window.openSet=()=>{
+  if(!sel)return;const d=sel,pos=d.type==='long'||d.type==='short',el=$('dset');
+  const f=setFields(d);
+  el.innerHTML=`<h4>${TNAME[d.type]||''} settings <button onclick="closeSet()">Done</button></h4><div class="gr">`+f.map(([k,n,v])=>k==='lw'?`<label>${n}<select oninput="setVal('lw',this.value)">${[1,1.6,2.5,3.5,5].map(x=>`<option value="${x}" ${x===(d.lw||1.6)?'selected':''}>${x}</option>`).join('')}</select></label>`:`<label>${n}<input id="sf_${k}" type="number" step="any" inputmode="decimal" value="${v}" oninput="setVal('${k}',this.value)"></label>`).join('')+`</div>`+(pos?`<div class="note">Entry badalne par TP/SL saath hi khisakte hain. R/R likhne par TP apne aap set hota hai. Amount = lots × price farak.</div>`:'');
+  el.classList.add('on');
+};
+window.closeSet=()=>{$('dset').classList.remove('on')};
+window.setVal=(k,raw)=>{
+  const d=sel;if(!d)return;const v=parseFloat(raw);if(!isFinite(v)||v<=0)return;
+  const lg=d.type==='long';
+  if(k==='lw'){d.lw=v}
+  else if(k==='en'){const dp=v-d.a.p;d.a={x:d.a.x,p:v};d.b={x:d.b.x,p:v};d.tp+=dp;d.sl+=dp}
+  else if(k==='tp')d.tp=v;
+  else if(k==='sl')d.sl=v;
+  else if(k==='lo')d.lots=Math.max(0.01,v);
+  else if(k==='rr'){const risk=Math.abs(d.a.p-d.sl)||1;d.tp=lg?d.a.p+v*risk:d.a.p-v*risk}
+  if(d.type==='long'||d.type==='short'){
+    const rr=Math.abs(d.a.p-d.sl)>0?Math.abs(d.tp-d.a.p)/Math.abs(d.a.p-d.sl):0,pr=x=>(+x).toFixed(S.dp);
+    const set=(id,val)=>{const e=$('sf_'+id);if(e&&document.activeElement!==e)e.value=val};
+    set('en',pr(d.a.p));set('tp',pr(d.tp));set('sl',pr(d.sl));set('rr',rr.toFixed(2));
+  }
+  drawChart();
+};
 window.dtbCol=(k,inp)=>{if(!sel)return;if(k==='col')setDcol(inp.value,1);sel[k]=inp.value;inp.parentNode.style.background=inp.value;drawChart()};
 window.dtbDel=()=>{const a=DR[dkey()];if(a&&sel){const i=a.indexOf(sel);if(i>=0)a.splice(i,1)}sel=null;updDtb();drawChart()};
 window.dtbDone=()=>{sel=null;updDtb();drawChart()};
@@ -812,7 +854,7 @@ function drawShape(g,d,w){
   const A=toXY(d.a),B=toXY(d.b),R=w-AXW,H=VW.H;
   g.save();g.beginPath();g.rect(0,0,R,H);g.clip();
   const CC=d.col||'#f5b53d';
-  g.strokeStyle=CC;g.fillStyle=CC;g.lineWidth=1.6;g.setLineDash([]);
+  g.strokeStyle=CC;g.fillStyle=CC;g.lineWidth=d.lw||1.6;g.setLineDash([]);
   const seg=(x1,y1,x2,y2)=>{g.beginPath();g.moveTo(x1,y1);g.lineTo(x2,y2);g.stroke()};
   const dot=P=>{g.beginPath();g.arc(P.x,P.y,3.5,0,7);g.fill()};
   const dx=B.x-A.x,dy=B.y-A.y,k=5000/(Math.hypot(dx,dy)||1);
@@ -824,7 +866,7 @@ function drawShape(g,d,w){
   else if(d.type==='vline'){seg(A.x,0,A.x,H)}
   else if(d.type==='rect'){g.fillStyle=rgba(CC,.13);g.fillRect(A.x,A.y,dx,dy);g.strokeRect(A.x,A.y,dx,dy);g.fillStyle=CC;dot(A);dot(B)}
   else if(d.type==='long'||d.type==='short'){
-    const G=posGeo(d),lg=d.type==='long',L=lots(),cs=S.cs;
+    const G=posGeo(d),lg=d.type==='long',L=d.lots||lots(),cs=S.cs;
     const cu=d.cu||TH.up,cd=d.cd||TH.dn;
     g.fillStyle=rgba(cu,.22);g.fillRect(G.x0,Math.min(A.y,G.yt),G.ww,Math.abs(G.yt-A.y));
     g.fillStyle=rgba(cd,.22);g.fillRect(G.x0,Math.min(A.y,G.ys),G.ww,Math.abs(G.ys-A.y));
