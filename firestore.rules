@@ -1,0 +1,82 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAdmin() {
+      return request.auth != null &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // user sirf ye avatar likh sakta hai: khaali ya p0..p19 (ready avatars)
+    function okAv(v) {
+      return v is string && (v == '' || v.matches('^p([0-9]|1[0-9])$'));
+    }
+
+    match /players/{uid} {
+      allow read: if true;
+
+      allow create: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(
+          ['name','pnl','trades','wins','t','joined','bonus','adsDay','adsCount',
+           'av','age','avPend','avSt'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() <= 20
+        && request.resource.data.pnl is number
+        && okAv(request.resource.data.get('av', ''))
+        && request.resource.data.get('avSt', '') in ['', 'pending']
+        && request.resource.data.get('avPend', '') is string
+        && request.resource.data.get('avPend', '').size() < 30000;
+
+      allow update: if (
+        request.auth != null && request.auth.uid == uid
+        && resource.data.get('banned', false) == false
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(
+          ['name','pnl','trades','wins','t','bonus','adsDay','adsCount',
+           'av','age','avPend','avSt'])
+        && request.resource.data.name.size() <= 20
+        && request.resource.data.pnl is number
+        // photo/age ke fields tabhi check hote hain jab user unhe badle
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['av'])
+            || okAv(request.resource.data.get('av', '')))
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['avSt'])
+            || request.resource.data.get('avSt', '') in ['', 'pending'])
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['avPend'])
+            || (request.resource.data.get('avPend', '') is string
+                && request.resource.data.get('avPend', '').size() < 30000))
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['age'])
+            || (request.resource.data.get('age', 0) is number
+                && request.resource.data.get('age', 0) >= 0
+                && request.resource.data.get('age', 0) <= 99))
+      ) || isAdmin();
+
+      allow delete: if (
+        request.auth != null && request.auth.uid == uid
+        && resource.data.get('banned', false) == false
+      ) || isAdmin();
+    }
+
+    // unique username: har naam ek hi user ka
+    match /usernames/{k} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.resource.data.uid == request.auth.uid
+        && k.size() >= 3 && k.size() <= 20;
+      allow update: if request.auth != null
+        && resource.data.uid == request.auth.uid
+        && request.resource.data.uid == request.auth.uid;
+      allow delete: if (request.auth != null && resource.data.uid == request.auth.uid)
+        || isAdmin();
+      allow write: if isAdmin();
+    }
+
+    match /config/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /admins/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
+    }
+  }
+}
