@@ -874,10 +874,11 @@ function drawShape(g,d,w){
     const cu=d.cu||TH.up,cd=d.cd||TH.dn;
     g.fillStyle=rgba(cu,.22);g.fillRect(G.x0,Math.min(A.y,G.yt),G.ww,Math.abs(G.yt-A.y));
     g.fillStyle=rgba(cd,.22);g.fillRect(G.x0,Math.min(A.y,G.ys),G.ww,Math.abs(G.ys-A.y));
-    g.lineWidth=1.2;g.strokeStyle=rgba(cu,.75);g.strokeRect(G.x0+.5,Math.min(A.y,G.yt)+.5,G.ww-1,Math.abs(G.yt-A.y)-1);
-    g.strokeStyle=rgba(cd,.75);g.strokeRect(G.x0+.5,Math.min(A.y,G.ys)+.5,G.ww-1,Math.abs(G.ys-A.y)-1);
-    g.lineWidth=1.2;g.strokeStyle=CC;seg(G.x0,A.y,G.x0+G.ww,A.y);
-    g.strokeStyle=cu;seg(G.x0,G.yt,G.x0+G.ww,G.yt);g.strokeStyle=cd;seg(G.x0,G.ys,G.x0+G.ww,G.ys);
+    {const cy=toXY({x:d.a.x,p:mid}).y,pr=(mid-d.a.p)*(lg?1:-1);
+     // live: entry se current price tak ka hissa gehra rang
+     if(pr>0){const e=Math.max(Math.min(cy,Math.max(A.y,G.yt)),Math.min(A.y,G.yt));g.fillStyle=rgba(cu,.5);g.fillRect(G.x0,Math.min(A.y,e),G.ww,Math.abs(e-A.y))}
+     else if(pr<0){const e=Math.max(Math.min(cy,Math.max(A.y,G.ys)),Math.min(A.y,G.ys));g.fillStyle=rgba(cd,.5);g.fillRect(G.x0,Math.min(A.y,e),G.ww,Math.abs(e-A.y))}}
+    g.lineWidth=1;g.strokeStyle='rgba(190,196,214,.55)';seg(G.x0,A.y,G.x0+G.ww,A.y);
     const dT=d.tp-d.a.p,dS=d.sl-d.a.p,pc=v=>Math.abs(v/d.a.p*100).toFixed(3);
     const amt=v=>money(Math.abs(v)*L*cs);
     const rr=Math.abs(dS)>0?Math.abs(dT/dS):0;
