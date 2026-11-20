@@ -793,7 +793,11 @@ function drawCross(g,w,h){
   if(!VW)return;
   const R=w-AXW;
   const isPs=drawing&&(drawing.type==='long'||drawing.type==='short');
-  const pt=drawing?(isPs?drawing.a:drawing.b):(tool==='elliott'&&multi&&multi.pts.length?multi.pts[multi.pts.length-1]:null);
+  let pt=drawing?(isPs?drawing.a:drawing.b):(tool==='elliott'&&multi&&multi.pts.length?multi.pts[multi.pts.length-1]:null);
+  if(!pt&&hdrag){
+    const hh=handlesOf(hdrag.d).find(q=>q.k===hdrag.k);
+    if(hh)pt=toData({x:hh.x,y:hh.y});
+  }
   if(pt){
     const P=toXY(pt);g.save();g.beginPath();g.rect(0,0,R,VW.H);g.clip();
     g.strokeStyle='#3b6bff';g.lineWidth=1;g.setLineDash([6,5]);g.beginPath();g.moveTo(0,P.y);g.lineTo(R,P.y);g.moveTo(P.x,0);g.lineTo(P.x,VW.H);g.stroke();g.setLineDash([]);
@@ -1000,7 +1004,7 @@ function drawChartNow(){
     [[up,'#6aa7ff'],[lo,'#6aa7ff'],[mi,'#4a5aa0']].forEach(([arr,col])=>{g.beginPath();arr.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]));g.strokeStyle=col;g.lineWidth=1.1;g.stroke()});
   }
   ((DR[dkey()]||[]).concat(drawing&&drawing.type!=='long'&&drawing.type!=='short'?[drawing]:[]).concat(multi&&multi.pts.length?[multi]:[])).forEach(d=>drawShape(g,d,w));
-  (DR[dkey()]||[]).forEach(d=>{if(d.type==='long'||d.type==='short'){const R=w-AXW;[[d.tp,d.cu||TH.up],[d.sl,d.cd||TH.dn]].forEach(([v,c])=>{const yy=toXY({x:d.a.x,p:v}).y;if(yy>4&&yy<VW.H-4)axTag(g,R,yy,px(v),c)})}});
+  (DR[dkey()]||[]).forEach(d=>{if(d.type==='long'||d.type==='short'){const R=w-AXW;[[d.tp,d.cu||TH.up],[d.a.p,'#5a6070'],[d.sl,d.cd||TH.dn]].forEach(([v,c])=>{const yy=toXY({x:d.a.x,p:v}).y;if(yy>4&&yy<VW.H-4)axTag(g,R,yy,px(v),c)})}});
   drawHandles(g);
   g.font='10px system-ui';
   const line=(v,col,txt)=>{
