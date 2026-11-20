@@ -107,6 +107,8 @@ window.FIREBASE_CONFIG={apiKey:"AIzaSyCC8y_IV3V35XrQwUJEXZxNcNyOY01t9fA",authDom
       <label class="tg"><div><b>📺 Interstitial ad (Leaderboard)</b><span class="mut">ON: Leaderboard kholne par full-screen ad, lekin sirf tab jab pichhle ad ko "gap" minute ho chuke hon.</span></div><input type="checkbox" id="cInt"></label>
       <div class="g2" style="margin-top:6px"><div><label class="fl">Interstitial gap (minute)</label><input id="cGap" type="number" min="1" max="120" inputmode="numeric"></div></div>
       <label class="tg"><div><b>🏆 Leaderboard: sirf profit wale</b><span class="mut">ON: leaderboard mein sirf profit (+) wale traders, sabse zyada profit upar. Loss wale nahi dikhenge.</span></div><input type="checkbox" id="cLbP"></label>
+      <label class="tg"><div><b>📷 User photo upload</b><span class="mut">ON: users gallery se apni photo laga sakte hain. OFF: sirf ready avatars.</span></div><input type="checkbox" id="cPhoto"></label>
+      <label class="tg"><div><b>🛡 Photo review (approve ke baad dikhe)</b><span class="mut">ON: upload ki hui photo pehle neeche "Photo Review" mein aayegi; approve karne par hi leaderboard/dusron ko dikhegi. Strongly recommended.</span></div><input type="checkbox" id="cPRev"></label>
       <div class="g2" style="margin-top:6px"><div><label class="fl">Trades per user per din</label><input id="cTLim" type="number" min="1" max="10000" inputmode="numeric"></div><div><label class="fl">Ek saath max open trades</label><input id="cMaxOpen" type="number" min="1" max="50" inputmode="numeric"></div></div>
       <div class="g2" style="margin-top:6px">
         <div><label class="fl">Reward ($ per ad)</label><input id="cReward" type="number" min="1" inputmode="numeric"></div>
@@ -136,6 +138,11 @@ window.FIREBASE_CONFIG={apiKey:"AIzaSyCC8y_IV3V35XrQwUJEXZxNcNyOY01t9fA",authDom
 
       <button class="btn pr" id="cSave" style="width:100%;margin-top:14px">💾 Save settings</button>
       <div class="mut" style="margin-top:8px">Naya setting app mein agli baar khulne par (ya 30 minute baad) lagta hai.</div>
+    </div>
+
+    <div class="card" id="revBox" style="margin-bottom:12px">
+      <h3 style="margin:0 0 8px">📷 Photo Review <span id="revN" class="mut"></span></h3>
+      <div id="revList" class="mut">Load ho raha hai…</div>
     </div>
 
     <div class="stats">
@@ -213,7 +220,7 @@ else{
       $('cLogin').checked=c.loginRequired!==false;
       $('cTest').checked=!!c.testAds;
       $('cBan').checked=c.bannerEnabled!==false;$('cInt').checked=c.interstitialEnabled!==false;$('cGap').value=c.interstitialGapMin||12;
-      $('cReward').value=c.rewardAmount;$('cLbP').checked=c.lbProfitOnly!==false;$('cTLim').value=c.dailyTradeLimit||100;$('cMaxOpen').value=c.maxOpenPos||3;
+      $('cReward').value=c.rewardAmount;$('cLbP').checked=c.lbProfitOnly!==false;$('cPhoto').checked=c.photoUpload!==false;$('cPRev').checked=c.photoReview!==false;$('cTLim').value=c.dailyTradeLimit||100;$('cMaxOpen').value=c.maxOpenPos||3;
       $('cLimit').value=c.dailyAdLimit;
       $('cNet').value=c.adNetwork==='admob'?'admob':'unity';
       $('cUKey').value=(c.unity&&c.unity.appKey)||'';
@@ -247,7 +254,7 @@ else{
       const missing=net==='unity'?(!key||!unit):!aunit;
       if(missing&&!test&&!confirm('Chune hue network ke ID khaali hain, isliye asli ads fail honge. Phir bhi save karein?'))return;
       const data={loginRequired:$('cLogin').checked,testAds:test,rewardAmount:reward,dailyAdLimit:limit,adNetwork:net,
-        bannerEnabled:$('cBan').checked,interstitialEnabled:$('cInt').checked,interstitialGapMin:gap,dailyTradeLimit:tlim,maxOpenPos:mop,lbProfitOnly:$('cLbP').checked,
+        bannerEnabled:$('cBan').checked,interstitialEnabled:$('cInt').checked,interstitialGapMin:gap,dailyTradeLimit:tlim,maxOpenPos:mop,lbProfitOnly:$('cLbP').checked,photoUpload:$('cPhoto').checked,photoReview:$('cPRev').checked,
         unity:{appKey:key,adUnitId:unit,bannerAdUnitId:$('cUBan').value.trim(),interstitialAdUnitId:$('cUInt').value.trim()},admob:{rewardedUnitId:aunit,bannerUnitId:$('cABan').value.trim(),interstitialUnitId:$('cAInt').value.trim()},updated:Fs.serverTimestamp()};
       $('cSave').disabled=true;st.textContent='Save ho raha hai…';
       try{await Fs.setDoc(Fs.doc(db,'config','app'),data,{merge:true});st.innerHTML='<span class="okmsg">✔ Save ho gaya</span>'}
@@ -265,9 +272,32 @@ else{
         hasMore=rows.length>=lim;
         try{const c=await Fs.getCountFromServer(Fs.collection(db,'players'));$('sTotal').textContent=c.data().count.toLocaleString('en-US')}catch(_){$('sTotal').textContent=rows.length}
         $('note').textContent='';
-        render();
+        render();loadReview();
       }catch(e){$('note').textContent='Error: '+(e.code||e.message)}
     }
+
+    async function loadReview(){
+      const box=$('revList');
+      try{
+        const s=await Fs.getDocs(Fs.query(Fs.collection(db,'players'),Fs.where('avSt','==','pending'),Fs.limit(50)));
+        const L=s.docs.map(x=>({id:x.id,...x.data()})).filter(r=>r.avPend&&String(r.avPend).startsWith('data:image/'));
+        $('revN').textContent=L.length?'('+L.length+' pending)':'';
+        box.innerHTML=L.length?L.map(r=>`<div class="pl" data-id="${esc(r.id)}" style="align-items:center">
+          <img src="${r.avPend}" alt="" style="width:84px;height:84px;border-radius:12px;object-fit:cover;flex:none">
+          <div class="inf"><b>${esc(r.name||'Trader')}</b><span>UID: ${esc(r.id.slice(0,10))}…</span>
+            <div class="acts"><button class="btn sm gr" data-r="ok">✔ Approve</button><button class="btn sm rd" data-r="no">✖ Reject</button><button class="btn sm rd" data-r="ban">Reject + Block</button></div></div></div>`).join(''):'Koi photo pending nahi hai ✅';
+      }catch(e){box.textContent='Review load fail: '+(e.code||e.message)+' (pehli baar index/permission lag sakta hai)'}
+    }
+    $('revList').addEventListener('click',async e=>{
+      const b=e.target.closest('button[data-r]');if(!b)return;
+      const id=b.closest('.pl').dataset.id,ref=Fs.doc(db,'players',id);
+      try{
+        if(b.dataset.r==='ok'){const s=await Fs.getDoc(ref);const d=s.data()||{};if(d.avPend)await Fs.updateDoc(ref,{av:d.avPend,avPend:'',avSt:'approved'})}
+        else if(b.dataset.r==='no')await Fs.updateDoc(ref,{avPend:'',avSt:'rejected'});
+        else{if(!confirm('Photo reject karke user ko BLOCK karna hai?'))return;await Fs.updateDoc(ref,{avPend:'',avSt:'rejected',av:'',banned:true})}
+        loadReview();
+      }catch(err){alert('Fail: '+(err.code||err.message))}
+    });
 
     function render(){
       const t=$('q').value.trim().toLowerCase();
@@ -281,7 +311,7 @@ else{
       $('list').innerHTML=v.map(r=>{
         const nm=r.name||'Trader',h=[...nm].reduce((a,c)=>a+c.charCodeAt(0),0)%360,pnl=r.pnl||0,w=r.trades?Math.round((r.wins||0)/r.trades*100):0;
         return `<div class="pl" data-id="${esc(r.id)}">
-          <div class="av" style="background:hsl(${h},55%,38%)">${esc(nm[0]||'T')}</div>
+          <div class="av" style="background:hsl(${h},55%,38%);overflow:hidden">${r.av&&String(r.av).startsWith('data:image/')?`<img src="${r.av}" alt="" style="width:100%;height:100%;object-fit:cover">`:esc(nm[0]||'T')}</div>
           <div class="inf">
             <b>${esc(nm)}${r.banned?'<span class="ban">BLOCKED</span>':''}</b>
             <span>UID: ${esc(r.id.slice(0,10))}… • Joined ${fmtD(r.joined)}</span>
@@ -291,6 +321,7 @@ else{
               <button class="btn sm ${r.banned?'gr':'rd'}" data-a="ban">${r.banned?'Unblock':'Block'}</button>
               <button class="btn sm" data-a="reset">Reset stats</button>
               <button class="btn sm" data-a="rename">Rename</button>
+              ${r.av?'<button class="btn sm" data-a="rmav">Photo hatao</button>':''}
               <button class="btn sm rd" data-a="del">Delete</button>
             </div>
           </div>
@@ -313,9 +344,19 @@ else{
         }else if(b.dataset.a==='rename'){
           const n=(prompt('Naya naam (3-20 akshar):',r.name||'')||'').trim();
           if(n.length<3||n.length>20)return;
+          const key=n.toLowerCase().replace(/[^a-z0-9_\u0900-\u097f]/g,'');
+          if(key.length<3){alert('Naam mein kam se kam 3 akshar/number chahiye');return}
+          const us=await Fs.getDoc(Fs.doc(db,'usernames',key));
+          if(us.exists()&&us.data().uid!==id){alert('Ye naam pehle se kisi ka hai');return}
+          await Fs.setDoc(Fs.doc(db,'usernames',key),{uid:id,name:n});
+          const ok=(r.name||'').toLowerCase().replace(/[^a-z0-9_\u0900-\u097f]/g,'');if(ok&&ok!==key){try{await Fs.deleteDoc(Fs.doc(db,'usernames',ok))}catch(_){}}
           await Fs.updateDoc(ref,{name:n});r.name=n;
+        }else if(b.dataset.a==='rmav'){
+          if(!confirm('Is user ki photo hatani hai?'))return;
+          await Fs.updateDoc(ref,{av:'',avPend:'',avSt:'rejected'});r.av='';
         }else if(b.dataset.a==='del'){
           if(!confirm('PAKKA delete karna hai: '+(r.name||id)+' ?\n(Sirf leaderboard profile hatega. Login account Firebase Authentication mein rahega. Block karna behtar hai.)'))return;
+          try{const k=(r.name||'').toLowerCase().replace(/[^a-z0-9_\u0900-\u097f]/g,'');if(k)await Fs.deleteDoc(Fs.doc(db,'usernames',k))}catch(_){}
           await Fs.deleteDoc(ref);rows=rows.filter(x=>x.id!==id);
         }
         render();
