@@ -854,6 +854,20 @@ window.setVal=(k,raw)=>{
 window.dtbCol=(k,inp)=>{if(!sel)return;if(k==='col')setDcol(inp.value,1);sel[k]=inp.value;inp.parentNode.style.background=inp.value;drawChart()};
 window.dtbDel=()=>{const a=DR[dkey()];if(a&&sel){const i=a.indexOf(sel);if(i>=0)a.splice(i,1)}sel=null;updDtb();drawChart()};
 window.dtbDone=()=>{sel=null;updDtb();drawChart()};
+function posFills(g,d,R,H){
+  const A=toXY(d.a),G=posGeo(d),lg=d.type==='long',cu=d.cu||TH.up,cd=d.cd||TH.dn;
+  g.save();g.beginPath();g.rect(0,0,R,H);g.clip();
+    g.fillStyle=rgba(cu,.22);g.fillRect(G.x0,Math.min(A.y,G.yt),G.ww,Math.abs(G.yt-A.y));
+    g.fillStyle=rgba(cd,.22);g.fillRect(G.x0,Math.min(A.y,G.ys),G.ww,Math.abs(G.ys-A.y));
+    {const cy=toXY({x:d.a.x,p:mid}).y,pr=(mid-d.a.p)*(lg?1:-1);
+     // live: entry se current price tak ka hissa gehra rang
+     if(pr>0){const e=Math.max(Math.min(cy,Math.max(A.y,G.yt)),Math.min(A.y,G.yt));g.fillStyle=rgba(cu,.5);g.fillRect(G.x0,Math.min(A.y,e),G.ww,Math.abs(e-A.y))}
+     else if(pr<0){const e=Math.max(Math.min(cy,Math.max(A.y,G.ys)),Math.min(A.y,G.ys));g.fillStyle=rgba(cd,.5);g.fillRect(G.x0,Math.min(A.y,e),G.ww,Math.abs(e-A.y))}}
+  g.restore();
+}
+function drawZones(g,w){
+  const R=w-AXW;(DR[dkey()]||[]).forEach(d=>{if(d.type==='long'||d.type==='short')posFills(g,d,R,VW.H)});
+}
 function drawShape(g,d,w){
   const A=toXY(d.a),B=toXY(d.b),R=w-AXW,H=VW.H;
   g.save();g.beginPath();g.rect(0,0,R,H);g.clip();
@@ -872,12 +886,6 @@ function drawShape(g,d,w){
   else if(d.type==='long'||d.type==='short'){
     const G=posGeo(d),lg=d.type==='long',L=d.lots||lots(),cs=S.cs;
     const cu=d.cu||TH.up,cd=d.cd||TH.dn;
-    g.fillStyle=rgba(cu,.22);g.fillRect(G.x0,Math.min(A.y,G.yt),G.ww,Math.abs(G.yt-A.y));
-    g.fillStyle=rgba(cd,.22);g.fillRect(G.x0,Math.min(A.y,G.ys),G.ww,Math.abs(G.ys-A.y));
-    {const cy=toXY({x:d.a.x,p:mid}).y,pr=(mid-d.a.p)*(lg?1:-1);
-     // live: entry se current price tak ka hissa gehra rang
-     if(pr>0){const e=Math.max(Math.min(cy,Math.max(A.y,G.yt)),Math.min(A.y,G.yt));g.fillStyle=rgba(cu,.5);g.fillRect(G.x0,Math.min(A.y,e),G.ww,Math.abs(e-A.y))}
-     else if(pr<0){const e=Math.max(Math.min(cy,Math.max(A.y,G.ys)),Math.min(A.y,G.ys));g.fillStyle=rgba(cd,.5);g.fillRect(G.x0,Math.min(A.y,e),G.ww,Math.abs(e-A.y))}}
     g.lineWidth=1;g.strokeStyle='rgba(190,196,214,.55)';seg(G.x0,A.y,G.x0+G.ww,A.y);
     {const L=candles[candles.length-1];if(L){const E=toXY({x:L.id,p:mid});if(E.x>=G.x0-2){g.save();g.lineWidth=1;g.strokeStyle='rgba(190,196,214,.7)';g.setLineDash([4,4]);seg(G.x0,A.y,Math.min(E.x,G.x0+G.ww),A.y+(E.y-A.y)*Math.min(1,(G.x0+G.ww-G.x0)/Math.max(1,E.x-G.x0)));g.restore()}}}
     const dT=d.tp-d.a.p,dS=d.sl-d.a.p,pc=v=>Math.abs(v/d.a.p*100).toFixed(3);
@@ -976,6 +984,7 @@ function drawChartNow(){
     g.strokeStyle=TH.grid;g.lineWidth=1;g.beginPath();g.moveTo(0,yy);g.lineTo(w-AXW,yy);g.stroke();
     g.fillStyle=AXC;g.fillText(px(val),w-AXW+6,yy+3);
   }
+  VW={left,cw,mn,mx,H,base:candles[0].id};drawZones(g,w);
   for(let i=i0;i<=i1;i++){
     const c=candles[i],x=X(i),upc=c.c>=c.o,col=upc?TH.up:TH.dn,wk=(upc?TH.wu:TH.wd)||col;
     g.strokeStyle=wk;g.fillStyle=col;g.lineWidth=1;
