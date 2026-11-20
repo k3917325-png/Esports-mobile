@@ -107,7 +107,7 @@ window.FIREBASE_CONFIG={apiKey:"AIzaSyCC8y_IV3V35XrQwUJEXZxNcNyOY01t9fA",authDom
       <label class="tg"><div><b>📺 Interstitial ad (Leaderboard)</b><span class="mut">ON: Leaderboard kholne par full-screen ad, lekin sirf tab jab pichhle ad ko "gap" minute ho chuke hon.</span></div><input type="checkbox" id="cInt"></label>
       <div class="g2" style="margin-top:6px"><div><label class="fl">Interstitial gap (minute)</label><input id="cGap" type="number" min="1" max="120" inputmode="numeric"></div></div>
       <label class="tg"><div><b>🏆 Leaderboard: sirf profit wale</b><span class="mut">ON: leaderboard mein sirf profit (+) wale traders, sabse zyada profit upar. Loss wale nahi dikhenge.</span></div><input type="checkbox" id="cLbP"></label>
-      <div class="g2" style="margin-top:6px"><div><label class="fl">Trades per user per din</label><input id="cTLim" type="number" min="1" max="10000" inputmode="numeric"></div></div>
+      <div class="g2" style="margin-top:6px"><div><label class="fl">Trades per user per din</label><input id="cTLim" type="number" min="1" max="10000" inputmode="numeric"></div><div><label class="fl">Ek saath max open trades</label><input id="cMaxOpen" type="number" min="1" max="50" inputmode="numeric"></div></div>
       <div class="g2" style="margin-top:6px">
         <div><label class="fl">Reward ($ per ad)</label><input id="cReward" type="number" min="1" inputmode="numeric"></div>
         <div><label class="fl">Ads per user per din</label><input id="cLimit" type="number" min="1" inputmode="numeric"></div>
@@ -206,14 +206,14 @@ else{
     });
 
     /* ---- App Settings (Firestore: config/app) ---- */
-    const DEF={loginRequired:true,bannerEnabled:true,interstitialEnabled:true,interstitialGapMin:12,dailyTradeLimit:100,lbProfitOnly:true,testAds:false,rewardAmount:1000,dailyAdLimit:20,adNetwork:'unity',unity:{appKey:'',adUnitId:''},admob:{rewardedUnitId:''}};
+    const DEF={loginRequired:true,bannerEnabled:true,interstitialEnabled:true,interstitialGapMin:12,dailyTradeLimit:100,maxOpenPos:3,lbProfitOnly:true,testAds:false,rewardAmount:1000,dailyAdLimit:20,adNetwork:'unity',unity:{appKey:'',adUnitId:''},admob:{rewardedUnitId:''}};
     function netUI(){const a=$('cNet').value==='admob';$('boxUnity').classList.toggle('on',!a);$('boxAdmob').classList.toggle('on',a)}
     function fillSettings(c){
       c=Object.assign({},DEF,c||{});
       $('cLogin').checked=c.loginRequired!==false;
       $('cTest').checked=!!c.testAds;
       $('cBan').checked=c.bannerEnabled!==false;$('cInt').checked=c.interstitialEnabled!==false;$('cGap').value=c.interstitialGapMin||12;
-      $('cReward').value=c.rewardAmount;$('cLbP').checked=c.lbProfitOnly!==false;$('cTLim').value=c.dailyTradeLimit||100;
+      $('cReward').value=c.rewardAmount;$('cLbP').checked=c.lbProfitOnly!==false;$('cTLim').value=c.dailyTradeLimit||100;$('cMaxOpen').value=c.maxOpenPos||3;
       $('cLimit').value=c.dailyAdLimit;
       $('cNet').value=c.adNetwork==='admob'?'admob':'unity';
       $('cUKey').value=(c.unity&&c.unity.appKey)||'';
@@ -239,13 +239,15 @@ else{
       if(!(reward>=1&&reward<=1000000)){st.textContent='Reward 1 se 10,00,000 ke beech rakho';return}
       const tlim=Math.round(+$('cTLim').value);
       if(!(tlim>=1&&tlim<=10000)){st.textContent='Daily trade limit 1 se 10000 ke beech rakho';return}
+      const mop=Math.round(+$('cMaxOpen').value);
+      if(!(mop>=1&&mop<=50)){st.textContent='Max open trades 1 se 50 ke beech rakho';return}
       const gap=Math.round(+$('cGap').value);
       if(!(gap>=1&&gap<=120)){st.textContent='Interstitial gap 1 se 120 minute ke beech rakho';return}
       if(!(limit>=1&&limit<=200)){st.textContent='Daily limit 1 se 200 ke beech rakho';return}
       const missing=net==='unity'?(!key||!unit):!aunit;
       if(missing&&!test&&!confirm('Chune hue network ke ID khaali hain, isliye asli ads fail honge. Phir bhi save karein?'))return;
       const data={loginRequired:$('cLogin').checked,testAds:test,rewardAmount:reward,dailyAdLimit:limit,adNetwork:net,
-        bannerEnabled:$('cBan').checked,interstitialEnabled:$('cInt').checked,interstitialGapMin:gap,dailyTradeLimit:tlim,lbProfitOnly:$('cLbP').checked,
+        bannerEnabled:$('cBan').checked,interstitialEnabled:$('cInt').checked,interstitialGapMin:gap,dailyTradeLimit:tlim,maxOpenPos:mop,lbProfitOnly:$('cLbP').checked,
         unity:{appKey:key,adUnitId:unit,bannerAdUnitId:$('cUBan').value.trim(),interstitialAdUnitId:$('cUInt').value.trim()},admob:{rewardedUnitId:aunit,bannerUnitId:$('cABan').value.trim(),interstitialUnitId:$('cAInt').value.trim()},updated:Fs.serverTimestamp()};
       $('cSave').disabled=true;st.textContent='Save ho raha hai…';
       try{await Fs.setDoc(Fs.doc(db,'config','app'),data,{merge:true});st.innerHTML='<span class="okmsg">✔ Save ho gaya</span>'}

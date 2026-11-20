@@ -584,8 +584,10 @@ const needMargin=l=>l*S.cs*mid/S.lev;
 const maxLots=()=>Math.max(0,Math.floor(freeMargin()*S.lev/(S.cs*mid)*100)/100);
 const tradesToday=()=>acct.tDay===todayStr()?(acct.tCnt||0):0;
 const tradeLimit=()=>Math.max(1,Math.round(+appCfg.dailyTradeLimit||100));
+const maxOpen=()=>Math.max(1,Math.round(+appCfg.maxOpenPos||3));
 function openPos(side,price){
   const l=lots(),need=needMargin(l);
+  if(pos.length>=maxOpen()){toast('Ek saath sirf '+maxOpen()+' trade open ho sakte hain. Pehle koi trade band karo.');return false}
   if(tradesToday()>=tradeLimit()){toast('Aaj ki limit poori: din mein sirf '+tradeLimit()+' trade. Kal dobara aao.');return false}
   if(bal<=0.5&&!pos.length){toast('Balance $0 hai. Portfolio mein ad dekho aur $'+Math.max(1,+appCfg.rewardAmount||1000)+' pao.');goHome('port');return false}
   if(need>freeMargin()){const m=maxLots();toast(m>=0.01?'Margin kam hai. Is balance par max '+m.toFixed(2)+' lot.':'Free margin nahi bachi. Positions band karo ya ad dekho.');return false}
@@ -1462,7 +1464,7 @@ window.addEventListener('fb-auth',async e=>{
 });
 
 /* ================= REMOTE CONFIG (admin panel) + LOGIN GATE + REWARDED ADS ================= */
-const CFG_DEF={loginRequired:true,bannerEnabled:true,interstitialEnabled:true,interstitialGapMin:12,dailyTradeLimit:100,lbProfitOnly:true,adNetwork:'unity',rewardAmount:1000,dailyAdLimit:20,testAds:false,unity:{appKey:'',adUnitId:'',bannerAdUnitId:'',interstitialAdUnitId:''},admob:{rewardedUnitId:'',bannerUnitId:'',interstitialUnitId:''}};
+const CFG_DEF={loginRequired:true,bannerEnabled:true,interstitialEnabled:true,interstitialGapMin:12,dailyTradeLimit:100,maxOpenPos:3,lbProfitOnly:true,adNetwork:'unity',rewardAmount:1000,dailyAdLimit:20,testAds:false,unity:{appKey:'',adUnitId:'',bannerAdUnitId:'',interstitialAdUnitId:''},admob:{rewardedUnitId:'',bannerUnitId:'',interstitialUnitId:''}};
 let appCfg=(()=>{let c=null;try{c=JSON.parse(localStorage.getItem('ts_cfg')||'null')}catch(_){}return Object.assign({},CFG_DEF,c||{})})();
 let cfgAt=0,adBusy=false;
 function tradePnl(){return Math.round((bal-10000-(acct.bonus||0))*100)/100}   // leaderboard sirf trading profit se (ad bonus alag)
