@@ -175,13 +175,15 @@ h4{padding:12px 16px 6px;color:#999;font-size:13px;font-weight:600}
 .pr{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #1d1d1d}
 .pr span{display:block;color:#999;font-size:12px}
 .mi{display:block;width:calc(100% - 32px);margin:10px 16px 0;text-align:left;padding:16px;border-radius:12px;background:#161616;border:0;color:#fff;font-size:15px}
-#tools{display:none;position:absolute;top:44px;left:6px;z-index:26;max-width:calc(100% - 12px);align-items:center;gap:2px;background:#1c1f26;border:1px solid #2d3340;border-radius:12px;padding:4px 6px;box-shadow:0 8px 24px rgba(0,0,0,.6)}
+#tools{display:none;position:absolute;top:46px;left:50%;transform:translateX(-50%);z-index:26;max-width:calc(100% - 12px);align-items:center;gap:0;background:#1b1b1d;border:0;border-radius:10px;padding:2px 8px 2px 4px;box-shadow:0 4px 16px rgba(0,0,0,.55)}
 #tools.open{display:flex}
-#tools .gp{color:#5b647f;font-size:18px;padding:0 4px;letter-spacing:-2px}
-#tools .ib{display:flex;gap:2px}
-#tools .ib1{background:transparent;border:0;color:#d5d9e8;border-radius:9px;min-width:42px;height:40px;display:flex;align-items:center;justify-content:center;font-size:18px;padding:0 4px}
-#tools .ib1.act,#tools .ib1:active{background:#2b3140;color:#f5b53d}
-#tools .sp{width:1px;height:26px;background:#2d3340;margin:0 4px}
+#tools .gp{display:grid;grid-template-columns:repeat(2,3px);gap:3px;padding:0 9px 0 6px;opacity:.45}
+#tools .gp i{width:3px;height:3px;border-radius:50%;background:#aab}
+#tools .ib{display:flex;gap:0}
+#tools .ib1{background:transparent;border:0;color:#d1d4dc;border-radius:8px;min-width:40px;height:38px;display:flex;align-items:center;justify-content:center;padding:0 3px}
+#tools .ib1 svg{width:28px;height:22px}
+#tools .ib1.act{color:#2962ff;background:transparent}
+#tools .ib1:active{opacity:.6}
 #dtb{display:none;position:absolute;top:6px;left:50%;transform:translateX(-50%);z-index:27;background:#1c1f26;border:1px solid #2d3340;border-radius:12px;padding:5px 8px;gap:8px;align-items:center;box-shadow:0 6px 18px rgba(0,0,0,.6);font-size:11px;color:#9aa3c7;white-space:nowrap}
 #dtb.on{display:flex}
 #dtb .sw{width:26px;height:26px}
@@ -200,7 +202,7 @@ h4{padding:12px 16px 6px;color:#999;font-size:13px;font-weight:600}
 .tc i{display:block;font-style:normal;font-size:20px;margin-bottom:2px}
 .tc.act{border-color:var(--acc);background:#3a2f12}
 .tf{display:flex;gap:8px;margin-top:8px}
-#toolHint{display:none;position:absolute;top:50px;left:50%;transform:translateX(-50%);z-index:12;background:#f5b53d;color:#000;font-weight:700;padding:6px 12px;border-radius:16px;font-size:12px;cursor:pointer;white-space:nowrap}
+#toolHint{display:none;position:absolute;top:100px;left:50%;transform:translateX(-50%);z-index:12;background:#f5b53d;color:#000;font-weight:700;padding:6px 12px;border-radius:16px;font-size:12px;cursor:pointer;white-space:nowrap}
 #tabs{display:none;position:absolute;top:44px;left:90px;z-index:25;background:#10152a;border:1px solid var(--line);border-radius:10px;padding:6px;grid-template-columns:repeat(4,auto);gap:5px;box-shadow:0 6px 20px rgba(0,0,0,.5)}
 #tabs.open{display:grid}
 .wh{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
@@ -402,12 +404,8 @@ h4{color:#e8e3ff;font-size:16px;font-weight:800;padding:14px 16px 6px}
   </div>
 
   <div id="tools">
-    <span class="gp">⋮</span>
+    <span class="gp"><i></i><i></i><i></i><i></i><i></i><i></i></span>
     <div class="ib" id="toolGrid"></div>
-    <span class="sp"></span>
-    <button class="ib1" id="dUndo" title="Undo">↶</button>
-    <button class="ib1" id="dClear" title="Sab hatao">🗑</button>
-    <button class="ib1" id="toolClose" title="Band">✕</button>
   </div>
   <div id="dtb"></div>
   <div id="toolHint"></div>
@@ -713,10 +711,10 @@ const AXW=64,LOAD=Date.now();
 let VW=null;
 const ind={ma:true,ema:false,bb:false,vol:true};
 const IND=[['ma','MA 20'],['ema','EMA 50'],['bb','Bollinger Bands'],['vol','Volume']];
-const SVG=i=>`<svg viewBox="0 0 30 24" width="30" height="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${i}</svg>`;
+const SVG=i=>`<svg viewBox="0 0 30 24" width="30" height="24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">${i}</svg>`;
 const TOOLS=[
-  ['long',SVG('<path d="M10 5h16M4 12h22M10 19h16"/><circle cx="6" cy="5" r="2.2"/><circle cx="6" cy="19" r="2.2"/><text x="14" y="16" font-size="7" fill="currentColor" stroke="none">L</text>'),'Long position'],
   ['rect',SVG('<rect x="6" y="5" width="18" height="14"/><circle cx="6" cy="5" r="2.2"/><circle cx="24" cy="5" r="2.2"/><circle cx="6" cy="19" r="2.2"/><circle cx="24" cy="19" r="2.2"/>'),'Rectangle'],
+  ['long',SVG('<path d="M10 5h16M4 12h22M10 19h16"/><circle cx="6" cy="5" r="2.2"/><circle cx="6" cy="19" r="2.2"/><text x="14" y="16" font-size="7" fill="currentColor" stroke="none">L</text>'),'Long position'],
   ['trend',SVG('<path d="M7 18 23 6"/><circle cx="6" cy="19" r="2.2"/><circle cx="24" cy="5" r="2.2"/>'),'Trendline'],
   ['hray',SVG('<path d="M8 12h20"/><circle cx="6" cy="12" r="2.2"/>'),'Horizontal ray'],
   ['fib',SVG('<path d="M4 5h22M4 11h22M4 17h22"/><circle cx="26" cy="5" r="2.2"/><circle cx="4" cy="17" r="2.2"/>'),'Fib retracement'],
@@ -728,7 +726,7 @@ const DR={};let tool=null,drawing=null,multi=null,sel=null,hdrag=null,tapSt=null
 const DCOLS=['#f5b53d','#1fb97a','#e5384f','#2fc4c4','#6aa7ff','#c77dff','#ffffff','#ff8a3d'];
 let dcol=(()=>{try{return localStorage.getItem('ts_dcol')||'#f5b53d'}catch(_){return '#f5b53d'}})();
 const dkey=()=>sym+'_'+tf;
-const addDrawing=d=>{d.col=d.col||dcol;(DR[dkey()]=DR[dkey()]||[]).push(d);sel=d;updDtb()};
+const addDrawing=d=>{d.col=d.col||(d.type==='elliott'?'#2962ff':dcol);(DR[dkey()]=DR[dkey()]||[]).push(d);sel=d;updDtb()};
 function toXY(pt){const i=pt.x-VW.base;return{x:(i-VW.left)*VW.cw+VW.cw/2,y:VW.H-(pt.p-VW.mn)/(VW.mx-VW.mn)*VW.H}}
 function toData(c){return{x:VW.base+VW.left+(c.x-VW.cw/2)/VW.cw,p:VW.mn+(VW.H-c.y)/VW.H*(VW.mx-VW.mn)}}
 function posGeo(d){
@@ -785,7 +783,7 @@ function xTag(g,x1,x2,h,txt,col){
 function drawCross(g,w,h){
   if(!VW)return;
   const R=w-AXW;
-  const pt=drawing&&(drawing.type==='long'||drawing.type==='short')?drawing.a:null;
+  const pt=drawing&&(drawing.type==='long'||drawing.type==='short')?drawing.a:(tool==='elliott'&&multi&&multi.pts.length?multi.pts[multi.pts.length-1]:null);
   if(pt){
     const P=toXY(pt);g.save();g.beginPath();g.rect(0,0,R,VW.H);g.clip();
     g.strokeStyle='#3b6bff';g.lineWidth=1;g.setLineDash([6,5]);g.beginPath();g.moveTo(0,P.y);g.lineTo(R,P.y);g.moveTo(P.x,0);g.lineTo(P.x,VW.H);g.stroke();g.setLineDash([]);
@@ -852,8 +850,8 @@ function drawShape(g,d,w){
   else if(d.type==='elliott'){
     const P=(d.pts||[d.a]).map(toXY);
     g.lineWidth=1.8;g.beginPath();P.forEach((q,i)=>i?g.lineTo(q.x,q.y):g.moveTo(q.x,q.y));g.stroke();
-    g.font='bold 11px system-ui';g.textAlign='center';
-    P.forEach((q,i)=>{dot(q);const up=i%2===1?(P[i-1]&&q.y<P[i-1].y):(P[i+1]?q.y<P[i+1].y:true);g.fillText(String(i),q.x,q.y+(i&&P[i-1]&&q.y<P[i-1].y?-8:15))});
+    g.font='bold 12px system-ui';g.textAlign='center';
+    P.forEach((q,i)=>{dot(q);if(i>0)g.fillText('('+i+')',q.x,q.y+(P[i-1]&&q.y<P[i-1].y?-9:17))});
     g.textAlign='left';
   }
   else if(d.type==='fib'){
@@ -883,10 +881,7 @@ window.recolorAll=()=>{(DR[dkey()]||[]).forEach(d=>d.col=dcol);drawChart()};
 window.togInd=k=>{ind[k]=!ind[k];renderTools();drawChart()};
 window.pickTool=k=>{tool=k;sel=null;updDtb();$('tabs').classList.remove('open');renderTools();showHint(k);drawChart()};
 $('toolBtn').onclick=()=>{renderTools();$('tools').classList.toggle('open')};
-$('toolClose').onclick=()=>$('tools').classList.remove('open');
 $('toolHint').onclick=()=>{if(multi&&multi.pts.length>=2)addDrawing(multi);endTool();drawChart()};
-$('dUndo').onclick=()=>{const a=DR[dkey()];if(a&&a.length)a.pop();drawChart()};
-$('dClear').onclick=()=>{DR[dkey()]=[];drawChart()};
 const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function fmtT(t){
   const d=new Date(t),p=n=>String(n).padStart(2,'0');
@@ -1007,7 +1002,7 @@ $('ch').addEventListener('pointerdown',e=>{
       const a=toData(p0);
       if(tool!=='elliott')try{$('ch').setPointerCapture(e.pointerId)}catch(_){}
       if(tool==='elliott'){
-        if(!multi)multi={type:'elliott',a,b:a,pts:[]};
+        if(!multi)multi={type:'elliott',a,b:a,pts:[],col:'#2962ff'};
         multi.pts.push(a);multi.b=a;
         if(multi.pts.length>=6){addDrawing(multi);endTool()}else showHint('elliott');
       }
