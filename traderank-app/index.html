@@ -769,6 +769,36 @@ function drawHandles(g){
     if(h.round)g.arc(h.x,h.y,7,0,7);else g.rect(h.x-7,h.y-7,14,14);g.fill();g.stroke();
   });
 }
+const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+function timeAt(x){
+  if(!candles.length)return Date.now();
+  const i=Math.round(x-candles[0].id),n=candles.length;
+  if(i>=0&&i<n)return candles[i].t;
+  return i<0?candles[0].t+i*tf:candles[n-1].t+(i-(n-1))*tf;
+}
+function fmtFull(t){const d=new Date(t),p=n=>String(n).padStart(2,'0');return DAYS[d.getDay()]+' '+d.getDate()+' '+MON[d.getMonth()]+" '"+String(d.getFullYear()).slice(2)+'  '+p(d.getHours())+':'+p(d.getMinutes())}
+function xTag(g,x1,x2,h,txt,col){
+  g.font='bold 11px system-ui';const tw=Math.max(g.measureText(txt).width+16,x2-x1);
+  const x=Math.max(2,Math.min($('ch').clientWidth-AXW-tw-2,(x1+x2)/2-tw/2));
+  g.fillStyle=col;g.fillRect(x,VW.H+1,tw,h-VW.H-1);g.fillStyle='#fff';g.textAlign='center';g.fillText(txt,x+tw/2,h-6);g.textAlign='left';
+}
+function drawCross(g,w,h){
+  if(!VW)return;
+  const R=w-AXW;
+  const pt=drawing&&(drawing.type==='long'||drawing.type==='short')?drawing.a:null;
+  if(pt){
+    const P=toXY(pt);g.save();g.beginPath();g.rect(0,0,R,VW.H);g.clip();
+    g.strokeStyle='#3b6bff';g.lineWidth=1;g.setLineDash([6,5]);g.beginPath();g.moveTo(0,P.y);g.lineTo(R,P.y);g.moveTo(P.x,0);g.lineTo(P.x,VW.H);g.stroke();g.setLineDash([]);
+    g.fillStyle='#3b6bff';g.beginPath();g.arc(P.x,P.y,4,0,7);g.fill();g.restore();
+    axTag(g,R,P.y,px(pt.p),'#5a6070');xTag(g,P.x,P.x,h,fmtFull(timeAt(pt.x)),'#4a5060');
+  }
+  const d=sel;
+  if(d&&(d.type==='long'||d.type==='short')&&(DR[dkey()]||[]).includes(d)){
+    const G=posGeo(d),yy=v=>toXY({x:d.a.x,p:v}).y;
+    [[d.tp,d.cu||TH.up],[d.a.p,'#5a6070'],[d.sl,d.cd||TH.dn]].forEach(([v,c])=>{const y0=yy(v);if(y0>4&&y0<VW.H-4)axTag(g,R,y0,px(v),c)});
+    xTag(g,G.x0,G.x0+G.ww,h,fmtFull(timeAt(d.a.x))+'   '+fmtFull(timeAt(d.b.x)),'#2b6bff');
+  }
+}
 function updDtb(){
   const el=$('dtb');if(!el)return;
   if(!sel||!(DR[dkey()]||[]).includes(sel)){sel=null;el.classList.remove('on');el.innerHTML='';return}
@@ -843,7 +873,7 @@ function showHint(k){
   const h=$('toolHint');if(!k){h.style.display='none';return}
   h.textContent=TNAME[k]+(k==='elliott'?': 6 point (0-5) ek ek karke tap karo'+(multi?' ('+multi.pts.length+'/6)':''):(k==='long'||k==='short')?': chart par ek tap karo (ya kheencho)':': ungli kheencho')+'   ✕ '+(k==='elliott'?'done/cancel':'cancel');h.style.display='block';
 }
-function endTool(){tool=null;drawing=null;multi=null;showHint(null)}
+function endTool(){tool=null;drawing=null;multi=null;showHint(null);try{renderTools()}catch(_){}}
 function renderTools(){
   $('toolGrid').innerHTML=TOOLS.map(([k,ic,n])=>`<button class="ib1 ${tool===k?'act':''}" title="${n}" onclick="pickTool('${k}')">${ic}</button>`).join('');
 }
@@ -851,7 +881,7 @@ window.setDcol=(c,keep)=>{dcol=c;try{localStorage.setItem('ts_dcol',c)}catch(_){
 window.recolorLast=()=>{const a=DR[dkey()];if(a&&a.length){a[a.length-1].col=dcol;drawChart()}else toast('Is chart par abhi koi drawing nahi hai')};
 window.recolorAll=()=>{(DR[dkey()]||[]).forEach(d=>d.col=dcol);drawChart()};
 window.togInd=k=>{ind[k]=!ind[k];renderTools();drawChart()};
-window.pickTool=k=>{tool=k;sel=null;updDtb();$('tools').classList.remove('open');$('tabs').classList.remove('open');showHint(k)};
+window.pickTool=k=>{tool=k;sel=null;updDtb();$('tabs').classList.remove('open');renderTools();showHint(k);drawChart()};
 $('toolBtn').onclick=()=>{renderTools();$('tools').classList.toggle('open')};
 $('toolClose').onclick=()=>$('tools').classList.remove('open');
 $('toolHint').onclick=()=>{if(multi&&multi.pts.length>=2)addDrawing(multi);endTool();drawChart()};
@@ -932,7 +962,7 @@ function drawChartNow(){
     }
     [[up,'#6aa7ff'],[lo,'#6aa7ff'],[mi,'#4a5aa0']].forEach(([arr,col])=>{g.beginPath();arr.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]));g.strokeStyle=col;g.lineWidth=1.1;g.stroke()});
   }
-  ((DR[dkey()]||[]).concat(drawing?[drawing]:[]).concat(multi&&multi.pts.length?[multi]:[])).forEach(d=>drawShape(g,d,w));
+  ((DR[dkey()]||[]).concat(drawing&&drawing.type!=='long'&&drawing.type!=='short'?[drawing]:[]).concat(multi&&multi.pts.length?[multi]:[])).forEach(d=>drawShape(g,d,w));
   (DR[dkey()]||[]).forEach(d=>{if(d.type==='long'||d.type==='short'){const R=w-AXW;[[d.tp,d.cu||TH.up],[d.sl,d.cd||TH.dn]].forEach(([v,c])=>{const yy=toXY({x:d.a.x,p:v}).y;if(yy>4&&yy<VW.H-4)axTag(g,R,yy,px(v),c)})}});
   drawHandles(g);
   g.font='10px system-ui';
@@ -962,6 +992,7 @@ function drawChartNow(){
     g.fillStyle=AXC;g.fillText(fmtT(candles[i].t),x,h-5);
   }
   g.textAlign='left';
+  drawCross(g,w,h);
 }
 
 const pts=new Map();let g0=null,lastTap=0;
@@ -997,7 +1028,10 @@ $('ch').addEventListener('pointerdown',e=>{
 });
 $('ch').addEventListener('pointermove',e=>{
   if(window.posMove&&posMove(e))return;
-  if(drawing&&e.pointerId===drawing.pid){drawing.b=toData(cpos(e));fixPos(drawing);drawChart();return}
+  if(drawing&&e.pointerId===drawing.pid){
+    const q=toData(cpos(e));
+    if(drawing.type==='long'||drawing.type==='short'){drawing.a=q;drawing.b=q}else{drawing.b=q;fixPos(drawing)}
+    drawChart();return}
   if(hdrag&&e.pointerId===hdrag.pid){dragHandle(hdrag.d,hdrag.k,cpos(e));drawChart();return}
   if(tapSt&&Math.hypot(e.clientX-tapSt.x,e.clientY-tapSt.y)>8)tapSt=null;
   if(!pts.has(e.pointerId))return;
@@ -1027,7 +1061,7 @@ $('ch').addEventListener('pointermove',e=>{
   if(drawing&&e.pointerId===drawing.pid){
     const A=toXY(drawing.a),B=toXY(drawing.b);
     const isP=drawing.type==='long'||drawing.type==='short';
-    if(Math.hypot(A.x-B.x,A.y-B.y)>8){const d=drawing;delete d.pid;addDrawing(d)}
+    if(!isP&&Math.hypot(A.x-B.x,A.y-B.y)>8){const d=drawing;delete d.pid;addDrawing(d)}
     else if(isP){const d=drawing;delete d.pid;const up=toData({x:A.x,y:A.y-VW.H*0.16});d.b={x:d.a.x+Math.max(8,Math.round(visN*0.18)),p:up.p};fixPos(d);addDrawing(d)}
     endTool();drawChart();return;
   }
