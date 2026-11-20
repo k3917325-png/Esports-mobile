@@ -2121,10 +2121,10 @@ const hasNative=()=>!!(window.NativeAds&&window.NativeAds.showRewarded);
 const adsPossible=()=>hasNative()||appCfg.testAds||!fbOn();     // web par asli ad nahi chalta, sirf test/preview mein nakli
 let bannerOn=false;
 function syncBanner(){
-  const on=document.body.className==='home'&&appCfg.bannerEnabled!==false&&adsPossible();
+  const on=document.body.className==='home'&&appCfg.bannerEnabled!==false;   // sirf Home/Markets/Portfolio/Leaders/Menu par; chart par kabhi nahi
   const slot=$('adTop');if(!slot)return;
   slot.style.display=on?'flex':'none';
-  slot.textContent=hasNative()?'':'📢 Banner Ad (test)';
+  slot.textContent=hasNative()?'':'📢 Banner Ad';
   if(hasNative()&&window.NativeAds.showBanner){
     try{
       if(on&&!bannerOn){NativeAds.showBanner(netNow(),netParams());bannerOn=true}
