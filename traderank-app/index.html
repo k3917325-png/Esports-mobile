@@ -362,6 +362,11 @@ h4{color:#e8e3ff;font-size:16px;font-weight:800;padding:14px 16px 6px}
 .peact{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}.pbtn.gh{background:transparent;border:1px solid rgba(255,255,255,.3)}
 .pei{width:100%;box-sizing:border-box;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.2);background:#0d0d28;color:#fff;font-size:16px}
 .penote{background:rgba(245,181,61,.12);border:1px solid rgba(245,181,61,.4);color:#ffd98a;border-radius:10px;padding:8px 10px;font-size:12.5px;margin:4px 0}.penote.bad{background:rgba(255,80,100,.12);border-color:rgba(255,80,100,.4);color:#ff8a9a}.pehint{color:#9a96c8;font-size:12px;margin-top:8px}
+.supc{margin:10px 14px;padding:14px;border-radius:18px;background:linear-gradient(135deg,rgba(60,35,160,.5),rgba(16,10,52,.35));border:1px solid rgba(140,120,255,.35)}
+.supt b{display:block;font-size:17px}.supt span{display:block;color:#c7c2f0;font-size:12.5px;margin-top:2px}
+.supg{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px}
+.supb{display:flex;align-items:center;gap:8px;padding:11px 12px;border-radius:12px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);color:#fff;text-decoration:none;font-weight:700;font-size:14px;min-width:0}
+.supb i{font-style:normal;font-size:18px}
 .peerr{color:#ff8a9a;font-size:13px;min-height:18px;margin:8px 0}
 </style>
 </head>
@@ -1362,7 +1367,7 @@ function lbRowHTML(u,i){
   const rk=i+1,medal=rk===1?'🥇':rk===2?'🥈':rk===3?'🥉':rk,col=u.pnl>=0?'pos':'neg';
   const nm=u.name||'Trader',w=u.trades?Math.round(u.wins/u.trades*100):0;
   const h=[...nm].reduce((a,c)=>a+c.charCodeAt(0),0)%360,mine=fbReady()&&FB.user&&u.id===FB.user.uid;
-  return `<div class="lr${rk<=3?' top':''}${mine?' me':''}"><div class="lrk">${medal}</div><div class="lav" style="background:hsl(${h},55%,38%)">${avIn(u.av,nm)}</div><div class="ln"><b>${esc(nm)}${mine?' (You)':''}</b><span>Win ${w}% • ${u.trades||0} trades</span></div><div class="lp"><b class="${col}">${sgn(Math.round(u.pnl))}</b><span class="${col}">${u.pnl>=0?'+':''}${(u.pnl/100).toFixed(1)}%</span></div></div>`;
+  return `<div class="lr${rk<=3?' top':''}${mine?' me':''}"><div class="lrk">${medal}</div><div class="lav" style="background:hsl(${h},55%,38%)">${avIn(mine?ownAv():u.av,nm)}</div><div class="ln"><b>${esc(nm)}${mine?' (You)':''}</b><span>Win ${w}% • ${u.trades||0} trades</span></div><div class="lp"><b class="${col}">${sgn(Math.round(u.pnl))}</b><span class="${col}">${u.pnl>=0?'+':''}${(u.pnl/100).toFixed(1)}%</span></div></div>`;
 }
 function lbHTML(){
   let top='';
@@ -1469,10 +1474,13 @@ window.peUp=inp=>{
   const f=inp.files&&inp.files[0];if(!f)return;
   const r=new FileReader();
   r.onload=()=>{const im=new Image();im.onload=()=>{
-    const S=96,c=document.createElement('canvas');c.width=c.height=S;
-    const z=Math.min(im.width,im.height),sx=(im.width-z)/2,sy=(im.height-z)/2;
-    c.getContext('2d').drawImage(im,sx,sy,z,z,0,0,S,S);
-    pe.av=c.toDataURL('image/jpeg',.7);peDraw();
+    // HD: 480px square (center crop), size ~ 90KB se kam rakhne ke liye quality apne aap ghatti hai
+    const S=Math.min(480,Math.min(im.width,im.height)),c=document.createElement('canvas');c.width=c.height=S;
+    const z=Math.min(im.width,im.height),sx=(im.width-z)/2,sy=(im.height-z)/2,x=c.getContext('2d');
+    x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';x.drawImage(im,sx,sy,z,z,0,0,S,S);
+    let q=.9,d=c.toDataURL('image/jpeg',q);
+    while(d.length>90000&&q>.4){q-=.08;d=c.toDataURL('image/jpeg',q)}
+    pe.av=d;peDraw();
   };im.onerror=()=>{$('peErr').textContent='Ye photo khul nahi payi, dusri chuno.'};im.src=r.result};
   r.readAsDataURL(f);
 };
@@ -1539,7 +1547,7 @@ window.addEventListener('fb-auth',async e=>{
 });
 
 /* ================= REMOTE CONFIG (admin panel) + LOGIN GATE + REWARDED ADS ================= */
-const CFG_DEF={loginRequired:true,bannerEnabled:true,interstitialEnabled:true,interstitialGapMin:12,dailyTradeLimit:100,maxOpenPos:3,lbProfitOnly:true,photoUpload:true,photoReview:true,adNetwork:'unity',rewardAmount:1000,dailyAdLimit:20,testAds:false,unity:{appKey:'',adUnitId:'',bannerAdUnitId:'',interstitialAdUnitId:''},admob:{rewardedUnitId:'',bannerUnitId:'ca-app-pub-3940256099942544/6300978111',interstitialUnitId:''}};
+const CFG_DEF={loginRequired:true,bannerEnabled:true,interstitialEnabled:true,interstitialGapMin:12,dailyTradeLimit:100,maxOpenPos:3,lbProfitOnly:true,photoUpload:true,photoReview:true,support:{title:'Support Team',text:'Koi problem ho to hamse sampark karo',instagram:'',telegram:'',whatsapp:'',youtube:'',email:'',website:'',customLabel:'',customUrl:''},adNetwork:'unity',rewardAmount:1000,dailyAdLimit:20,testAds:false,unity:{appKey:'',adUnitId:'',bannerAdUnitId:'',interstitialAdUnitId:''},admob:{rewardedUnitId:'',bannerUnitId:'ca-app-pub-3940256099942544/6300978111',interstitialUnitId:''}};
 let appCfg=(()=>{let c=null;try{c=JSON.parse(localStorage.getItem('ts_cfg')||'null')}catch(_){}return Object.assign({},CFG_DEF,c||{})})();
 let cfgAt=0,adBusy=false;
 function tradePnl(){return Math.round((bal-10000-(acct.bonus||0))*100)/100}   // leaderboard sirf trading profit se (ad bonus alag)
@@ -2095,6 +2103,27 @@ function spark(){
   const up=s[s.length-1]>=s[0],col=up?'#22e08a':'#ff4d6a',d=pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
   return `<div class="sp-wrap"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><defs><linearGradient id="spg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${col}" stop-opacity=".35"/><stop offset="1" stop-color="${col}" stop-opacity="0"/></linearGradient></defs><polygon points="0,${H} ${d} ${W},${H}" fill="url(#spg)"/><polyline points="${d}" fill="none" stroke="${col}" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg></div>`;
 }
+/* ---- Support team card (admin panel se links) ---- */
+function supLinks(){
+  const c=Object.assign({},(appCfg&&appCfg.support)||{}),out=[];
+  const web=v=>/^https?:\/\/[^\s]+$/i.test(v);
+  const h=v=>String(v||'').trim().replace(/^@/,'');
+  const add=(ic,lb,url)=>{if(url)out.push({ic,lb,url})};
+  let v=String(c.instagram||'').trim();if(v)add('📸','Instagram',web(v)?v:'https://instagram.com/'+h(v));
+  v=String(c.telegram||'').trim();if(v)add('✈️','Telegram',web(v)?v:'https://t.me/'+h(v));
+  v=String(c.whatsapp||'').trim();if(v){const dg=v.replace(/\D/g,'');add('💬','WhatsApp',web(v)?v:(dg.length>=8?'https://wa.me/'+dg:''))}
+  v=String(c.youtube||'').trim();if(v)add('▶️','YouTube',web(v)?v:'https://youtube.com/@'+h(v));
+  v=String(c.email||'').trim();if(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v))add('✉️','Email','mailto:'+v);
+  v=String(c.website||'').trim();if(web(v))add('🌐','Website',v);
+  v=String(c.customUrl||'').trim();if(web(v))add('🔗',String(c.customLabel||'Link').slice(0,20),v);
+  return out;
+}
+window.openLink=u=>{try{if(window.NativeAds&&NativeAds.openUrl){NativeAds.openUrl(u);return}}catch(_){}window.open(u,'_blank','noopener')};
+function supportHTML(){
+  const L=supLinks();if(!L.length)return '';
+  const c=(appCfg&&appCfg.support)||{};
+  return `<div class="supc"><div class="supt"><b>🎧 ${esc(c.title||'Support Team')}</b><span>${esc(c.text||'')}</span></div><div class="supg">${L.map(x=>`<a class="supb" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer" onclick="openLink(this.href);return false"><i>${x.ic}</i>${esc(x.lb)}</a>`).join('')}</div></div>`;
+}
 const adCard=()=>{
   const lim=adsLimit(),used=adsToday(),left=used<lim,amt=Math.max(1,+appCfg.rewardAmount||1000);
   return `<div class="adbn"><div class="gi">🎁</div><div class="t"><b>Free ${money(amt)}</b><span>Ad dekho, ${money(amt)} pao • Aaj ${Math.min(used,lim)}/${lim}</span><div class="bar2"><i style="width:${Math.min(100,used/lim*100)}%"></i></div></div><button id="adBtn" onclick="watchAd()" ${left?'':'disabled'}>${left?'▶ Ad':'Kal aana'}</button></div>`;
@@ -2111,7 +2140,7 @@ function homeHTML(){
   return `${prof}
   <div class="gl" style="position:relative"><span class="mt">Total Balance</span><div class="big" id="hmEq">${money(bal+fl)}</div>${spark()}</div>
   <div class="row2"><div class="gl gr"><span class="mt">Realized P&amp;L</span><div class="mid ${cls(pnl)}">${sgn(Math.round(pnl))}</div></div><div class="gl bl"><span class="mt">Floating P&amp;L</span><div class="mid ${cls(fl)}" id="hmFl">${money(fl)}</div></div></div>
-  ${adCard()}`;
+  ${adCard()}${supportHTML()}`;
 }
 function marketsHTML(){
   return `<div class="ttl">Markets<small>Kisi par tap karo, chart khulega</small></div>`+SECT.map(([n,ks])=>`<div class="hs" onclick="togSec('${n}')"><span class="chev">${closedSec[n]?'›':'⌄'}</span> ${n}</div>`+(closedSec[n]?'':ks.map(rowHTML).join(''))).join('');
@@ -2130,6 +2159,7 @@ function menuHTML(){
   <div class="row3"><div class="gl bl"><span class="mt">Rank</span><div class="mid">${myRk?'#'+myRk:'–'}</div></div><div class="gl pk"><span class="mt">Win rate</span><div class="mid">${winRate()}%</div></div><div class="gl gr"><span class="mt">Trades</span><div class="mid">${acct.trades}</div></div></div>
   ${isIn()?`<button class="mi" onclick="editName()">✏️ Edit Profile<span class="ch">›</span></button><button class="mi or" onclick="doLogout()">🚪 Logout<span class="ch">›</span></button><button class="mi pk" onclick="delAcct()">🗑 Account Delete<span class="ch">›</span></button>`:''}
   <button class="mi" onclick="clearDraw()">🧹 Drawings hatao<span class="ch">›</span></button><button class="mi" onclick="fsToggle()">⛶ Fullscreen<span class="ch">›</span></button>
+  ${supportHTML()}
   <div class="note" style="padding:16px">TradeRank (demo): prices simulated hain. Real paisa involve nahi hai.</div>`;
 }
 /* leaderboard: podium + list + Your Rank bar */
@@ -2145,7 +2175,7 @@ function lbShow(rows,total){
   const mineId=isIn()?FB.user.uid:null;
   const pod=(i,r)=>{const u=rows[i];if(!u)return '<div class="pd"></div>';
     const nm=u.name||'Trader',col=u.pnl>=0?'pos':'neg',h=[...nm].reduce((a,c)=>a+c.charCodeAt(0),0)%360;
-    return `<div class="pd p${r}">${r===1?'<div class="crown">👑</div>':''}<div class="pa" style="background:hsl(${h},55%,40%)">${avIn(u.av,nm)}</div><span class="rk">#${r}</span><div class="pn">${esc(nm)}${u.id===mineId?' (You)':''}</div><div class="pt">${u.trades||0} trades</div><b class="${col}">${sgn(Math.round(u.pnl))}</b></div>`};
+    return `<div class="pd p${r}">${r===1?'<div class="crown">👑</div>':''}<div class="pa" style="background:hsl(${h},55%,40%)">${avIn(u.id===mineId?ownAv():u.av,nm)}</div><span class="rk">#${r}</span><div class="pn">${esc(nm)}${u.id===mineId?' (You)':''}</div><div class="pt">${u.trades||0} trades</div><b class="${col}">${sgn(Math.round(u.pnl))}</b></div>`};
   $('lbPod').innerHTML=rows.length?`<div class="podium">${pod(1,2)}${pod(0,1)}${pod(2,3)}</div>`:'';
   $('lbList').innerHTML=rows.slice(3).map((u,i)=>lbRowHTML(u,i+3)).join('');
   $('lbMore').textContent=rows.length?`Top ${rows.length} • kul ${lbTotal.toLocaleString('en-US')} traders`:'Abhi koi trader nahi. Pehle aap bano! 🚀';

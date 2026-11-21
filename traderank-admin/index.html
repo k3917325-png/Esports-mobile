@@ -136,6 +136,18 @@ window.FIREBASE_CONFIG={apiKey:"AIzaSyCC8y_IV3V35XrQwUJEXZxNcNyOY01t9fA",authDom
         <span class="mut" style="display:block;margin-top:6px">AdMob <b>App ID</b> (ca-app-pub-…~…) app ke AndroidManifest mein rehta hai, yahan nahi. Testing ke liye Google ka test unit: <code>ca-app-pub-3940256099942544/5224354917</code></span>
       </div>
 
+      <h4 style="margin:16px 0 4px">🎧 Support Team (app ke Home aur Menu mein dikhega)</h4>
+      <span class="mut" style="display:block;margin-bottom:6px">Jo khaali chhodoge wo button nahi dikhega. Poora link ya sirf username/number likh sakte ho.</span>
+      <label class="fl">Title</label><input id="sTitle" maxlength="30" placeholder="Support Team">
+      <label class="fl">Chhota text</label><input id="sText" maxlength="80" placeholder="Koi problem ho to hamse sampark karo">
+      <label class="fl">Instagram (link ya username)</label><input id="sIg" placeholder="https://instagram.com/yourpage" autocomplete="off">
+      <label class="fl">Telegram (link ya username)</label><input id="sTg" placeholder="https://t.me/yourchannel" autocomplete="off">
+      <label class="fl">WhatsApp (number country code ke saath, ya link)</label><input id="sWa" placeholder="919876543210" autocomplete="off">
+      <label class="fl">YouTube (link ya @handle)</label><input id="sYt" placeholder="https://youtube.com/@yourchannel" autocomplete="off">
+      <label class="fl">Email</label><input id="sEm" placeholder="support@yourmail.com" autocomplete="off">
+      <label class="fl">Website</label><input id="sWeb" placeholder="https://..." autocomplete="off">
+      <div class="g2"><div><label class="fl">Extra button ka naam</label><input id="sCL" maxlength="20" placeholder="Jaise Facebook"></div><div><label class="fl">Extra button ka link</label><input id="sCU" placeholder="https://..." autocomplete="off"></div></div>
+
       <button class="btn pr" id="cSave" style="width:100%;margin-top:14px">💾 Save settings</button>
       <div class="mut" style="margin-top:8px">Naya setting app mein agli baar khulne par (ya 30 minute baad) lagta hai.</div>
     </div>
@@ -220,7 +232,8 @@ else{
       $('cLogin').checked=c.loginRequired!==false;
       $('cTest').checked=!!c.testAds;
       $('cBan').checked=c.bannerEnabled!==false;$('cInt').checked=c.interstitialEnabled!==false;$('cGap').value=c.interstitialGapMin||12;
-      $('cReward').value=c.rewardAmount;$('cLbP').checked=c.lbProfitOnly!==false;$('cPhoto').checked=c.photoUpload!==false;$('cPRev').checked=c.photoReview!==false;$('cTLim').value=c.dailyTradeLimit||100;$('cMaxOpen').value=c.maxOpenPos||3;
+      $('cReward').value=c.rewardAmount;$('cLbP').checked=c.lbProfitOnly!==false;$('cPhoto').checked=c.photoUpload!==false;
+      {const s=c.support||{};$('sTitle').value=s.title||'Support Team';$('sText').value=s.text||'';$('sIg').value=s.instagram||'';$('sTg').value=s.telegram||'';$('sWa').value=s.whatsapp||'';$('sYt').value=s.youtube||'';$('sEm').value=s.email||'';$('sWeb').value=s.website||'';$('sCL').value=s.customLabel||'';$('sCU').value=s.customUrl||''}$('cPRev').checked=c.photoReview!==false;$('cTLim').value=c.dailyTradeLimit||100;$('cMaxOpen').value=c.maxOpenPos||3;
       $('cLimit').value=c.dailyAdLimit;
       $('cNet').value=c.adNetwork==='admob'?'admob':'unity';
       $('cUKey').value=(c.unity&&c.unity.appKey)||'';
@@ -254,7 +267,7 @@ else{
       const missing=net==='unity'?(!key||!unit):!aunit;
       if(missing&&!test&&!confirm('Chune hue network ke ID khaali hain, isliye asli ads fail honge. Phir bhi save karein?'))return;
       const data={loginRequired:$('cLogin').checked,testAds:test,rewardAmount:reward,dailyAdLimit:limit,adNetwork:net,
-        bannerEnabled:$('cBan').checked,interstitialEnabled:$('cInt').checked,interstitialGapMin:gap,dailyTradeLimit:tlim,maxOpenPos:mop,lbProfitOnly:$('cLbP').checked,photoUpload:$('cPhoto').checked,photoReview:$('cPRev').checked,
+        bannerEnabled:$('cBan').checked,interstitialEnabled:$('cInt').checked,interstitialGapMin:gap,dailyTradeLimit:tlim,maxOpenPos:mop,lbProfitOnly:$('cLbP').checked,photoUpload:$('cPhoto').checked,support:{title:$('sTitle').value.trim().slice(0,30),text:$('sText').value.trim().slice(0,80),instagram:$('sIg').value.trim(),telegram:$('sTg').value.trim(),whatsapp:$('sWa').value.trim(),youtube:$('sYt').value.trim(),email:$('sEm').value.trim(),website:$('sWeb').value.trim(),customLabel:$('sCL').value.trim(),customUrl:$('sCU').value.trim()},photoReview:$('cPRev').checked,
         unity:{appKey:key,adUnitId:unit,bannerAdUnitId:$('cUBan').value.trim(),interstitialAdUnitId:$('cUInt').value.trim()},admob:{rewardedUnitId:aunit,bannerUnitId:$('cABan').value.trim(),interstitialUnitId:$('cAInt').value.trim()},updated:Fs.serverTimestamp()};
       $('cSave').disabled=true;st.textContent='Save ho raha hai…';
       try{await Fs.setDoc(Fs.doc(db,'config','app'),data,{merge:true});st.innerHTML='<span class="okmsg">✔ Save ho gaya</span>'}

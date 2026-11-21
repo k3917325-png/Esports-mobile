@@ -25,7 +25,7 @@ service cloud.firestore {
         && okAv(request.resource.data.get('av', ''))
         && request.resource.data.get('avSt', '') in ['', 'pending']
         && request.resource.data.get('avPend', '') is string
-        && request.resource.data.get('avPend', '').size() < 30000;
+        && request.resource.data.get('avPend', '').size() < 120000;
 
       allow update: if (
         request.auth != null && request.auth.uid == uid
@@ -42,7 +42,7 @@ service cloud.firestore {
             || request.resource.data.get('avSt', '') in ['', 'pending'])
         && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['avPend'])
             || (request.resource.data.get('avPend', '') is string
-                && request.resource.data.get('avPend', '').size() < 30000))
+                && request.resource.data.get('avPend', '').size() < 120000))
         && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['age'])
             || (request.resource.data.get('age', 0) is number
                 && request.resource.data.get('age', 0) >= 0
