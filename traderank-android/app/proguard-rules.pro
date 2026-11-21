@@ -1,0 +1,3 @@
+-keepclassmembers class com.traderank.app.NativeAds { @android.webkit.JavascriptInterface <methods>; }
+-keep class com.unity3d.** { *; }
+-dontwarn com.unity3d.**

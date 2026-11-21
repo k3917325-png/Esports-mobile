@@ -1,0 +1,67 @@
+name: Build TradeRank APK
+
+# Phone se: GitHub app -> Actions -> "Build TradeRank APK" -> Run workflow.
+# Do APK banti hain (Artifacts mein):
+#   TradeRank-lite-debug  = sirf AdMob (sabse safe, pehle isi ko install karke dekho)
+#   TradeRank-full-debug  = AdMob + Unity LevelPlay (agar fail ho to lite hi use karo)
+# Koi secret nahi chahiye. Debug-signed APK seedha phone mein install hota hai.
+on:
+  workflow_dispatch:
+  push:
+    branches: [ traderank-apk ]
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: traderank-android
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Accept Android SDK licenses
+        run: |
+          mkdir -p "$ANDROID_HOME/licenses"
+          printf '\n24333f8a63b6825ea9c5514f83c2829b004d1fee\n8933bad161af4178b1185d1a37fbf41ea5269c55\nd56f5187479451eabf01fb78af6dfcb131a6481e\n84831b9409646a918e30573bab4c9c91346d8abd\n' > "$ANDROID_HOME/licenses/android-sdk-license"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null 2>&1 || true
+      - name: Build LITE debug APK (AdMob)
+        env:
+          ADMOB_APP_ID: ${{ vars.ADMOB_APP_ID }}
+        run: |
+          chmod +x gradlew
+          set +e
+          ./gradlew :app:assembleLiteDebug --no-daemon 2>&1 | tee lite.log
+          rc=${PIPESTATUS[0]}
+          if [ $rc -ne 0 ]; then
+            MSG=$(grep -E "^e: |error:|What went wrong|Could not|Unresolved|Execution failed" lite.log | head -30 | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
+            echo "::error title=LITE build errors::$MSG"
+          fi
+          exit $rc
+      - name: Upload LITE APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: TradeRank-lite-debug
+          path: traderank-android/app/build/outputs/apk/lite/debug/*.apk
+          if-no-files-found: error
+      - name: Build FULL debug APK (AdMob + Unity)
+        continue-on-error: true
+        env:
+          ADMOB_APP_ID: ${{ vars.ADMOB_APP_ID }}
+        run: |
+          set +e
+          ./gradlew :app:assembleFullDebug --no-daemon 2>&1 | tee full.log
+          rc=${PIPESTATUS[0]}
+          if [ $rc -ne 0 ]; then
+            MSG=$(grep -E "^e: |error:|What went wrong|Could not|Unresolved|Execution failed" full.log | head -30 | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
+            echo "::warning title=FULL (Unity) build errors::$MSG"
+          fi
+          exit $rc
+      - name: Upload FULL APK
+        if: hashFiles('traderank-android/app/build/outputs/apk/full/debug/*.apk') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: TradeRank-full-debug
+          path: traderank-android/app/build/outputs/apk/full/debug/*.apk

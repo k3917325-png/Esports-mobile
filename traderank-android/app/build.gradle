@@ -1,0 +1,52 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+
+// Public AdMob IDs (secret nahi). Default = Google ke TEST ids. Asli IDs GitHub repo Variables se aate hain.
+def admobAppId = System.getenv("ADMOB_APP_ID") ?: "ca-app-pub-3940256099942544~3347511713"
+def runNumber = Integer.parseInt(System.getenv("GITHUB_RUN_NUMBER") ?: "1")
+
+android {
+    namespace "com.traderank.app"
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "com.traderank.app"
+        minSdk 24
+        targetSdk 35
+        versionCode runNumber
+        versionName "1.0.0"
+        manifestPlaceholders = [admobAppId: admobAppId]
+    }
+
+    // lite = sirf AdMob (sabse safe build). full = AdMob + Unity LevelPlay.
+    flavorDimensions "ads"
+    productFlavors {
+        lite { dimension "ads" }
+        full { dimension "ads" }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug { minifyEnabled false }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions { jvmTarget = "17" }
+}
+
+dependencies {
+    implementation 'com.google.android.gms:play-services-ads:23.6.0'
+    fullImplementation 'com.unity3d.ads-mediation:mediation-sdk:9.1.0'
+    fullImplementation 'com.google.android.gms:play-services-appset:16.1.0'
+    fullImplementation 'com.google.android.gms:play-services-ads-identifier:18.2.0'
+    fullImplementation 'com.google.android.gms:play-services-basement:18.5.0'
+}

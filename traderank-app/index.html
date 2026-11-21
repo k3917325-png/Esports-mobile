@@ -563,7 +563,8 @@ const f2=n=>n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDig
 const money=n=>(n<0?'-$':'$')+f2(Math.abs(n));
 const cls=n=>n>=0?'pos':'neg';
 function rnd(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
-const bid=()=>mid-S.spread/2, ask=()=>mid+S.spread/2;
+// Paper trading: entry/exit candle ke current (last) price par hoti hai, spread nahi lagta
+const bid=()=>mid, ask=()=>mid;
 const lots=()=>Math.max(0.01,parseFloat($('lots').value)||0.01);
 const px=v=>v==null?'-':v.toFixed(S.dp);
 
@@ -1683,6 +1684,16 @@ applyGate();
 
 function goChart(){document.body.className='chart';requestAnimationFrame(()=>{render();setTimeout(render,120)})}
 function goHome(tab){if(tab)homeTab=tab;document.body.className='home';renderHome()}
+/* Android back button (NativeAds wrapper): true = app ne handle kiya, false = app band/peeche jao */
+window.__nativeBack=()=>{
+  try{
+    const open=['pedit','histm'].map($).find(m=>m&&m.classList.contains('open'));
+    if(open){open.className='';return true}
+    if(document.body.className!=='home'){const b=$('exitBtn');if(b){b.click();return true}goHome();return true}
+    if(homeTab!=='home'){goHome('home');return true}
+  }catch(_){}
+  return false;
+};
 $('hNav').addEventListener('click',e=>{
   const b=e.target.closest('[data-n]');if(!b)return;
   const n=b.dataset.n;
