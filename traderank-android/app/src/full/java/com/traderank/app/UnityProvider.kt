@@ -10,7 +10,7 @@ import com.unity3d.mediation.LevelPlayConfiguration
 import com.unity3d.mediation.LevelPlayInitError
 import com.unity3d.mediation.LevelPlayInitListener
 import com.unity3d.mediation.LevelPlayInitRequest
-import com.unity3d.mediation.banner.LevelPlayAdSize
+import com.unity3d.mediation.LevelPlayAdSize
 import com.unity3d.mediation.banner.LevelPlayBannerAdView
 import com.unity3d.mediation.interstitial.LevelPlayInterstitialAd
 import com.unity3d.mediation.interstitial.LevelPlayInterstitialAdListener
@@ -81,6 +81,7 @@ private class LevelPlayImpl : UnityAds {
         val appKey = p.optString("appKey"); val unit = p.optString("bannerAdUnitId")
         if (appKey.isBlank() || unit.isBlank()) return null
         withInit(activity, appKey, {}, {})
-        return LevelPlayBannerAdView(activity, unit).apply { setAdSize(LevelPlayAdSize.BANNER); loadAd() }
+        val cfg = LevelPlayBannerAdView.Config.Builder().setAdSize(LevelPlayAdSize.BANNER).build()
+        return LevelPlayBannerAdView(activity, unit, cfg).apply { loadAd() }
     }
 }
