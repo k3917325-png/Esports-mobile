@@ -136,6 +136,8 @@ window.FIREBASE_CONFIG={apiKey:"AIzaSyCC8y_IV3V35XrQwUJEXZxNcNyOY01t9fA",authDom
         <span class="mut" style="display:block;margin-top:6px">AdMob <b>App ID</b> (ca-app-pub-…~…) app ke AndroidManifest mein rehta hai, yahan nahi. Testing ke liye Google ka test unit: <code>ca-app-pub-3940256099942544/5224354917</code></span>
       </div>
 
+      <div class="g2" style="margin-top:6px"><div><label class="fl">Trade History kitne din rakhe (default 90 = 3 mahine)</label><input id="cHDays" type="number" min="1" max="365" inputmode="numeric"></div></div>
+      <span class="mut" style="display:block;margin-top:4px">Itne din ke baad user ki purani trades history apne aap hat jaati hai.</span>
       <h4 style="margin:16px 0 4px">🎧 Support Team (app ke Home aur Menu mein dikhega)</h4>
       <span class="mut" style="display:block;margin-bottom:6px">Jo khaali chhodoge wo button nahi dikhega. Poora link ya sirf username/number likh sakte ho.</span>
       <label class="fl">Title</label><input id="sTitle" maxlength="30" placeholder="Support Team">
@@ -232,7 +234,7 @@ else{
       $('cLogin').checked=c.loginRequired!==false;
       $('cTest').checked=!!c.testAds;
       $('cBan').checked=c.bannerEnabled!==false;$('cInt').checked=c.interstitialEnabled!==false;$('cGap').value=c.interstitialGapMin||12;
-      $('cReward').value=c.rewardAmount;$('cLbP').checked=c.lbProfitOnly!==false;$('cPhoto').checked=c.photoUpload!==false;
+      $('cReward').value=c.rewardAmount;$('cLbP').checked=c.lbProfitOnly!==false;$('cPhoto').checked=c.photoUpload!==false;$('cHDays').value=c.historyDays||90;
       {const s=c.support||{};$('sTitle').value=s.title||'Support Team';$('sText').value=s.text||'';$('sIg').value=s.instagram||'';$('sTg').value=s.telegram||'';$('sWa').value=s.whatsapp||'';$('sYt').value=s.youtube||'';$('sEm').value=s.email||'';$('sWeb').value=s.website||'';$('sCL').value=s.customLabel||'';$('sCU').value=s.customUrl||''}$('cPRev').checked=c.photoReview!==false;$('cTLim').value=c.dailyTradeLimit||100;$('cMaxOpen').value=c.maxOpenPos||3;
       $('cLimit').value=c.dailyAdLimit;
       $('cNet').value=c.adNetwork==='admob'?'admob':'unity';
@@ -259,6 +261,8 @@ else{
       if(!(reward>=1&&reward<=1000000)){st.textContent='Reward 1 se 10,00,000 ke beech rakho';return}
       const tlim=Math.round(+$('cTLim').value);
       if(!(tlim>=1&&tlim<=10000)){st.textContent='Daily trade limit 1 se 10000 ke beech rakho';return}
+      const hdays=Math.round(+$('cHDays').value);
+      if(!(hdays>=1&&hdays<=365)){st.textContent='History 1 se 365 din ke beech rakho';return}
       const mop=Math.round(+$('cMaxOpen').value);
       if(!(mop>=1&&mop<=50)){st.textContent='Max open trades 1 se 50 ke beech rakho';return}
       const gap=Math.round(+$('cGap').value);
@@ -267,7 +271,7 @@ else{
       const missing=net==='unity'?(!key||!unit):!aunit;
       if(missing&&!test&&!confirm('Chune hue network ke ID khaali hain, isliye asli ads fail honge. Phir bhi save karein?'))return;
       const data={loginRequired:$('cLogin').checked,testAds:test,rewardAmount:reward,dailyAdLimit:limit,adNetwork:net,
-        bannerEnabled:$('cBan').checked,interstitialEnabled:$('cInt').checked,interstitialGapMin:gap,dailyTradeLimit:tlim,maxOpenPos:mop,lbProfitOnly:$('cLbP').checked,photoUpload:$('cPhoto').checked,support:{title:$('sTitle').value.trim().slice(0,30),text:$('sText').value.trim().slice(0,80),instagram:$('sIg').value.trim(),telegram:$('sTg').value.trim(),whatsapp:$('sWa').value.trim(),youtube:$('sYt').value.trim(),email:$('sEm').value.trim(),website:$('sWeb').value.trim(),customLabel:$('sCL').value.trim(),customUrl:$('sCU').value.trim()},photoReview:$('cPRev').checked,
+        bannerEnabled:$('cBan').checked,interstitialEnabled:$('cInt').checked,interstitialGapMin:gap,dailyTradeLimit:tlim,maxOpenPos:mop,lbProfitOnly:$('cLbP').checked,historyDays:hdays,photoUpload:$('cPhoto').checked,support:{title:$('sTitle').value.trim().slice(0,30),text:$('sText').value.trim().slice(0,80),instagram:$('sIg').value.trim(),telegram:$('sTg').value.trim(),whatsapp:$('sWa').value.trim(),youtube:$('sYt').value.trim(),email:$('sEm').value.trim(),website:$('sWeb').value.trim(),customLabel:$('sCL').value.trim(),customUrl:$('sCU').value.trim()},photoReview:$('cPRev').checked,
         unity:{appKey:key,adUnitId:unit,bannerAdUnitId:$('cUBan').value.trim(),interstitialAdUnitId:$('cUInt').value.trim()},admob:{rewardedUnitId:aunit,bannerUnitId:$('cABan').value.trim(),interstitialUnitId:$('cAInt').value.trim()},updated:Fs.serverTimestamp()};
       $('cSave').disabled=true;st.textContent='Save ho raha hai…';
       try{await Fs.setDoc(Fs.doc(db,'config','app'),data,{merge:true});st.innerHTML='<span class="okmsg">✔ Save ho gaya</span>'}

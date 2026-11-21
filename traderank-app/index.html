@@ -67,7 +67,7 @@ table.l th{color:var(--mut);font-weight:500;font-size:9px;border:0}
 body.home #app{display:none}
 body.chart #home{display:none}
 #home{position:fixed;top:0;left:0;right:0;bottom:0;background:#000;display:flex;flex-direction:column;z-index:60;font-size:14px}
-.hh{display:flex;align-items:center;gap:10px;padding:14px 14px 10px;border-bottom:1px solid #1f1f1f}
+.hxh{display:flex;align-items:center;gap:10px;padding:14px 14px 10px;border-bottom:1px solid #1f1f1f}
 .hb{background:none;border:0;color:#fff;font-size:26px;padding:0 6px}
 .hsep{width:1px;height:28px;background:#333}
 .hpill{background:#2a2a2a;border:0;color:#fff;border-radius:12px;padding:11px 20px;font-size:17px;font-weight:600}
@@ -367,6 +367,11 @@ h4{color:#e8e3ff;font-size:16px;font-weight:800;padding:14px 16px 6px}
 .supg{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px}
 .supb{display:flex;align-items:center;gap:8px;padding:11px 12px;border-radius:12px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);color:#fff;text-decoration:none;font-weight:700;font-size:14px;min-width:0}
 .supb i{font-style:normal;font-size:18px}
+#histm{display:none;position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,.7);align-items:flex-end;justify-content:center}#histm.open{display:flex}
+.hsum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}.hsum div{background:rgba(255,255,255,.06);border-radius:12px;padding:10px;text-align:center}.hsum span{display:block;font-size:12px;color:#c7c2f0}.hsum b{font-size:17px}
+.hfl{display:flex;gap:8px;margin-bottom:8px}.hfl button{flex:1;padding:9px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:transparent;color:#fff;font-weight:700}.hfl button.on{background:#5b3df5;border-color:#7c4dff}
+.thr{padding:10px 0;border-bottom:1px solid rgba(255,255,255,.08)}.thh{display:flex;justify-content:space-between;font-size:15px}.thh small{color:#c7c2f0;font-weight:400}.thd{color:#a9a4d6;font-size:12px;margin-top:2px;word-break:break-word}
+.hemp{text-align:center;color:#a9a4d6;padding:26px 0}.hnote{margin-top:12px;color:#ffd98a;font-size:12.5px}
 .peerr{color:#ff8a9a;font-size:13px;min-height:18px;margin:8px 0}
 </style>
 </head>
@@ -616,11 +621,38 @@ function openPos(side,price){
   if(bal<=0.5&&!pos.length){toast('Balance $0 hai. Portfolio mein ad dekho aur $'+Math.max(1,+appCfg.rewardAmount||1000)+' pao.');goHome('port');return false}
   if(need>freeMargin()){const m=maxLots();toast(m>=0.01?'Margin kam hai. Is balance par max '+m.toFixed(2)+' lot.':'Free margin nahi bachi. Positions band karo ya ad dekho.');return false}
   const t=todayStr();if(acct.tDay!==t){acct.tDay=t;acct.tCnt=0}acct.tCnt++;lsSave();
-  pos.push({id:idn++,side,lots:l,entry:price,mg:need,sl:null,tp:null});posSig='';return true
+  pos.push({id:idn++,side,lots:l,entry:price,mg:need,sl:null,tp:null,sym,t0:Date.now()});posSig='';return true
+}
+/* ---- Trade history: poori history phone mein, admin ke set kiye din (default 90 = 3 mahine) ke baad apne aap delete ---- */
+const histDays=()=>Math.max(1,Math.min(365,Math.round(+(appCfg&&appCfg.historyDays)||90)));
+const histKey=()=>lsKey()+'_h';
+function histLoad(){
+  let a=[];try{a=JSON.parse(localStorage.getItem(histKey())||'[]')}catch(_){}
+  if(!Array.isArray(a))a=[];
+  const lim=Date.now()-histDays()*86400000,keep=a.filter(x=>x&&x.t>=lim);
+  if(keep.length!==a.length){try{localStorage.setItem(histKey(),JSON.stringify(keep))}catch(_){}}
+  return keep;
+}
+function histAdd(r){const a=histLoad();a.unshift(r);try{localStorage.setItem(histKey(),JSON.stringify(a.slice(0,2000)))}catch(_){}}
+const hfmt=t=>{const d=new Date(t),z=n=>String(n).padStart(2,'0');return z(d.getDate())+'/'+z(d.getMonth()+1)+'/'+d.getFullYear()+' '+z(d.getHours())+':'+z(d.getMinutes())};
+let hFilt='all';
+window.openHist=()=>{let m=$('histm');if(!m){m=document.createElement('div');m.id='histm';document.body.appendChild(m)}m.className='open';hFilt='all';histDraw()};
+window.hClose=()=>{const m=$('histm');if(m)m.className=''};
+window.hSet=f=>{hFilt=f;histDraw()};
+function histDraw(){
+  const m=$('histm');if(!m)return;
+  const all=histLoad(),w=all.filter(x=>x.pl>0).length,tot=all.reduce((a,x)=>a+x.pl,0);
+  const L=all.filter(x=>hFilt==='all'||(hFilt==='win'?x.pl>0:x.pl<=0));
+  m.innerHTML=`<div class="pecard"><div class="peh"><b>📜 Trade History</b><button class="pex" onclick="hClose()">✕</button></div>
+  <div class="hsum"><div><span>Trades</span><b>${all.length}</b></div><div><span>Win rate</span><b>${all.length?Math.round(w/all.length*100):0}%</b></div><div><span>Net P&amp;L</span><b class="${tot>=0?'pos':'neg'}">${sgn(Math.round(tot*100)/100)}</b></div></div>
+  <div class="hfl"><button class="${hFilt==='all'?'on':''}" onclick="hSet('all')">Sab</button><button class="${hFilt==='win'?'on':''}" onclick="hSet('win')">Profit</button><button class="${hFilt==='loss'?'on':''}" onclick="hSet('loss')">Loss</button></div>
+  <div class="thl">${L.length?L.map(x=>`<div class="thr"><div class="thh"><b class="${x.side==='B'?'pos':'neg'}">${x.side==='B'?'BUY':'SELL'} ${esc(x.sym||'')} <small>${(+x.lots).toFixed(2)} lot</small></b><b class="${x.pl>=0?'pos':'neg'}">${x.pl>=0?'+':'-'}${money(Math.abs(x.pl))}</b></div><div class="thd">${px(x.entry)} → ${px(x.exit)} • ${esc(x.why||'')}</div><div class="thd">${x.t0?hfmt(x.t0)+' → ':''}${hfmt(x.t)}</div></div>`).join(''):'<div class="hemp">Abhi koi trade nahi.</div>'}</div>
+  <div class="hnote">⏳ History ${histDays()} din (${Math.round(histDays()/30*10)/10} mahine) tak rehti hai, uske baad purani trades apne aap hat jaati hain.</div></div>`;
 }
 function closePos(p,price,why){
   const pl=(p.side==='B'?price-p.entry:p.entry-price)*p.lots*S.cs;
   bal=Math.max(0,bal+pl);closed.unshift({side:p.side,lots:p.lots,entry:p.entry,exit:price,pl,why});
+  try{histAdd({t:Date.now(),t0:p.t0||0,sym:p.sym||sym,side:p.side,lots:p.lots,entry:p.entry,exit:price,pl,why})}catch(_){}
   acct.trades++;if(pl>0)acct.wins++;
   acct.pending=(acct.pending||0)+1;acct.dirty=true;lsSave();updSyncStatus();
   if(acct.pending>=10)syncNow();
@@ -1231,6 +1263,7 @@ window.clearDraw=()=>{Object.keys(DR).forEach(k=>delete DR[k]);alert('Saari draw
 window.fsToggle=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen()}catch(e){}};
 function menuHTML(){
   return `<h4>Menu</h4>${acctHTML()}
+  <button class="mi" onclick="openHist()">📜 Trade History<span class="ch">›</span></button>
   <button class="mi" onclick="clearDraw()">🧹 Saari drawings hatao</button>
   <button class="mi" onclick="fsToggle()">⛶ Fullscreen on/off</button>
   <div class="note" style="padding:18px 16px">TradeRank (demo): saare prices simulated hain, real market data nahi hai. Real paisa involve nahi hai.</div>`;
@@ -1547,7 +1580,7 @@ window.addEventListener('fb-auth',async e=>{
 });
 
 /* ================= REMOTE CONFIG (admin panel) + LOGIN GATE + REWARDED ADS ================= */
-const CFG_DEF={loginRequired:true,bannerEnabled:true,interstitialEnabled:true,interstitialGapMin:12,dailyTradeLimit:100,maxOpenPos:3,lbProfitOnly:true,photoUpload:true,photoReview:true,support:{title:'Support Team',text:'Koi problem ho to hamse sampark karo',instagram:'',telegram:'',whatsapp:'',youtube:'',email:'',website:'',customLabel:'',customUrl:''},adNetwork:'unity',rewardAmount:1000,dailyAdLimit:20,testAds:false,unity:{appKey:'',adUnitId:'',bannerAdUnitId:'',interstitialAdUnitId:''},admob:{rewardedUnitId:'',bannerUnitId:'ca-app-pub-3940256099942544/6300978111',interstitialUnitId:''}};
+const CFG_DEF={loginRequired:true,bannerEnabled:true,interstitialEnabled:true,interstitialGapMin:12,dailyTradeLimit:100,maxOpenPos:3,lbProfitOnly:true,photoUpload:true,photoReview:true,historyDays:90,support:{title:'Support Team',text:'Koi problem ho to hamse sampark karo',instagram:'',telegram:'',whatsapp:'',youtube:'',email:'',website:'',customLabel:'',customUrl:''},adNetwork:'unity',rewardAmount:1000,dailyAdLimit:20,testAds:false,unity:{appKey:'',adUnitId:'',bannerAdUnitId:'',interstitialAdUnitId:''},admob:{rewardedUnitId:'',bannerUnitId:'ca-app-pub-3940256099942544/6300978111',interstitialUnitId:''}};
 let appCfg=(()=>{let c=null;try{c=JSON.parse(localStorage.getItem('ts_cfg')||'null')}catch(_){}return Object.assign({},CFG_DEF,c||{})})();
 let cfgAt=0,adBusy=false;
 function tradePnl(){return Math.round((bal-10000-(acct.bonus||0))*100)/100}   // leaderboard sirf trading profit se (ad bonus alag)
@@ -2186,6 +2219,7 @@ function menuHTML(){
   return head+`<div class="row2"><div class="gl gr"><span class="mt">Balance</span><div class="mid">${money(bal)}</div></div><div class="gl pk"><span class="mt">Realized P&amp;L</span><div class="mid ${cls(pnl)}">${sgn(Math.round(pnl))}</div></div></div>
   <div class="row3"><div class="gl bl"><span class="mt">Rank</span><div class="mid">${myRk?'#'+myRk:'–'}</div></div><div class="gl pk"><span class="mt">Win rate</span><div class="mid">${winRate()}%</div></div><div class="gl gr"><span class="mt">Trades</span><div class="mid">${acct.trades}</div></div></div>
   ${isIn()?`<button class="mi" onclick="editName()">✏️ Edit Profile<span class="ch">›</span></button><button class="mi or" onclick="doLogout()">🚪 Logout<span class="ch">›</span></button><button class="mi pk" onclick="delAcct()">🗑 Account Delete<span class="ch">›</span></button>`:''}
+  <button class="mi" onclick="openHist()">📜 Trade History<span class="ch">›</span></button>
   <button class="mi" onclick="clearDraw()">🧹 Drawings hatao<span class="ch">›</span></button><button class="mi" onclick="fsToggle()">⛶ Fullscreen<span class="ch">›</span></button>
   ${supportHTML()}
   <div class="note" style="padding:16px">TradeRank (demo): prices simulated hain. Real paisa involve nahi hai.</div>`;
