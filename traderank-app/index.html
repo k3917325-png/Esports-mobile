@@ -373,6 +373,7 @@ h4{color:#e8e3ff;font-size:16px;font-weight:800;padding:14px 16px 6px}
 .thr{padding:10px 0;border-bottom:1px solid rgba(255,255,255,.08)}.thh{display:flex;justify-content:space-between;font-size:15px}.thh small{color:#c7c2f0;font-weight:400}.thd{color:#a9a4d6;font-size:12px;margin-top:2px;word-break:break-word}
 .hemp{text-align:center;color:#a9a4d6;padding:26px 0}.hnote{margin-top:12px;color:#ffd98a;font-size:12.5px}
 #hMenu{display:none!important}
+#vpnb{display:none;position:fixed;inset:0;z-index:99999;background:#05030f;align-items:center;justify-content:center;padding:24px;text-align:center}#vpnb.open{display:flex}.vpnc{max-width:340px;display:flex;flex-direction:column;gap:12px;align-items:center}.vpnc b{font-size:22px}.vpnc p{color:#c7c2f0;margin:0}
 .peerr{color:#ff8a9a;font-size:13px;min-height:18px;margin:8px 0}
 </style>
 </head>
@@ -1581,7 +1582,7 @@ window.addEventListener('fb-auth',async e=>{
 });
 
 /* ================= REMOTE CONFIG (admin panel) + LOGIN GATE + REWARDED ADS ================= */
-const CFG_DEF={loginRequired:true,bannerEnabled:true,interstitialEnabled:true,interstitialGapMin:12,interstitialTabs:['port','lb'],dailyTradeLimit:100,maxOpenPos:3,lbProfitOnly:true,photoUpload:true,photoReview:true,historyDays:90,support:{title:'Support Team',text:'Koi problem ho to hamse sampark karo',instagram:'',telegram:'',whatsapp:'',youtube:'',email:'',website:'',customLabel:'',customUrl:''},adNetwork:'unity',rewardAmount:1000,dailyAdLimit:20,testAds:false,unity:{appKey:'',adUnitId:'',bannerAdUnitId:'',interstitialAdUnitId:''},admob:{rewardedUnitId:'',bannerUnitId:'ca-app-pub-3940256099942544/6300978111',interstitialUnitId:''}};
+const CFG_DEF={loginRequired:true,bannerEnabled:true,interstitialEnabled:true,interstitialGapMin:12,interstitialTabs:['port','lb'],dailyTradeLimit:100,maxOpenPos:3,lbProfitOnly:true,photoUpload:true,photoReview:true,historyDays:90,adCooldownSec:180,vpnBlock:true,indiaOnly:false,support:{title:'Support Team',text:'Koi problem ho to hamse sampark karo',instagram:'',telegram:'',whatsapp:'',youtube:'',email:'',website:'',customLabel:'',customUrl:''},adNetwork:'unity',rewardAmount:1000,dailyAdLimit:20,testAds:false,unity:{appKey:'',adUnitId:'',bannerAdUnitId:'',interstitialAdUnitId:''},admob:{rewardedUnitId:'',bannerUnitId:'ca-app-pub-3940256099942544/6300978111',interstitialUnitId:''}};
 let appCfg=(()=>{let c=null;try{c=JSON.parse(localStorage.getItem('ts_cfg')||'null')}catch(_){}return Object.assign({},CFG_DEF,c||{})})();
 let cfgAt=0,adBusy=false;
 function tradePnl(){return Math.round((bal-10000-(acct.bonus||0))*100)/100}   // leaderboard sirf trading profit se (ad bonus alag)
@@ -1591,7 +1592,7 @@ async function loadCfg(){
   try{
     const c=await FB.config();
     if(c){appCfg=Object.assign({},CFG_DEF,c);try{localStorage.setItem('ts_cfg',JSON.stringify(appCfg))}catch(_){}}
-    cfgAt=Date.now();applyGate();if(homeTab==='port')renderHome();if(typeof syncBanner==='function')syncBanner();
+    cfgAt=Date.now();applyGate();if(homeTab==='port')renderHome();if(typeof syncBanner==='function')syncBanner();if(typeof vpnCheck==='function')vpnCheck();
   }catch(_){/* offline/error: purani saved settings se chalao */}
 }
 function applyGate(){
@@ -1628,8 +1629,17 @@ function simAd(){
     btn.onclick=()=>{clearInterval(iv);el.classList.remove('open');res(btn.dataset.ok==='1'?'rewarded':'closed')};
   });
 }
+/* ---- rewarded ad cooldown: ek ad ke baad agla ad kuchh minute baad (admin: adCooldownSec, default 180 = 3 min) ---- */
+const adAtKey=()=>lsKey()+'_adat';
+const adCoolMs=()=>Math.max(0,Math.round(+(appCfg.adCooldownSec!=null?appCfg.adCooldownSec:180)))*1000;
+function adWait(){let t=0;try{t=+localStorage.getItem(adAtKey())||0}catch(_){}return Math.max(0,Math.ceil((t+adCoolMs()-Date.now())/1000))}
+const mmss=n=>Math.floor(n/60)+':'+String(n%60).padStart(2,'0');
+const adBtnDis=left=>(left&&!adWait())?'':'disabled';
+const adBtnTxt=left=>!left?'Kal aana':(adWait()?'⏳ '+mmss(adWait()):'▶ Ad');
+setInterval(()=>{const b=$('adBtn');if(!b||adBusy)return;const left=adsToday()<adsLimit(),w=adWait();b.disabled=!(left&&!w);b.textContent=adBtnTxt(left)},1000);
 async function watchAd(){
   if(adBusy)return;
+  if(adWait()>0){toast('Agla ad '+mmss(adWait())+' baad milega.');return}
   if(adsToday()>=adsLimit()){toast('Aaj ki ad limit ('+adsLimit()+') khatam. Kal phir aana!');return}
   adBusy=true;{const b=$('adBtn');if(b){b.disabled=true;b.textContent='Loading…'}}
   let st;
@@ -1642,7 +1652,7 @@ async function watchAd(){
     const amt=Math.max(1,+appCfg.rewardAmount||1000),t=todayStr();
     bal+=amt;acct.bonus=(acct.bonus||0)+amt;
     if(acct.adsDay!==t){acct.adsDay=t;acct.adsCount=0}
-    acct.adsCount=(acct.adsCount||0)+1;
+    acct.adsCount=(acct.adsCount||0)+1;try{localStorage.setItem(adAtKey(),String(Date.now()))}catch(_){}
     acct.pending=(acct.pending||0)+1;acct.dirty=true;lsSave();updSyncStatus();
     if(acct.pending>=10)syncNow();
     toast('🎉 +'+money(amt)+' mil gaye!');
@@ -1654,7 +1664,7 @@ async function watchAd(){
 function portTopHTML(fl){
   const lim=adsLimit(),used=adsToday(),left=used<lim,amt=Math.max(1,+appCfg.rewardAmount||1000);
   return `<div class="pf-hero"><span>Total Equity</span><b id="hEq">${money(bal+fl)}</b><div class="pf-sub"><div><span>Balance</span><b id="hBal">${money(bal)}</b></div><div><span>Floating P&amp;L</span><b id="hFl" class="${cls(fl)}">${money(fl)}</b></div></div></div>
-  <div class="adc"><div class="adi">🎁</div><div class="adt"><b>Free ${money(amt)}</b><span>Ek ad dekho, ${money(amt)} pao • Aaj ${Math.min(used,lim)}/${lim}</span><div class="adbar"><i style="width:${Math.min(100,used/lim*100)}%"></i></div></div><button class="adb" id="adBtn" onclick="watchAd()" ${left?'':'disabled'}>${left?'▶ Ad dekho':'Kal aana'}</button></div>`;
+  <div class="adc"><div class="adi">🎁</div><div class="adt"><b>Free ${money(amt)}</b><span>Ek ad dekho, ${money(amt)} pao • Aaj ${Math.min(used,lim)}/${lim}</span><div class="adbar"><i style="width:${Math.min(100,used/lim*100)}%"></i></div></div><button class="adb" id="adBtn" onclick="watchAd()" ${adBtnDis(left)}>${adBtnTxt(left)}</button></div>`;
 }
 
 /* ---- Account delete (Play Store ke liye zaroori) ---- */
@@ -2188,7 +2198,7 @@ function supportHTML(){
 }
 const adCard=()=>{
   const lim=adsLimit(),used=adsToday(),left=used<lim,amt=Math.max(1,+appCfg.rewardAmount||1000);
-  return `<div class="adbn"><div class="gi">🎁</div><div class="t"><b>Free ${money(amt)}</b><span>Ad dekho, ${money(amt)} pao • Aaj ${Math.min(used,lim)}/${lim}</span><div class="bar2"><i style="width:${Math.min(100,used/lim*100)}%"></i></div></div><button id="adBtn" onclick="watchAd()" ${left?'':'disabled'}>${left?'▶ Ad':'Kal aana'}</button></div>`;
+  return `<div class="adbn"><div class="gi">🎁</div><div class="t"><b>Free ${money(amt)}</b><span>Ad dekho, ${money(amt)} pao • Aaj ${Math.min(used,lim)}/${lim}</span><div class="bar2"><i style="width:${Math.min(100,used/lim*100)}%"></i></div></div><button id="adBtn" onclick="watchAd()" ${adBtnDis(left)}>${adBtnTxt(left)}</button></div>`;
 };
 const initial=n=>esc((n||'T')[0].toUpperCase());
 const userName=()=>isIn()?(FB.user.displayName||'Trader'):'Guest';
@@ -2370,6 +2380,36 @@ $('hNav').addEventListener('click',e=>{
   interThen(()=>{homeTab=n;renderHome()});
 },true);
 const _tileLb=null;
+/* ---- VPN / proxy block (admin: vpnBlock, indiaOnly) ---- */
+let vpnAt=0,vpnRes=null;
+function vpnShow(kind){
+  let m=$('vpnb');if(!m){m=document.createElement('div');m.id='vpnb';document.body.appendChild(m)}
+  if(!kind){m.className='';return}
+  m.className='open';
+  m.innerHTML=`<div class="vpnc"><div style="font-size:46px">🛡️</div><b>${kind==='country'?'Sirf India mein available':'VPN / Proxy band karo'}</b><p>${kind==='country'?'TradeRank abhi sirf India ke users ke liye hai.':'Fair leaderboard ke liye VPN ya proxy ke saath app nahi chalta. VPN band karke apne normal mobile data/WiFi se aao.'}</p><button class="addb" onclick="vpnCheck(true)">🔄 Dobara check karo</button></div>`;
+}
+async function vpnCheck(force){
+  if(!fbOn()||(appCfg.vpnBlock===false&&!appCfg.indiaOnly))return;
+  let bad='';
+  try{
+    if(appCfg.vpnBlock!==false&&window.NativeAds&&NativeAds.isVpnActive&&NativeAds.isVpnActive())bad='vpn';
+    if(!bad&&navigator.onLine){
+      if(force||!vpnRes||Date.now()-vpnAt>120000){
+        try{vpnRes=await jget('https://api.ipapi.is/',6000);vpnAt=Date.now()}catch(_){vpnRes=null}   // check na ho paye to rokte nahi
+      }
+      const j=vpnRes;
+      if(j){
+        if(appCfg.vpnBlock!==false&&(j.is_vpn||j.is_proxy||j.is_tor))bad='vpn';
+        else if(appCfg.indiaOnly&&j.location&&j.location.country_code&&j.location.country_code!=='IN')bad='country';
+      }
+    }
+  }catch(_){}
+  vpnShow(bad);
+}
+setInterval(()=>vpnCheck(),300000);
+window.addEventListener('online',()=>vpnCheck(true));
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')vpnCheck()});
+setTimeout(()=>vpnCheck(),2500);
 syncBanner();
 </script>
 </body>
