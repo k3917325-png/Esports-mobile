@@ -145,6 +145,9 @@ window.FIREBASE_CONFIG={apiKey:"AIzaSyCC8y_IV3V35XrQwUJEXZxNcNyOY01t9fA",authDom
       <span class="mut" style="display:block;margin-top:4px">180 = 3 minute. Ad dekhne ke baad button par timer chalta hai, timer khatam hone par hi agla ad.</span>
       <label class="tg"><div><b>🛡 VPN / Proxy block</b><span class="mut">ON: VPN ya proxy se aane wale users ko app nahi chalega (Android app mein VPN seedha pakda jata hai, browser mein IP check se).</span></div><input type="checkbox" id="cVpn"></label>
       <label class="tg"><div><b>🇮🇳 Sirf India ke users</b><span class="mut">ON: India ke bahar ke IP wale users band. (Jio, Airtel, Vi sab chalenge.)</span></div><input type="checkbox" id="cIndia"></label>
+      <div style="margin-top:10px"><b>🚫 Country block</b><span class="mut" style="display:block;margin:2px 0 6px">Yahan chune hue desh ke users app nahi chala payenge (unke IP se pata chalta hai). Khaali = sab desh allowed.</span>
+        <div style="display:flex;gap:8px"><select id="cBlkSel" style="flex:1;min-width:0"></select><button class="btn sm" id="cBlkAdd" type="button">+ Block</button></div>
+        <div id="cBlkList" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div></div>
       <h4 style="margin:16px 0 4px">🎧 Support Team (app ke Home aur Menu mein dikhega)</h4>
       <span class="mut" style="display:block;margin-bottom:6px">Jo khaali chhodoge wo button nahi dikhega. Poora link ya sirf username/number likh sakte ho.</span>
       <label class="fl">Title</label><input id="sTitle" maxlength="30" placeholder="Support Team">
@@ -241,7 +244,7 @@ else{
       $('cLogin').checked=c.loginRequired!==false;
       $('cTest').checked=!!c.testAds;
       $('cBan').checked=c.bannerEnabled!==false;$('cInt').checked=c.interstitialEnabled!==false;$('cGap').value=c.interstitialGapMin||12;{const t=Array.isArray(c.interstitialTabs)?c.interstitialTabs:['port','lb'];['watch','port','lb','menu'].forEach(k=>$('cIT_'+k).checked=t.includes(k))}
-      $('cReward').value=c.rewardAmount;$('cLbP').checked=c.lbProfitOnly!==false;$('cPhoto').checked=c.photoUpload!==false;$('cHDays').value=c.historyDays||90;$('cACool').value=c.adCooldownSec!=null?c.adCooldownSec:180;$('cVpn').checked=c.vpnBlock!==false;$('cIndia').checked=!!c.indiaOnly;
+      $('cReward').value=c.rewardAmount;$('cLbP').checked=c.lbProfitOnly!==false;$('cPhoto').checked=c.photoUpload!==false;$('cHDays').value=c.historyDays||90;blk=Array.isArray(c.blockedCountries)?c.blockedCountries.slice():[];blkDraw();$('cACool').value=c.adCooldownSec!=null?c.adCooldownSec:180;$('cVpn').checked=c.vpnBlock!==false;$('cIndia').checked=!!c.indiaOnly;
       {const s=c.support||{};$('sTitle').value=s.title||'Support Team';$('sText').value=s.text||'';$('sIg').value=s.instagram||'';$('sTg').value=s.telegram||'';$('sWa').value=s.whatsapp||'';$('sYt').value=s.youtube||'';$('sEm').value=s.email||'';$('sWeb').value=s.website||'';$('sCL').value=s.customLabel||'';$('sCU').value=s.customUrl||''}$('cPRev').checked=c.photoReview!==false;$('cTLim').value=c.dailyTradeLimit||100;$('cMaxOpen').value=c.maxOpenPos||3;
       $('cLimit').value=c.dailyAdLimit;
       $('cNet').value=c.adNetwork==='admob'?'admob':'unity';
@@ -280,7 +283,7 @@ else{
       const missing=net==='unity'?(!key||!unit):!aunit;
       if(missing&&!test&&!confirm('Chune hue network ke ID khaali hain, isliye asli ads fail honge. Phir bhi save karein?'))return;
       const data={loginRequired:$('cLogin').checked,testAds:test,rewardAmount:reward,dailyAdLimit:limit,adNetwork:net,
-        bannerEnabled:$('cBan').checked,interstitialEnabled:$('cInt').checked,interstitialGapMin:gap,interstitialTabs:['watch','port','lb','menu'].filter(k=>$('cIT_'+k).checked),dailyTradeLimit:tlim,maxOpenPos:mop,lbProfitOnly:$('cLbP').checked,historyDays:hdays,adCooldownSec:acool,vpnBlock:$('cVpn').checked,indiaOnly:$('cIndia').checked,photoUpload:$('cPhoto').checked,support:{title:$('sTitle').value.trim().slice(0,30),text:$('sText').value.trim().slice(0,80),instagram:$('sIg').value.trim(),telegram:$('sTg').value.trim(),whatsapp:$('sWa').value.trim(),youtube:$('sYt').value.trim(),email:$('sEm').value.trim(),website:$('sWeb').value.trim(),customLabel:$('sCL').value.trim(),customUrl:$('sCU').value.trim()},photoReview:$('cPRev').checked,
+        bannerEnabled:$('cBan').checked,interstitialEnabled:$('cInt').checked,interstitialGapMin:gap,interstitialTabs:['watch','port','lb','menu'].filter(k=>$('cIT_'+k).checked),dailyTradeLimit:tlim,maxOpenPos:mop,lbProfitOnly:$('cLbP').checked,historyDays:hdays,adCooldownSec:acool,blockedCountries:blk.slice(),vpnBlock:$('cVpn').checked,indiaOnly:$('cIndia').checked,photoUpload:$('cPhoto').checked,support:{title:$('sTitle').value.trim().slice(0,30),text:$('sText').value.trim().slice(0,80),instagram:$('sIg').value.trim(),telegram:$('sTg').value.trim(),whatsapp:$('sWa').value.trim(),youtube:$('sYt').value.trim(),email:$('sEm').value.trim(),website:$('sWeb').value.trim(),customLabel:$('sCL').value.trim(),customUrl:$('sCU').value.trim()},photoReview:$('cPRev').checked,
         unity:{appKey:key,adUnitId:unit,bannerAdUnitId:$('cUBan').value.trim(),interstitialAdUnitId:$('cUInt').value.trim()},admob:{rewardedUnitId:aunit,bannerUnitId:$('cABan').value.trim(),interstitialUnitId:$('cAInt').value.trim()},updated:Fs.serverTimestamp()};
       $('cSave').disabled=true;st.textContent='Save ho raha hai…';
       try{await Fs.setDoc(Fs.doc(db,'config','app'),data,{merge:true});st.innerHTML='<span class="okmsg">✔ Save ho gaya</span>'}
@@ -302,6 +305,15 @@ else{
       }catch(e){$('note').textContent='Error: '+(e.code||e.message)}
     }
 
+    const CTRY='AF:Afghanistan|AL:Albania|DZ:Algeria|AO:Angola|AR:Argentina|AM:Armenia|AU:Australia|AT:Austria|AZ:Azerbaijan|BH:Bahrain|BD:Bangladesh|BY:Belarus|BE:Belgium|BT:Bhutan|BO:Bolivia|BA:Bosnia|BR:Brazil|BG:Bulgaria|KH:Cambodia|CM:Cameroon|CA:Canada|CL:Chile|CN:China|CO:Colombia|HR:Croatia|CU:Cuba|CY:Cyprus|CZ:Czechia|DK:Denmark|EC:Ecuador|EG:Egypt|ET:Ethiopia|FI:Finland|FR:France|GE:Georgia|DE:Germany|GH:Ghana|GR:Greece|HK:Hong Kong|HU:Hungary|IS:Iceland|IN:India|ID:Indonesia|IR:Iran|IQ:Iraq|IE:Ireland|IL:Israel|IT:Italy|JP:Japan|JO:Jordan|KZ:Kazakhstan|KE:Kenya|KW:Kuwait|KG:Kyrgyzstan|LA:Laos|LV:Latvia|LB:Lebanon|LY:Libya|LT:Lithuania|MY:Malaysia|MV:Maldives|MX:Mexico|MN:Mongolia|MA:Morocco|MM:Myanmar|NP:Nepal|NL:Netherlands|NZ:New Zealand|NG:Nigeria|KP:North Korea|NO:Norway|OM:Oman|PK:Pakistan|PS:Palestine|PE:Peru|PH:Philippines|PL:Poland|PT:Portugal|QA:Qatar|RO:Romania|RU:Russia|SA:Saudi Arabia|RS:Serbia|SG:Singapore|SK:Slovakia|SI:Slovenia|ZA:South Africa|KR:South Korea|SS:South Sudan|ES:Spain|LK:Sri Lanka|SD:Sudan|SE:Sweden|CH:Switzerland|SY:Syria|TW:Taiwan|TJ:Tajikistan|TZ:Tanzania|TH:Thailand|TR:Turkey|TM:Turkmenistan|UG:Uganda|UA:Ukraine|AE:UAE|GB:United Kingdom|US:United States|UZ:Uzbekistan|VE:Venezuela|VN:Vietnam|YE:Yemen|ZM:Zambia|ZW:Zimbabwe'.split('|').map(x=>{const i=x.indexOf(':');return[x.slice(0,i),x.slice(i+1)]});
+    let blk=[];
+    const cname=c=>(CTRY.find(x=>x[0]===c)||[c,c])[1];
+    function blkDraw(){
+      $('cBlkList').innerHTML=blk.length?blk.map(c=>`<span style="background:rgba(255,80,100,.15);border:1px solid rgba(255,80,100,.45);border-radius:20px;padding:5px 10px;display:inline-flex;gap:8px;align-items:center">${esc(cname(c))} (${esc(c)}) <b data-c="${esc(c)}" style="cursor:pointer">✕</b></span>`).join(''):'<span class="mut">Koi desh block nahi.</span>';
+    }
+    $('cBlkSel').innerHTML='<option value="">Desh chuno…</option>'+CTRY.map(x=>`<option value="${x[0]}">${x[1]} (${x[0]})</option>`).join('');
+    $('cBlkAdd').onclick=()=>{const v=$('cBlkSel').value;if(v&&!blk.includes(v)){blk.push(v);blkDraw()}$('cBlkSel').value=''};
+    $('cBlkList').onclick=e=>{const b=e.target.closest('b[data-c]');if(b){blk=blk.filter(x=>x!==b.dataset.c);blkDraw()}};
     async function loadReview(){
       const box=$('revList');
       try{
