@@ -105,6 +105,9 @@ window.FIREBASE_CONFIG={apiKey:"AIzaSyCC8y_IV3V35XrQwUJEXZxNcNyOY01t9fA",authDom
 
       <label class="tg"><div><b>📢 Banner ad (home ke upar)</b><span class="mut">ON: Home, Markets, Portfolio, Leaders, Menu ke upar chhota banner. Chart screen par nahi aata.</span></div><input type="checkbox" id="cBan"></label>
       <label class="tg"><div><b>📺 Interstitial ad (Leaderboard)</b><span class="mut">ON: Leaderboard kholne par full-screen ad, lekin sirf tab jab pichhle ad ko "gap" minute ho chuke hon.</span></div><input type="checkbox" id="cInt"></label>
+      <label class="fl" style="margin-top:8px">Interstitial kin buttons par aaye (niche ke menu mein)</label>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;margin:4px 0 6px"><label><input type="checkbox" id="cIT_watch"> Markets</label><label><input type="checkbox" id="cIT_port"> Portfolio</label><label><input type="checkbox" id="cIT_lb"> Leaders</label><label><input type="checkbox" id="cIT_menu"> Menu</label></div>
+      <span class="mut" style="display:block;margin-bottom:4px">Chart par kabhi ad nahi aata. Ads ki ginti par koi limit nahi, bas har ad ke beech "gap" minute. Limit sirf rewarded video ads par hai.</span>
       <div class="g2" style="margin-top:6px"><div><label class="fl">Interstitial gap (minute)</label><input id="cGap" type="number" min="1" max="120" inputmode="numeric"></div></div>
       <label class="tg"><div><b>🏆 Leaderboard: sirf profit wale</b><span class="mut">ON: leaderboard mein sirf profit (+) wale traders, sabse zyada profit upar. Loss wale nahi dikhenge.</span></div><input type="checkbox" id="cLbP"></label>
       <label class="tg"><div><b>📷 User photo upload</b><span class="mut">ON: users gallery se apni photo laga sakte hain. OFF: sirf ready avatars.</span></div><input type="checkbox" id="cPhoto"></label>
@@ -233,7 +236,7 @@ else{
       c=Object.assign({},DEF,c||{});
       $('cLogin').checked=c.loginRequired!==false;
       $('cTest').checked=!!c.testAds;
-      $('cBan').checked=c.bannerEnabled!==false;$('cInt').checked=c.interstitialEnabled!==false;$('cGap').value=c.interstitialGapMin||12;
+      $('cBan').checked=c.bannerEnabled!==false;$('cInt').checked=c.interstitialEnabled!==false;$('cGap').value=c.interstitialGapMin||12;{const t=Array.isArray(c.interstitialTabs)?c.interstitialTabs:['port','lb'];['watch','port','lb','menu'].forEach(k=>$('cIT_'+k).checked=t.includes(k))}
       $('cReward').value=c.rewardAmount;$('cLbP').checked=c.lbProfitOnly!==false;$('cPhoto').checked=c.photoUpload!==false;$('cHDays').value=c.historyDays||90;
       {const s=c.support||{};$('sTitle').value=s.title||'Support Team';$('sText').value=s.text||'';$('sIg').value=s.instagram||'';$('sTg').value=s.telegram||'';$('sWa').value=s.whatsapp||'';$('sYt').value=s.youtube||'';$('sEm').value=s.email||'';$('sWeb').value=s.website||'';$('sCL').value=s.customLabel||'';$('sCU').value=s.customUrl||''}$('cPRev').checked=c.photoReview!==false;$('cTLim').value=c.dailyTradeLimit||100;$('cMaxOpen').value=c.maxOpenPos||3;
       $('cLimit').value=c.dailyAdLimit;
@@ -271,7 +274,7 @@ else{
       const missing=net==='unity'?(!key||!unit):!aunit;
       if(missing&&!test&&!confirm('Chune hue network ke ID khaali hain, isliye asli ads fail honge. Phir bhi save karein?'))return;
       const data={loginRequired:$('cLogin').checked,testAds:test,rewardAmount:reward,dailyAdLimit:limit,adNetwork:net,
-        bannerEnabled:$('cBan').checked,interstitialEnabled:$('cInt').checked,interstitialGapMin:gap,dailyTradeLimit:tlim,maxOpenPos:mop,lbProfitOnly:$('cLbP').checked,historyDays:hdays,photoUpload:$('cPhoto').checked,support:{title:$('sTitle').value.trim().slice(0,30),text:$('sText').value.trim().slice(0,80),instagram:$('sIg').value.trim(),telegram:$('sTg').value.trim(),whatsapp:$('sWa').value.trim(),youtube:$('sYt').value.trim(),email:$('sEm').value.trim(),website:$('sWeb').value.trim(),customLabel:$('sCL').value.trim(),customUrl:$('sCU').value.trim()},photoReview:$('cPRev').checked,
+        bannerEnabled:$('cBan').checked,interstitialEnabled:$('cInt').checked,interstitialGapMin:gap,interstitialTabs:['watch','port','lb','menu'].filter(k=>$('cIT_'+k).checked),dailyTradeLimit:tlim,maxOpenPos:mop,lbProfitOnly:$('cLbP').checked,historyDays:hdays,photoUpload:$('cPhoto').checked,support:{title:$('sTitle').value.trim().slice(0,30),text:$('sText').value.trim().slice(0,80),instagram:$('sIg').value.trim(),telegram:$('sTg').value.trim(),whatsapp:$('sWa').value.trim(),youtube:$('sYt').value.trim(),email:$('sEm').value.trim(),website:$('sWeb').value.trim(),customLabel:$('sCL').value.trim(),customUrl:$('sCU').value.trim()},photoReview:$('cPRev').checked,
         unity:{appKey:key,adUnitId:unit,bannerAdUnitId:$('cUBan').value.trim(),interstitialAdUnitId:$('cUInt').value.trim()},admob:{rewardedUnitId:aunit,bannerUnitId:$('cABan').value.trim(),interstitialUnitId:$('cAInt').value.trim()},updated:Fs.serverTimestamp()};
       $('cSave').disabled=true;st.textContent='Save ho raha hai…';
       try{await Fs.setDoc(Fs.doc(db,'config','app'),data,{merge:true});st.innerHTML='<span class="okmsg">✔ Save ho gaya</span>'}

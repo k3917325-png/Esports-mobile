@@ -372,6 +372,7 @@ h4{color:#e8e3ff;font-size:16px;font-weight:800;padding:14px 16px 6px}
 .hfl{display:flex;gap:8px;margin-bottom:8px}.hfl button{flex:1;padding:9px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:transparent;color:#fff;font-weight:700}.hfl button.on{background:#5b3df5;border-color:#7c4dff}
 .thr{padding:10px 0;border-bottom:1px solid rgba(255,255,255,.08)}.thh{display:flex;justify-content:space-between;font-size:15px}.thh small{color:#c7c2f0;font-weight:400}.thd{color:#a9a4d6;font-size:12px;margin-top:2px;word-break:break-word}
 .hemp{text-align:center;color:#a9a4d6;padding:26px 0}.hnote{margin-top:12px;color:#ffd98a;font-size:12.5px}
+#hMenu{display:none!important}
 .peerr{color:#ff8a9a;font-size:13px;min-height:18px;margin:8px 0}
 </style>
 </head>
@@ -1580,7 +1581,7 @@ window.addEventListener('fb-auth',async e=>{
 });
 
 /* ================= REMOTE CONFIG (admin panel) + LOGIN GATE + REWARDED ADS ================= */
-const CFG_DEF={loginRequired:true,bannerEnabled:true,interstitialEnabled:true,interstitialGapMin:12,dailyTradeLimit:100,maxOpenPos:3,lbProfitOnly:true,photoUpload:true,photoReview:true,historyDays:90,support:{title:'Support Team',text:'Koi problem ho to hamse sampark karo',instagram:'',telegram:'',whatsapp:'',youtube:'',email:'',website:'',customLabel:'',customUrl:''},adNetwork:'unity',rewardAmount:1000,dailyAdLimit:20,testAds:false,unity:{appKey:'',adUnitId:'',bannerAdUnitId:'',interstitialAdUnitId:''},admob:{rewardedUnitId:'',bannerUnitId:'ca-app-pub-3940256099942544/6300978111',interstitialUnitId:''}};
+const CFG_DEF={loginRequired:true,bannerEnabled:true,interstitialEnabled:true,interstitialGapMin:12,interstitialTabs:['port','lb'],dailyTradeLimit:100,maxOpenPos:3,lbProfitOnly:true,photoUpload:true,photoReview:true,historyDays:90,support:{title:'Support Team',text:'Koi problem ho to hamse sampark karo',instagram:'',telegram:'',whatsapp:'',youtube:'',email:'',website:'',customLabel:'',customUrl:''},adNetwork:'unity',rewardAmount:1000,dailyAdLimit:20,testAds:false,unity:{appKey:'',adUnitId:'',bannerAdUnitId:'',interstitialAdUnitId:''},admob:{rewardedUnitId:'',bannerUnitId:'ca-app-pub-3940256099942544/6300978111',interstitialUnitId:''}};
 let appCfg=(()=>{let c=null;try{c=JSON.parse(localStorage.getItem('ts_cfg')||'null')}catch(_){}return Object.assign({},CFG_DEF,c||{})})();
 let cfgAt=0,adBusy=false;
 function tradePnl(){return Math.round((bal-10000-(acct.bonus||0))*100)/100}   // leaderboard sirf trading profit se (ad bonus alag)
@@ -2359,11 +2360,14 @@ async function interThen(go){
   if(st!=='failed')markInter();      // ad aaya hi nahi to user ko rokte nahi
   go();
 }
+// Interstitial: admin ke chune hue bottom-menu buttons par (default Portfolio + Leaders). Har ad ke beech gap (12 min), ads ki ginti par koi limit nahi.
+const interTabs=()=>Array.isArray(appCfg.interstitialTabs)?appCfg.interstitialTabs:['port','lb'];
 $('hNav').addEventListener('click',e=>{
-  const b=e.target.closest('[data-n="lb"]');if(!b)return;
-  if(homeTab==='lb'||!interDue())return;                 // 12 minute nahi hue: seedha leaderboard
+  const b=e.target.closest('[data-n]');if(!b)return;
+  const n=b.dataset.n;
+  if(n==='chart'||homeTab===n||!interTabs().includes(n)||!interDue())return;   // chart par kabhi nahi; gap poora nahi hua to seedha jao
   e.stopImmediatePropagation();
-  interThen(()=>{homeTab='lb';renderHome()});
+  interThen(()=>{homeTab=n;renderHome()});
 },true);
 const _tileLb=null;
 syncBanner();
