@@ -2301,7 +2301,7 @@ function menuHTML(){
   <button class="mi" onclick="openHist()">📜 Trade History<span class="ch">›</span></button>
   <button class="mi" onclick="clearDraw()">🧹 Drawings hatao<span class="ch">›</span></button><button class="mi" onclick="fsToggle()">⛶ Fullscreen<span class="ch">›</span></button>
   ${supportHTML()}
-  <div class="note" style="padding:16px">TradeRank (demo): prices simulated hain. Real paisa involve nahi hai.</div>`;
+  <div class="note" style="padding:16px">TradeRank (demo): prices simulated hain. Real paisa involve nahi hai.${(()=>{try{return window.NativeAds&&NativeAds.appBuild?'<br><small style="opacity:.6">App '+esc(NativeAds.appBuild())+'</small>':''}catch(_){return ''}})()}</div>`;
 }
 /* leaderboard: podium + list + Your Rank bar */
 function lbHTML(){

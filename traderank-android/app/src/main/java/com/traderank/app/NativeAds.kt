@@ -190,6 +190,17 @@ class NativeAds(private val activity: Activity, private val web: WebView) {
         }
     }
 
+    // Kaun si APK build chal rahi hai (Menu ke neeche dikhta hai)
+    @JavascriptInterface
+    fun appBuild(): String {
+        return try {
+            val pi = activity.packageManager.getPackageInfo(activity.packageName, 0)
+            @Suppress("DEPRECATION")
+            val code = if (android.os.Build.VERSION.SDK_INT >= 28) pi.longVersionCode else pi.versionCode.toLong()
+            "build " + code + " (banner: " + (if ((activity as? MainActivity)?.bannerHost != null) "top-layout" else "overlay") + ")"
+        } catch (_: Exception) { "" }
+    }
+
     @JavascriptInterface
     fun hideBanner() {
         main.post {
