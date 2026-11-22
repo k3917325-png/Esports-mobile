@@ -374,6 +374,17 @@ h4{color:#e8e3ff;font-size:16px;font-weight:800;padding:14px 16px 6px}
 .hemp{text-align:center;color:#a9a4d6;padding:26px 0}.hnote{margin-top:12px;color:#ffd98a;font-size:12.5px}
 #hMenu{display:none!important}
 #vpnb{display:none;position:fixed;inset:0;z-index:99999;background:#05030f;align-items:center;justify-content:center;padding:24px;text-align:center}#vpnb.open{display:flex}.vpnc{max-width:340px;display:flex;flex-direction:column;gap:12px;align-items:center}.vpnc b{font-size:22px}.vpnc p{color:#c7c2f0;margin:0}
+#dimv{position:fixed;inset:0;background:#000;pointer-events:none;z-index:99990;opacity:0}
+#dispm{display:none;position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,.7);align-items:flex-end;justify-content:center}#dispm.open{display:flex}
+.dsec{margin:14px 0}.dlab{display:flex;justify-content:space-between;font-size:15px;margin-bottom:8px}.dhint{color:#a9a4d6;font-size:12px;margin-top:6px}
+#dbr{width:100%;accent-color:#7c4dff;height:34px}
+.dthm{display:flex;gap:10px}.dthm button{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px;border-radius:14px;border:1.5px solid rgba(255,255,255,.2);background:transparent;color:#fff;font-weight:700}.dthm button.on{border-color:#7c4dff;background:rgba(124,77,255,.18)}.dthm i{display:block;width:100%;height:34px;border-radius:8px}
+html.blk{--bg:#000;--card:#0b0b0d;--line:#222}
+html.blk #home,html.blk body{background:#000}
+html.blk #hNav{background:#000;border-top-color:#222}
+html.blk .gl,html.blk .pf-hero,html.blk .supc{background:#0b0b0e;border-color:#26262c;box-shadow:none}
+html.blk .mi,html.blk .pcard,html.blk .bal,html.blk .stat{background:#0b0b0e;border-color:#26262c}
+html.blk .pecard{background:#0b0b0e;border:1px solid #26262c}
 .peerr{color:#ff8a9a;font-size:13px;min-height:18px;margin:8px 0}
 </style>
 </head>
@@ -638,6 +649,29 @@ function histLoad(){
 }
 function histAdd(r){const a=histLoad();a.unshift(r);try{localStorage.setItem(histKey(),JSON.stringify(a.slice(0,2000)))}catch(_){}}
 const hfmt=t=>{const d=new Date(t),z=n=>String(n).padStart(2,'0');return z(d.getDate())+'/'+z(d.getMonth()+1)+'/'+d.getFullYear()+' '+z(d.getHours())+':'+z(d.getMinutes())};
+/* ---- Display: brightness + Black (AMOLED) theme, phone mein yaad rehta hai ---- */
+let DISP={b:100,blk:false};
+try{Object.assign(DISP,JSON.parse(localStorage.getItem('ts_disp')||'{}'))}catch(_){}
+function dispApply(){
+  DISP.b=Math.max(30,Math.min(100,Math.round(+DISP.b||100)));
+  document.documentElement.classList.toggle('blk',!!DISP.blk);
+  let o=$('dimv');if(!o){o=document.createElement('div');o.id='dimv';document.body.appendChild(o)}
+  o.style.opacity=String((100-DISP.b)/100*0.85);
+  try{localStorage.setItem('ts_disp',JSON.stringify(DISP))}catch(_){}
+}
+window.openDisp=()=>{let m=$('dispm');if(!m){m=document.createElement('div');m.id='dispm';document.body.appendChild(m)}m.className='open';dispDraw()};
+window.dClose=()=>{const m=$('dispm');if(m)m.className=''};
+window.dBri=v=>{DISP.b=+v;dispApply();const e=$('dbv');if(e)e.textContent=DISP.b+'%'};
+window.dBlk=on=>{DISP.blk=!!on;dispApply();dispDraw()};
+function dispDraw(){
+  const m=$('dispm');if(!m)return;
+  m.innerHTML=`<div class="pecard"><div class="peh"><b>🎨 Display</b><button class="pex" onclick="dClose()">✕</button></div>
+  <div class="dsec"><div class="dlab"><span>☀️ Brightness</span><b id="dbv">${DISP.b}%</b></div><input id="dbr" type="range" min="30" max="100" step="1" value="${DISP.b}" oninput="dBri(this.value)"><div class="dhint">App ki roshni kam karo (phone ki brightness alag se bhi badal sakte ho).</div></div>
+  <div class="dsec"><div class="dlab"><span>🌑 Theme</span></div>
+    <div class="dthm"><button class="${DISP.blk?'':'on'}" onclick="dBlk(false)"><i style="background:linear-gradient(135deg,#2a0f78,#07051a)"></i>Default</button><button class="${DISP.blk?'on':''}" onclick="dBlk(true)"><i style="background:#000;border:1px solid #444"></i>Black</button></div>
+    <div class="dhint">Black: poora kala (AMOLED) background, battery bachati hai aur aankhon ko aaram deta hai.</div></div>
+  <button class="pbtn" style="margin-top:6px" onclick="DISP={b:100,blk:false};dispApply();dispDraw()">↺ Reset</button></div>`;
+}
 let hFilt='all';
 window.openHist=()=>{let m=$('histm');if(!m){m=document.createElement('div');m.id='histm';document.body.appendChild(m)}m.className='open';hFilt='all';histDraw()};
 window.hClose=()=>{const m=$('histm');if(m)m.className=''};
@@ -1266,6 +1300,7 @@ window.clearDraw=()=>{Object.keys(DR).forEach(k=>delete DR[k]);alert('Saari draw
 window.fsToggle=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen()}catch(e){}};
 function menuHTML(){
   return `<h4>Menu</h4>${acctHTML()}
+  <button class="mi" onclick="openDisp()">🎨 Display: Brightness &amp; Black<span class="ch">›</span></button>
   <button class="mi" onclick="openHist()">📜 Trade History<span class="ch">›</span></button>
   <button class="mi" onclick="clearDraw()">🧹 Saari drawings hatao</button>
   <button class="mi" onclick="fsToggle()">⛶ Fullscreen on/off</button>
@@ -2241,6 +2276,7 @@ function menuHTML(){
   return head+`<div class="row2"><div class="gl gr"><span class="mt">Balance</span><div class="mid">${money(bal)}</div></div><div class="gl pk"><span class="mt">Realized P&amp;L</span><div class="mid ${cls(pnl)}">${sgn(Math.round(pnl))}</div></div></div>
   <div class="row3"><div class="gl bl"><span class="mt">Rank</span><div class="mid">${myRk?'#'+myRk:'–'}</div></div><div class="gl pk"><span class="mt">Win rate</span><div class="mid">${winRate()}%</div></div><div class="gl gr"><span class="mt">Trades</span><div class="mid">${acct.trades}</div></div></div>
   ${isIn()?`<button class="mi" onclick="editName()">✏️ Edit Profile<span class="ch">›</span></button><button class="mi or" onclick="doLogout()">🚪 Logout<span class="ch">›</span></button><button class="mi pk" onclick="delAcct()">🗑 Account Delete<span class="ch">›</span></button>`:''}
+  <button class="mi" onclick="openDisp()">🎨 Display: Brightness &amp; Black<span class="ch">›</span></button>
   <button class="mi" onclick="openHist()">📜 Trade History<span class="ch">›</span></button>
   <button class="mi" onclick="clearDraw()">🧹 Drawings hatao<span class="ch">›</span></button><button class="mi" onclick="fsToggle()">⛶ Fullscreen<span class="ch">›</span></button>
   ${supportHTML()}
@@ -2333,7 +2369,7 @@ let bannerOn=false,bannerKey='';
 function syncBanner(){
   const on=document.body.className==='home'&&appCfg.bannerEnabled!==false;   // sirf Home/Markets/Portfolio/Leaders/Menu par; chart par kabhi nahi
   const slot=$('adTop');if(!slot)return;
-  slot.style.display=on?'flex':'none';
+  slot.style.display=(on&&!hasNative())?'flex':'none';
   slot.textContent=hasNative()?'':'📢 Banner Ad';
   if(hasNative()&&window.NativeAds.showBanner){
     try{
@@ -2421,6 +2457,7 @@ async function vpnCheck(force){
 }
 setInterval(()=>vpnCheck(),300000);
 window.addEventListener('online',()=>vpnCheck(true));
+dispApply();
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')vpnCheck()});
 setTimeout(()=>vpnCheck(),2500);
 syncBanner();

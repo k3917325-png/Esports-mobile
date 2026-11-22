@@ -154,7 +154,13 @@ class NativeAds(private val activity: Activity, private val web: WebView) {
                     UnityProvider.get()?.banner(activity, p)
                 }
                 if (v != null) {
-                    activity.addContentView(v, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP).apply { topMargin = statusBarHeight() })
+                    val host = (activity as? MainActivity)?.bannerHost
+                    if (host != null) {
+                        // Status bar ke thik neeche, app ke upar (header ko nahi dhakta)
+                        host.addView(v, FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL))
+                    } else {
+                        activity.addContentView(v, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP).apply { topMargin = statusBarHeight() })
+                    }
                     bannerView = v
                 }
             } catch (t: Throwable) { /* banner na aaye to app chalta rahe */ }

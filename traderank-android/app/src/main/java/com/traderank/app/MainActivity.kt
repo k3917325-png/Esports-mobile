@@ -12,10 +12,13 @@ import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.widget.FrameLayout
+import android.widget.LinearLayout
 
 class MainActivity : Activity() {
 
     private lateinit var web: WebView
+    /** Banner ad yahan lagta hai (WebView ke upar alag jagah), isliye app ke header ko dhakta nahi. */
+    lateinit var bannerHost: FrameLayout
     private var fileCb: ValueCallback<Array<Uri>>? = null
 
     companion object {
@@ -28,10 +31,13 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val root = FrameLayout(this)
+        val root = LinearLayout(this)
+        root.orientation = LinearLayout.VERTICAL
         root.setBackgroundColor(Color.parseColor("#05030F"))
+        bannerHost = FrameLayout(this)
+        root.addView(bannerHost, LinearLayout.LayoutParams(-1, -2))
         web = WebView(this)
-        root.addView(web, FrameLayout.LayoutParams(-1, -1))
+        root.addView(web, LinearLayout.LayoutParams(-1, 0, 1f))
         setContentView(root)
 
         // Android 15 edge-to-edge: status bar / navigation bar ke neeche content na jaye
