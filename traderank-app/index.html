@@ -373,12 +373,29 @@ h4{color:#e8e3ff;font-size:16px;font-weight:800;padding:14px 16px 6px}
 .thr{padding:10px 0;border-bottom:1px solid rgba(255,255,255,.08)}.thh{display:flex;justify-content:space-between;font-size:15px}.thh small{color:#c7c2f0;font-weight:400}.thd{color:#a9a4d6;font-size:12px;margin-top:2px;word-break:break-word}
 .hemp{text-align:center;color:#a9a4d6;padding:26px 0}.hnote{margin-top:12px;color:#ffd98a;font-size:12.5px}
 #hMenu{display:none!important}
+/* thoda jaan: halki chamak/glow animations (reduce-motion par band) */
+@keyframes shn{0%{transform:translateX(-120%)}60%,100%{transform:translateX(220%)}}
+@keyframes pls{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,.55)}50%{box-shadow:0 0 0 9px rgba(255,255,255,0)}}
+@keyframes flt{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-4px) rotate(4deg)}}
+.adc,.adbn{position:relative;overflow:hidden}
+.adc::after,.adbn::after{content:"";position:absolute;top:0;bottom:0;left:0;width:38%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.38),transparent);animation:shn 3.6s ease-in-out infinite;pointer-events:none}
+.adc .adi,.adbn .gi{display:inline-block;animation:flt 2.4s ease-in-out infinite}
+#adBtn:not(:disabled){animation:pls 1.8s ease-out infinite}
+.mi,.supb,.adc button,.adbn button,#hNav [data-n]{transition:transform .12s ease,filter .12s ease}
+.mi:active,.supb:active,#hNav [data-n]:active{transform:scale(.96)}
+#hNav [data-n].on{box-shadow:0 6px 18px rgba(124,77,255,.45)}
+@media (prefers-reduced-motion:reduce){.adc::after,.adbn::after,.adc .adi,.adbn .gi,#adBtn{animation:none!important}}
 #vpnb{display:none;position:fixed;inset:0;z-index:99999;background:#05030f;align-items:center;justify-content:center;padding:24px;text-align:center}#vpnb.open{display:flex}.vpnc{max-width:340px;display:flex;flex-direction:column;gap:12px;align-items:center}.vpnc b{font-size:22px}.vpnc p{color:#c7c2f0;margin:0}
 #dimv{position:fixed;inset:0;background:#000;pointer-events:none;z-index:99990;opacity:0}
 #dispm{display:none;position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,.7);align-items:flex-end;justify-content:center}#dispm.open{display:flex}
 .dsec{margin:14px 0}.dlab{display:flex;justify-content:space-between;font-size:15px;margin-bottom:8px}.dhint{color:#a9a4d6;font-size:12px;margin-top:6px}
 #dbr{width:100%;accent-color:#7c4dff;height:34px}
-.dthm{display:flex;gap:10px}.dthm button{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px;border-radius:14px;border:1.5px solid rgba(255,255,255,.2);background:transparent;color:#fff;font-weight:700}.dthm button.on{border-color:#7c4dff;background:rgba(124,77,255,.18)}.dthm i{display:block;width:100%;height:34px;border-radius:8px}
+.dthm{display:flex;gap:10px}.dthm button{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px;border-radius:14px;border:1.5px solid rgba(255,255,255,.2);background:transparent;color:#fff;font-weight:700}.dthm button.on{border-color:#7c4dff;background:rgba(124,77,255,.18)}.dthm i{display:block;width:100%;height:34px;border-radius:8px}
+html.wht{filter:invert(1) hue-rotate(180deg);background:#fff}
+html.wht img,html.wht video,html.wht .av img,html.wht .lav img,html.wht .peav img{filter:invert(1) hue-rotate(180deg)}
+html.wht #dimv{background:#fff}
+html.wht .adbn,html.wht .adc,html.wht .supb i{filter:invert(1) hue-rotate(180deg)}
+html.wht .dthm i{filter:invert(1) hue-rotate(180deg)}
 html.blk{--bg:#000;--card:#0b0b0d;--line:#222}
 html.blk #home,html.blk body{background:#000}
 html.blk #hNav{background:#000;border-top-color:#222}
@@ -650,11 +667,12 @@ function histLoad(){
 function histAdd(r){const a=histLoad();a.unshift(r);try{localStorage.setItem(histKey(),JSON.stringify(a.slice(0,2000)))}catch(_){}}
 const hfmt=t=>{const d=new Date(t),z=n=>String(n).padStart(2,'0');return z(d.getDate())+'/'+z(d.getMonth()+1)+'/'+d.getFullYear()+' '+z(d.getHours())+':'+z(d.getMinutes())};
 /* ---- Display: brightness + Black (AMOLED) theme, phone mein yaad rehta hai ---- */
-let DISP={b:100,blk:false};
+let DISP={b:100,blk:false,wht:false};
 try{Object.assign(DISP,JSON.parse(localStorage.getItem('ts_disp')||'{}'))}catch(_){}
 function dispApply(){
   DISP.b=Math.max(30,Math.min(100,Math.round(+DISP.b||100)));
-  document.documentElement.classList.toggle('blk',!!DISP.blk);
+  document.documentElement.classList.toggle('blk',!!DISP.blk&&!DISP.wht);
+  document.documentElement.classList.toggle('wht',!!DISP.wht);
   let o=$('dimv');if(!o){o=document.createElement('div');o.id='dimv';document.body.appendChild(o)}
   o.style.opacity=String((100-DISP.b)/100*0.85);
   try{localStorage.setItem('ts_disp',JSON.stringify(DISP))}catch(_){}
@@ -662,15 +680,15 @@ function dispApply(){
 window.openDisp=()=>{let m=$('dispm');if(!m){m=document.createElement('div');m.id='dispm';document.body.appendChild(m)}m.className='open';dispDraw()};
 window.dClose=()=>{const m=$('dispm');if(m)m.className=''};
 window.dBri=v=>{DISP.b=+v;dispApply();const e=$('dbv');if(e)e.textContent=DISP.b+'%'};
-window.dBlk=on=>{DISP.blk=!!on;dispApply();dispDraw()};
+window.dThm=t=>{DISP.blk=t==='blk';DISP.wht=t==='wht';dispApply();dispDraw()};
 function dispDraw(){
   const m=$('dispm');if(!m)return;
   m.innerHTML=`<div class="pecard"><div class="peh"><b>🎨 Display</b><button class="pex" onclick="dClose()">✕</button></div>
   <div class="dsec"><div class="dlab"><span>☀️ Brightness</span><b id="dbv">${DISP.b}%</b></div><input id="dbr" type="range" min="30" max="100" step="1" value="${DISP.b}" oninput="dBri(this.value)"><div class="dhint">App ki roshni kam karo (phone ki brightness alag se bhi badal sakte ho).</div></div>
   <div class="dsec"><div class="dlab"><span>🌑 Theme</span></div>
-    <div class="dthm"><button class="${DISP.blk?'':'on'}" onclick="dBlk(false)"><i style="background:linear-gradient(135deg,#2a0f78,#07051a)"></i>Default</button><button class="${DISP.blk?'on':''}" onclick="dBlk(true)"><i style="background:#000;border:1px solid #444"></i>Black</button></div>
-    <div class="dhint">Black: poora kala (AMOLED) background, battery bachati hai aur aankhon ko aaram deta hai.</div></div>
-  <button class="pbtn" style="margin-top:6px" onclick="DISP={b:100,blk:false};dispApply();dispDraw()">↺ Reset</button></div>`;
+    <div class="dthm"><button class="${!DISP.blk&&!DISP.wht?'on':''}" onclick="dThm('def')"><i style="background:linear-gradient(135deg,#2a0f78,#07051a)"></i>Purple</button><button class="${DISP.blk&&!DISP.wht?'on':''}" onclick="dThm('blk')"><i style="background:#000;border:1px solid #444"></i>Black</button><button class="${DISP.wht?'on':''}" onclick="dThm('wht')"><i style="background:#fff;border:1px solid #cfd3e6"></i>White</button></div>
+    <div class="dhint">Black: poora kala (AMOLED), battery bachata hai. White: din ki roshni mein saaf dikhta hai (chart bhi safed).</div></div>
+  <button class="pbtn" style="margin-top:6px" onclick="DISP={b:100,blk:false,wht:false};dispApply();dispDraw()">↺ Reset</button></div>`;
 }
 let hFilt='all';
 window.openHist=()=>{let m=$('histm');if(!m){m=document.createElement('div');m.id='histm';document.body.appendChild(m)}m.className='open';hFilt='all';histDraw()};
