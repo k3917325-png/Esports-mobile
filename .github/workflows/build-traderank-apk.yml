@@ -43,7 +43,7 @@ jobs:
       - name: Upload LITE APK
         uses: actions/upload-artifact@v4
         with:
-          name: TradeRank-lite-debug
+          name: TradeRank-lite-build${{ github.run_number }}
           path: traderank-android/app/build/outputs/apk/lite/debug/*.apk
           if-no-files-found: error
       - name: Build FULL debug APK (AdMob + Unity)
@@ -63,5 +63,5 @@ jobs:
         if: hashFiles('traderank-android/app/build/outputs/apk/full/debug/*.apk') != ''
         uses: actions/upload-artifact@v4
         with:
-          name: TradeRank-full-debug
+          name: TradeRank-full-build${{ github.run_number }}
           path: traderank-android/app/build/outputs/apk/full/debug/*.apk
