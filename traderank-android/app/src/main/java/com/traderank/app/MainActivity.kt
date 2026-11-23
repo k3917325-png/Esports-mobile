@@ -35,6 +35,7 @@ class MainActivity : Activity() {
         root.orientation = LinearLayout.VERTICAL
         root.setBackgroundColor(Color.parseColor("#05030F"))
         bannerHost = FrameLayout(this)
+        bannerHost.setBackgroundColor(Color.parseColor("#05030F"))
         root.addView(bannerHost, LinearLayout.LayoutParams(-1, -2))
         web = WebView(this)
         root.addView(web, LinearLayout.LayoutParams(-1, 0, 1f))

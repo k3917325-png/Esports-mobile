@@ -158,8 +158,6 @@ class NativeAds(private val activity: Activity, private val web: WebView) {
                     if (host != null) {
                         // Status bar ke thik neeche, app ke upar (header ko nahi dhakta)
                         host.addView(v, FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL))
-                    } else {
-                        activity.addContentView(v, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP).apply { topMargin = statusBarHeight() })
                     }
                     bannerView = v
                 }
@@ -197,7 +195,7 @@ class NativeAds(private val activity: Activity, private val web: WebView) {
             val pi = activity.packageManager.getPackageInfo(activity.packageName, 0)
             @Suppress("DEPRECATION")
             val code = if (android.os.Build.VERSION.SDK_INT >= 28) pi.longVersionCode else pi.versionCode.toLong()
-            "build " + code + " (banner: " + (if ((activity as? MainActivity)?.bannerHost != null) "top-layout" else "overlay") + ")"
+            "build " + code + " (banner: " + "top-layout, stacked" + ")"
         } catch (_: Exception) { "" }
     }
 
