@@ -1323,6 +1323,7 @@ function setRemote(doc){
   RCFG = mergeDeep(defaultConfig(), doc.config || {});
   RADS = mergeDeep(defaultAdConfig(), doc.adConfig || {});
   RPROMOS = (doc.promos && typeof doc.promos === "object") ? doc.promos : null;
+  try{ pushAdCfg(); }catch(e){}   // admin Ads switches reach the native ad layer immediately
 }
 function applyRemoteToS(){ if(!S) return; if(RCFG) S.config = RCFG; if(RADS) S.adConfig = RADS; if(RPROMOS) S.promos = RPROMOS; }
 try{ const r = JSON.parse(localStorage.getItem("esp_remote") || "null"); if(r && r.doc){ setRemote(r.doc); lastRemoteJson = JSON.stringify(r.doc); } }catch(e){}
@@ -1689,14 +1690,16 @@ if(S && S.wd && S.wd.length && S.wd.some(w=>!w.id)){
   S.wdSeq = seq; save();
 }
 function pushAdCfg(){
-  if(!(window.AndroidAds && window.AndroidAds.configure && S && S.adConfig)) return;
-  const a = S.adConfig, n = a.networks || {}, u = n.unity || {}, st = n.startio || {}, lp = n.levelplay || {};
+  if(!(window.AndroidAds && window.AndroidAds.configure)) return;
+  const a = RADS || (S && S.adConfig); if(!a) return;
+  const n = a.networks || {}, u = n.unity || {}, st = n.startio || {}, lp = n.levelplay || {};
   try{ window.AndroidAds.configure(JSON.stringify({on:a.on!==false, unityOn:a.unityOn!==false, bannerOn:a.bannerOn!==false, rewardedOn:a.rewardedOn!==false, adDebug:a.adDebug===true,
     unityGame:u.gameId||"", unityBanner:u.bannerId||"", unityRewarded:u.rewardedId||"", startId:st.appId||"", lpKey:lp.appKey||"", lpRewarded:lp.rewardedId||"", lpBanner:lp.bannerId||""})); }catch(e){}
 }
+function adBannerWanted(screen){ const a = RADS || (S && S.adConfig); if(!a) return false; return a.on!==false && a.bannerOn!==false && a.unityOn!==false && !(a.screens && a.screens[screen]===false); }
 function adBox(screen){
   // Banner sits at the very TOP of the screen (away from buttons, so no accidental taps). Rewarded ad only on the RP claim.
-  if(window.AndroidAds && window.AndroidAds.setBanner){ try{ window.AndroidAds.setBanner(true); }catch(e){} }
+  if(window.AndroidAds && window.AndroidAds.setBanner){ try{ window.AndroidAds.setBanner(adBannerWanted(screen)); }catch(e){} }
   return "";
 }
 function noticeBanner(screen){
@@ -2166,8 +2169,8 @@ function board(chips){
 function play(){
   const v = $("#view");
   if(!(S&&S.countryId) && !window.wdIpCc){ ipCountry().then(cc=>{ if(cc && !window.wdIpCc){ window.wdIpCc = cc; if(tab==='play' && !$('#gm')) render(); } }).catch(()=>{}); }
-  const chips = `<div class="chips"><button class="chip ${sub!=="board"?"on":""}" onclick="sub='matches';render()">Tournaments</button><button class="chip ${sub==="board"?"on":""}" onclick="sub='board';render()">Leaderboard</button></div>`;
-  if(!earnOk()) sub = "matches";
+  const chips = `<div class="chips"><button class="chip ${sub!=="board"?"on":""}" onclick="sub='matches';render()">Tournaments</button>${cfg().lbOn!==false?`<button class="chip ${sub==="board"?"on":""}" onclick="sub='board';render()">Leaderboard</button>`:""}</div>`;
+  if(!earnOk() || cfg().lbOn===false) sub = "matches";
   if(sub==="board") return board(chips);
   const ord = gamesOrderAll(cfg());
   const toursSorted = S.tours.slice().sort((a,b)=>ord.indexOf(a.g)-ord.indexOf(b.g));
@@ -2226,7 +2229,7 @@ setInterval(()=>{
       lbDayOk = Math.round((todMid-lastMid)/86400000) >= iv;
     }
   } else { lbDayOk = true; }
-  if(!lbc.lbServerPayout && lbDayOk && d.getHours()>=lbc.lbResetHour && S.lastLbPayout !== todayStr){
+  if(lbc.lbOn!==false && !lbc.lbServerPayout && lbDayOk && d.getHours()>=lbc.lbResetHour && S.lastLbPayout !== todayStr){
     if(S.isGuest || !acctOf(S.phone)){ S.rp = 0; S.lastLbPayout = todayStr; ch = true; }
     else if(!LBP.payBusy && Date.now()>LBP.payAt){
       LBP.payBusy = true;
@@ -2301,7 +2304,7 @@ function mkG(t, c){
        startMs:now(), bullets:[], roids:[], knifeRot:0, knifeRotSpeed:0.038, stuck:[], grid:null, bmTime:120, carry:0};
 }
 function openGame(t){
-  try{ if(window.AndroidAds && window.AndroidAds.setBanner) window.AndroidAds.setBanner(true); }catch(e){}
+  try{ if(window.AndroidAds && window.AndroidAds.setBanner) window.AndroidAds.setBanner(adBannerWanted("game")); }catch(e){}
   const o = document.createElement("div"); o.id = "gm";
   const acc = GACC[t.g]||"#8b5cf6"; o.style.cssText = "position:fixed;inset:0;z-index:99;background:radial-gradient(120% 60% at 50% 0%,"+acc+"55,transparent 62%),radial-gradient(90% 50% at 50% 100%,"+acc+"33,transparent 70%),#0d0826;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:env(safe-area-inset-top,0px) 10px env(safe-area-inset-bottom,0px);overflow-y:auto";
   const gameAdOn = !window.AndroidAds && S.adConfig && S.adConfig.on && (!S.adConfig.screens || S.adConfig.screens.game!==false);
@@ -3945,7 +3948,7 @@ const A = {gc:{items:[], loaded:false, country:"US", denom:"", codes:"", showSol
 const PAYOUT_LIST = [["custom","Custom backend (gift card API / webhook)"]];
 try{ A.sent = JSON.parse(localStorage.getItem("adm_sent")||"{}") || {}; }catch(e){ A.sent = {}; }
 const CFG_TABS = ["games","lb","wal","prem","bonus","ads","info","ctry","promo","ctl"];
-const TABS = [["wd","💸 Withdrawals"],["gc","🎁 Gift Cards"],["rep","📊 Reports"],["users","👥 Users"],["games","🎮 Games"],["wal","💰 Wallet"],["prem","⭐ Premium"],["bonus","🎁 Bonus"],["ads","📺 Ads"],["info","📢 Notice & Links"],["ctry","🌍 Geo-Control"],["ctl","🛠 App Control"],["sup","🆘 Support"],["aud","🧾 Audit Log"]];
+const TABS = [["ctrl","🎛 Control Center"],["wd","💸 Withdrawals"],["gc","🎁 Gift Cards"],["rep","📊 Reports"],["users","👥 Users"],["games","🎮 Games"],["wal","💰 Wallet"],["prem","⭐ Premium"],["bonus","🎁 Bonus"],["ads","📺 Ads"],["info","📢 Notice & Links"],["ctry","🌍 Geo-Control"],["ctl","🛠 App Control"],["sup","🆘 Support"],["aud","🧾 Audit Log"]];
 const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 const METHODS = ["GooglePlay","Amazon"];
 
@@ -4310,6 +4313,29 @@ function tBonus(){
   ${c.dailyBonusTimeEnabled?`${inp("Start","config.dailyBonusTimeStart","t",{type:"time"})}${inp("End","config.dailyBonusTimeEnd","t",{type:"time"})}`:""}
   <div class="mut" style="margin-top:10px">Daily Bonus RP user ko video dekhne ke baad milta hai. (Login Streak feature app se hata diya gaya hai.)</div>`;
 }
+function tCtrl(){
+  const un = A.doc.adConfig.unityOn !== false, c = A.doc.config;
+  const order = (typeof gamesOrderAll==="function") ? gamesOrderAll(c) : Object.keys(GAME_CANON);
+  return `<h3>🎛 Control Center — saare main switch ek jagah</h3>
+  <div class="mut" style="font-size:12px;margin-bottom:8px">Yahan se sab kuchh ON/OFF karo. Badlav ke baad neeche <b>Save</b> dabao — app mein agli baar khulte hi lagu ho jata hai (naya build nahi chahiye).</div>
+  <div class="card2"><b>📺 Ads</b>
+    <div class="ar"><span class="mut">🎮 Unity LevelPlay (saare ads ka engine)</span><button class="b ${un?"g":"s"} sm" data-a="unity">${un?"ON ✅":"OFF ❌"}</button></div>
+    ${tg("All Ads (master)","adConfig.on","1")}${tg("🎬 Rewarded Video (Claim RP)","adConfig.rewardedOn","1")}${tg("🔲 Banner (upar)","adConfig.bannerOn","1")}${tg("🐞 Ad Debug (publish se pehle OFF)","adConfig.adDebug","")}
+  </div>
+  <div class="card2"><b>🌍 Security & Country</b>
+    ${tg("🛡️ Geo-Blocking MASTER (OFF = koi country/VPN block nahi)","config.geoBlockOn","1")}${tg("📱 Ek phone = ek account","config.oneDeviceOn","1")}${tg("🔑 Login Restriction","config.loginRestrictOn","1")}${tg("💸 Withdrawal Restriction","config.wdRestrictOn","1")}${tg("🔒 VPN / Proxy block","config.vpnBlock","1")}${tg("📍 GPS mandatory (withdrawal)","config.gpsRequired","1")}
+  </div>
+  <div class="card2"><b>🏆 Matches & Rewards</b>
+    ${tg("🏆 Leaderboard (tab + daily prize)","config.lbOn","1")}${tg("🎁 Amazon Gift Card","config.amazonEnabled","1")}${tg("🆘 Support / Report form (Profile)","config.supportTicketOn","1")}${tg("💬 Withdraw popup","config.wdMsgOn","")}
+  </div>
+  <div class="card2"><b>🛠 App</b>
+    ${tg("🚧 Maintenance Mode (app band)","config.maintenanceOn","")}${tg("⬆️ Force Update","config.forceUpdateOn","")}
+  </div>
+  <div class="card2"><b>🎮 Games ON/OFF</b>
+    ${order.map(g=>{ const on = (c.gamesEnabled||{})[g]!==false; return `<div class="ar"><span class="mut">${E(GAME_CANON[g].name)}</span><button class="b ${on?"g":"s"} sm" data-a="tg" data-p="config.gamesEnabled.${g}" data-d="1">${on?"ON ✅":"OFF ❌"}</button></div>`; }).join("")}
+  </div>
+  <div class="mut" style="font-size:11.5px;margin-top:8px">Aur settings: Withdrawals/Gift Cards/Wallet/Premium/Bonus/Geo-Control tab mein. Country list, rates, prize table wahin se badlegi.</div>`;
+}
 function tAds(){
   const ad = A.doc.adConfig, un = ad.unityOn !== false;
   const net = (k,f,ph,max) => `<input data-p="adConfig.networks.${k}.${f}" data-t="t" placeholder="${ph}" ${max?`maxlength="${max}"`:""} value="${E(gp(A.doc,`adConfig.networks.${k}.${f}`)||"")}">`;
@@ -4581,7 +4607,7 @@ function tUsers(){
 function body(){
   switch(A.tab){
     case "wd": return tWd(); case "rep": return tRep(); case "users": return tUsers(); case "games": return tGames(); case "lb": return tLb();
-    case "wal": return tWal(); case "prem": return tPrem(); case "gc": return tGc(); case "bonus": return tBonus(); case "ads": return tAds(); case "info": return tInfo(); case "ctry": return tCtry(); case "promo": return tPromo(); case "ctl": return tCtl(); case "sup": return tSup(); case "aud": return tAud();
+    case "wal": return tWal(); case "prem": return tPrem(); case "gc": return tGc(); case "bonus": return tBonus(); case "ctrl": return tCtrl(); case "ads": return tAds(); case "info": return tInfo(); case "ctry": return tCtry(); case "promo": return tPromo(); case "ctl": return tCtl(); case "sup": return tSup(); case "aud": return tAud();
   }
   return "";
 }
