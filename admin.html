@@ -610,6 +610,8 @@ function defaultConfig(){ return {
   gamesOrder: ["arctic","hoop","blockfit","tilematch","bricksmash","colortubes","bubbleshoot"],
   lbResetHour: 5,
   lbResetMode: "daily", lbResetDays: [0,1,2,3,4,5,6], lbResetIntervalDays: 1, // mode: "daily" (har din), "days" (sirf selected weekdays par; 0=Sun...6=Sat), ya "interval" (har N din mein ek baar)
+  lbTopN: 100000,
+  lbPrizeRanges: [{f:1,t:1,c:13500},{f:2,t:2,c:6750},{f:3,t:3,c:4500},{f:4,t:5,c:2625},{f:6,t:10,c:1800},{f:11,t:20,c:1125},{f:21,t:35,c:900},{f:36,t:50,c:750}],
   lbPrizeTable: (()=>{ const t = {1:7500,2:4500,3:3750,4:1500,5:1500,6:750,7:750,8:750,9:150,10:150};
     for(let r=11;r<=20;r++) t[r] = 100;
     for(let r=21;r<=30;r++) t[r] = 75;
@@ -1781,7 +1783,7 @@ function estimateRank(myScore){
   if(myScore <= LB_MIN) return LB_TOTAL-1;
   return Math.min(LB_TOTAL-1, Math.max(LB_TOP_N, Math.round(LB_TOP_N + Math.log(LB_MID/myScore)/LB_K2)));
 }
-let LBP = {list:null, at:0, busy:false, err:false, sig:"", payAt:0, payBusy:false};
+let LBP = {n:100, far:0, list:null, at:0, busy:false, err:false, sig:"", payAt:0, payBusy:false};
 function lbpName(){ return (String(S&&S.name||"Player").trim().split(/\s+/)[0]||"Player").slice(0,14); }
 async function lbpPush(){
   if(!SHEETS_URL || !S || S.isGuest || !acctOf(S.phone)) return;
@@ -1795,7 +1797,14 @@ async function lbpFetch(force){
   LBP.busy = true;
   try{
     await lbpPush();
-    LBP.list = (await runQuery("user", {from:[{collectionId:"lbp"}], orderBy:[{field:{fieldPath:"rp"}, direction:"DESCENDING"}], limit:50})).filter(b=>b.rp>0);
+    const lim = Math.max(100, Math.min(lbTopN(), LBP.n||100));
+    LBP.list = (await runQuery("user", {from:[{collectionId:"lbp"}], orderBy:[{field:{fieldPath:"rp"}, direction:"DESCENDING"}], limit:lim})).filter(b=>b.rp>0);
+    LBP.lim = lim; LBP.far = 0;
+    const mine = Math.floor(S.rp||0);
+    if(mine>0 && LBP.list.length>=lim && !LBP.list.some(b=>b.uid===S.phone) && mine < LBP.list[LBP.list.length-1].rp+1){
+      // my rank is beyond the loaded rows: 1 cheap count query (players with more RP than me)
+      LBP.far = 1 + await countQuery("user", {from:[{collectionId:"lbp"}], where:{fieldFilter:{field:{fieldPath:"rp"}, op:"GREATER_THAN", value:toV(mine)}}});
+    }
     LBP.err = false;
   }catch(e){ LBP.err = true; }
   LBP.at = Date.now(); LBP.busy = false; return LBP.list;
@@ -1803,14 +1812,27 @@ async function lbpFetch(force){
 // Real players only: top-50 list with my live RP merged in. rank = 0-based position, -1 = not in top 50.
 function lbpBoard(){
   if(!LBP.list) return null;
+  const N = lbTopN(), lim = LBP.lim||100;
   const me = {uid:S.phone, name:lbpName(), rp:S.rp||0, me:true};
   const others = LBP.list.filter(b=>b.uid!==S.phone);
-  const all = others.concat(me.rp>0 ? [me] : []).sort((a,b)=>b.rp-a.rp || String(a.uid).localeCompare(String(b.uid))).slice(0,50);
-  return {list:all, rank:all.findIndex(b=>b.me), need:(others.length>=50?others[49].rp+1:1)};
+  const all = others.concat(me.rp>0 ? [me] : []).sort((a,b)=>b.rp-a.rp || String(a.uid).localeCompare(String(b.uid))).slice(0,lim);
+  let rank = all.findIndex(b=>b.me);
+  if(rank<0 && LBP.far>0 && LBP.far<=N) rank = LBP.far-1;      // beyond loaded rows but still inside Top N
+  if(rank>=N) rank = -1;
+  return {list:all, rank, N, more:(LBP.list.length>=lim && lim<N), need:(others.length>=N?others[N-1].rp+1:1)};
 }
 
 function lbFmt(n){ return new Intl.NumberFormat("en",{notation:"compact",maximumFractionDigits:1}).format(n); }
-function lbPrizeTable(){ return cfg().lbPrizeTable || defaultConfig().lbPrizeTable; }
+function lbTopN(){ const n = parseInt(cfg().lbTopN,10); return (n>=50 && n<=1000000) ? n : 100000; }
+// rank -> coins, built from the admin "rank range" rows (prizes only for the ranks listed, normally Top 50)
+function lbPrizeTable(){
+  let rg = cfg().lbPrizeRanges; if(!Array.isArray(rg)) rg = defaultConfig().lbPrizeRanges;
+  const t = {};
+  rg.forEach(x=>{ const f = Math.max(1,parseInt(x&&x.f,10)||0), e = Math.min(1000,parseInt(x&&x.t,10)||0), c = Math.max(0,Math.floor(Number(x&&x.c)||0));
+    for(let r=f;r<=e;r++) t[r] = c; });
+  return t;
+}
+function lbMore(){ LBP.n = Math.min(lbTopN(), (LBP.n||100)+100); lbpFetch(true).then(()=>{ if(tab==="play" && sub==="board" && !$("#gm")) render(); }); render(); }
 function genLeaderboardTop(count){
   const list = [];
   for(let i=0;i<count;i++){
@@ -2157,14 +2179,14 @@ function board(chips){
           ${prize?`<span style="background:linear-gradient(135deg,#ffe488,#f5a300);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:900;font-size:14px;text-shadow:0 0 12px rgba(245,163,0,.5)">🪙 ${prize.toLocaleString()}</span>`:""}
         </span></div>`;
     }).join("") : `<div class="card mut" style="text-align:center">${bd ? "Abhi koi player RP ke saath nahi hai. Games khelo aur #1 bano!" : (LBP.err ? "Leaderboard load nahi hua, thodi der baad try karo" : "Leaderboard load ho raha hai…")}</div>`;
-    const youRow = (bd && rank<0) ? `<div class="lb" style="border:1px solid var(--acc);margin-top:6px"><b>50+</b><span class="n">${esc(lbpName())} (You)</span><span class="p">💜 ${myRP}</span></div>` : "";
-    const loadMore = "";
+    const youRow = (bd && !top.some(b=>b.me)) ? `<div class="lb" style="border:1px solid var(--acc);margin-top:6px"><b>${rank>=0?"#"+(rank+1):"—"}</b><span class="n">${esc(lbpName())} (You)</span><span class="p">💜 ${myRP}</span></div>` : "";
+    const loadMore = (bd && bd.more) ? `<button class="btn" style="width:100%;margin:10px 0" onclick="lbMore()">Aur dikhao ▾ (Top ${bd.N.toLocaleString("en-IN")} tak)</button>` : "";
     const payoutCard = `<div class="card" style="text-align:center">
       <div class="mut" style="margin-bottom:4px">⏰ Next Prize Distribution</div>
       <div id="lbCountdown" style="font-size:24px;font-weight:900;color:var(--gold)">${fmtCountdown(nextLbPayoutTime()-now())}</div>
       <div class="mut" style="margin-top:4px">${cfg().lbResetMode==="days" ? ((cfg().lbResetDays||[]).map(i=>["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][i]).join(", ")||"Koi din select nahi") : cfg().lbResetMode==="interval" ? `Every ${cfg().lbResetIntervalDays||1} Day(s)` : "Daily"} ${String(cfg().lbResetHour).padStart(2,"0")}:00 • Top rank ka prize account mein add hota hai</div>
     </div>`;
-    v.innerHTML = adBox('matches') + noticeBanner('matches') + chips + payoutCard + `<div class="mut" style="margin:10px 0 8px">Real players • ${bd ? (rank>=0 ? `Your Rank: <b>#${rank+1}</b>` : `Top 50 mein aane ke liye <b>${bd.need} RP</b> chahiye`) : "…"}</div>` + rows + youRow + loadMore; return; 
+    v.innerHTML = adBox('matches') + noticeBanner('matches') + chips + payoutCard + `<div class="mut" style="margin:10px 0 8px">🏆 Top ${bd?bd.N.toLocaleString("en-IN"):"…"} • Prize: Top ${Math.max(0,...Object.keys(LB_PRIZE).map(Number).filter(k=>LB_PRIZE[k]>0))} • ${bd ? (rank>=0 ? `Your Rank: <b>#${rank+1}</b>` : `Top ${bd.N.toLocaleString("en-IN")} mein aane ke liye <b>${bd.need} RP</b> chahiye`) : "…"}</div>` + rows + youRow + loadMore; return; 
 }
 function play(){
   const v = $("#view");
@@ -4216,6 +4238,17 @@ function tGames(){
   <button class="b g wf" data-a="addmt">Tournament Add Karo</button>
   ${(c.manualTours||[]).map((m,i)=>`<div class="ar lb2"><span>🎯 ${E((GAME_CANON[m.g]||{}).name||m.g)} • ${E(m.pool)} RP • ${E(m.min)} min</span><button class="b s sm" data-a="delmt" data-i="${i}">✕</button></div>`).join("")}`;
 }
+function prizeRanges(){
+  const c = A.doc.config; if(!Array.isArray(c.lbPrizeRanges)) c.lbPrizeRanges = JSON.parse(JSON.stringify(defaultConfig().lbPrizeRanges));
+  let tot = 0, rows = "";
+  c.lbPrizeRanges.forEach((x,i)=>{ const n = Math.max(0,(parseInt(x.t,10)||0)-(parseInt(x.f,10)||0)+1), sub = n*(Number(x.c)||0); tot += sub;
+    const f = (k,w)=>`<input data-p="config.lbPrizeRanges.${i}.${k}" data-t="i" data-rr="1" type="number" min="1" value="${E(x[k]==null?"":x[k])}" style="margin:0;width:${w}px">`;
+    rows += `<div class="ar" style="gap:6px;flex-wrap:wrap"><span class="mut">Rank</span>${f("f",62)}<span class="mut">–</span>${f("t",62)}<span class="mut">🪙 har ek ko</span>${f("c",84)}<span class="mut" style="font-size:11px">= ${sub.toLocaleString("en-IN")}</span><button class="b s sm" data-a="delpr" data-i="${i}">✕</button></div>`; });
+  return `<div class="mut" style="margin:8px 0 4px"><b>🪙 Prize Table (Coins, rank range ke hisaab se)</b></div>${rows}
+  <button class="b s wf" data-a="addpr" style="margin-top:6px">+ Naya rank range jodo</button>
+  <div class="ar sum"><b>Total prize / reset</b><b>🪙 ${tot.toLocaleString("en-IN")}</b></div>
+  <div class="mut" style="margin-top:4px">≈ $${(tot/(Number(c.rate)||1500)).toFixed(2)} (coin rate ${E(c.rate)} = $1)</div>`;
+}
 function tLb(){
   const c = A.doc.config, mode = c.lbResetMode==="days"||c.lbResetMode==="interval" ? c.lbResetMode : "daily";
   const hours = Array.from({length:24},(_,h)=>[h, h===0?"12:00 AM":h<12?`${h}:00 AM`:h===12?"12:00 PM":`${h-12}:00 PM`]);
@@ -4227,8 +4260,9 @@ function tLb(){
     <option value="daily" ${mode==="daily"?"selected":""}>Daily (har din)</option><option value="days" ${mode==="days"?"selected":""}>Specific Days</option><option value="interval" ${mode==="interval"?"selected":""}>Fix Days (har N din)</option></select></div>
   ${mode==="days"?days("Reset in din par hoga","config.lbResetDays"):""}
   ${mode==="interval"?inp("Reset har (din)","config.lbResetIntervalDays","i",{w:80}):""}
-  ${table("config.lbPrizeTable",50,"Rank Reward Structure — Top 50 (RP/coins)")}
-  <div class="mut" style="margin-top:6px">≈ Total $ value = total ÷ coin rate (${E(c.rate)})</div>
+  ${inp("🏆 Leaderboard list size (Top N players dikhenge)","config.lbTopN","i",{w:110})}
+  <div class="mut" style="margin:4px 0 8px">Abhi: user ko <b>Top ${(parseInt(c.lbTopN,10)||100000).toLocaleString("en-IN")}</b> list dikhegi (100-100 karke "Aur dikhao"). Prize sirf neeche di gayi ranks ko milta hai.</div>
+  ${prizeRanges()}
   <div class="mut" style="margin:14px 0 6px">Manual Override</div>
   <button class="b s wf" data-a="resetMyRp">Is device ka RP 0 karo</button>
   <div class="mut" style="margin-top:6px">Ban/Unban ab 👥 Users tab mein hai — sabhi users par lagu hota hai.</div>`;
@@ -4714,6 +4748,8 @@ const actions = {
     if(!/^\d{6}$/.test(c) || isNaN(v) || v<1) return flash("6-digit code aur RP daalo");
     A.doc.promos[c] = v; markDirty(); draw(); },
   delpc(el){ delete A.doc.promos[el.dataset.k]; markDirty(); draw(); },
+  addpr(){ const a = A.doc.config.lbPrizeRanges = A.doc.config.lbPrizeRanges||[]; const l = a.length ? (parseInt(a[a.length-1].t,10)||0) : 0; a.push({f:l+1,t:l+1,c:100}); markDirty(); draw(); },
+  delpr(el){ A.doc.config.lbPrizeRanges.splice(parseInt(el.dataset.i,10),1); markDirty(); draw(); },
   resetMyRp(){ if(S){ S.rp = 0; save(); flash("Is device ka RP 0 ho gaya"); } else flash("Pehle app mein login karo"); },
   copy(el){ try{ navigator.clipboard.writeText(el.dataset.t); flash("Copied"); }catch(e){ flash("Copy nahi hua"); } },
   wdload(){ loadWd(); },
