@@ -600,7 +600,7 @@ function defaultConfig(){ return {
     100,100,100,100,100,100,100,100,100,100,
     65,65,65,65,65,65,65,65,65,65];
     const t = {}; p.forEach((v,i)=>t[i+1]=v); return t; })(),
-  rpPerCent: 100000, rpCoins: 15, premiumCountries: ["US","CA","GB","AU","NZ","DE","CH","NO","SE"], rpPremiumUsd: 0.10, premium2Countries: [], runScore: 100, runMins: 3, runRp: 5000, // rpPerCent RP = rpCoins coins (shown on the Games screen; admin can change). 15 coins = $0.01 at the default rate
+  rpPerCent: 100000, rpCoins: 15, premiumCountries: ["US","CA","GB","AU","NZ","DE","CH","NO","SE"], rpPremiumUsd: 0.10, premium2Countries: [], runScore: 100, runMins: 3, runRp: 5000, runRpScore: 50, // rpPerCent RP = rpCoins coins (shown on the Games screen; admin can change). 15 coins = $0.01 at the default rate
   dailyBonusRp: 500,
   dailyBonusIntervalDays: 1, // 1=roz, 2=har 2 din mein ek baar, 3=har 3 din mein ek baar, etc.
   dailyBonusTimeEnabled: false, dailyBonusTimeStart: "18:00", dailyBonusTimeEnd: "22:00", // sirf is window mein claim available
@@ -623,14 +623,14 @@ function tierOfCc(cc, c){ cc = String(cc||"").toUpperCase(); if(!cc) return 0; i
 function wdTier(){ return tierOfCc(pvCc() || String(window.wdIpCc||(S&&S.countryId)||"").toUpperCase()); }
 function wdIsPrem(){ return wdTier()>0; }
 /* per-group settings: Normal = config.<key>, Premium (1) / Premium 2 (2) = config.tiers.t1 / t2.<key> (empty -> falls back to the normal value) */
-const TIER_BASE = {minUsd:"minWithdrawUsd", maxUsd:"maxWithdrawUsd", perDay:"wdMaxPerDay", timeOn:"wdTimeEnabled", timeStart:"wdTimeStart", timeEnd:"wdTimeEnd", daysOn:"wdDaysEnabled", days:"wdDays", presetAmounts:"presetAmounts", rpPer:"rpPerCent", runScore:"runScore", runMins:"runMins", runRp:"runRp"};
+const TIER_BASE = {minUsd:"minWithdrawUsd", maxUsd:"maxWithdrawUsd", perDay:"wdMaxPerDay", timeOn:"wdTimeEnabled", timeStart:"wdTimeStart", timeEnd:"wdTimeEnd", daysOn:"wdDaysEnabled", days:"wdDays", presetAmounts:"presetAmounts", rpPer:"rpPerCent", runScore:"runScore", runMins:"runMins", runRp:"runRp", runRpScore:"runRpScore"};
 const TIER_LEGACY = {rpUsd:"rpPremiumUsd", minUsd:"minWithdrawUsdPrem", maxUsd:"maxWithdrawUsdPrem"};
 function tv(k, t, c){
   c = c || cfg(); t = t===undefined ? wdTier() : t;
   if(t>0){
     let v = ((c.tiers||{})["t"+t]||{})[k];
     if((v===undefined||v===null||v==="") && t===1 && TIER_LEGACY[k]) v = c[TIER_LEGACY[k]];
-    const num = (k==="minUsd"||k==="maxUsd"||k==="perDay"||k==="rpPer"||k==="runScore"||k==="runMins"||k==="runRp");
+    const num = (k==="minUsd"||k==="maxUsd"||k==="perDay"||k==="rpPer"||k==="runScore"||k==="runMins"||k==="runRp"||k==="runRpScore");
     const ok = !(v===undefined||v===null||v==="") && !(num && !(Number(v)>0)) && !(k==="presetAmounts" && !(Array.isArray(v)&&v.length)) && !(k==="days" && !Array.isArray(v));
     if(ok) return v;
   }
@@ -1708,19 +1708,20 @@ function reconcileTours(){
 }
 applyRemoteToS();
 reconcileTours();
-function runMin(){ const v = Number(tv("runScore")); return v>0 ? Math.round(v) : 100; }      // minimum score to earn the RP reward (per country group)
+function runMin(){ return 1; }      // minimum score to earn the RP reward (per country group)
 function runSecs(){ const v = Number(tv("runMins")); return Math.round(Math.min(60, Math.max(0.5, v>0 ? v : 3))*60); }   // game timer in seconds
 function runTimeLbl(sec){ sec = sec===undefined ? runSecs() : sec; return Math.floor(sec/60)+":"+String(sec%60).padStart(2,"0"); }
 function runMinsTxt(){ const m = runSecs()/60; return (Number.isInteger(m)?m:+m.toFixed(1))+" min"; }
-function runRpAmt(){ const v = Number(tv("runRp")); return v>0 ? Math.round(v) : Math.max.apply(null, tourPrizes()); }   // RP reward (per country group)
+function rpScoreVal(){ const v = Number(tv("runRpScore")); return v>0 ? v : 50; }   // RP per score point (per country group)
+function runRpAmt(sc){ sc = sc===undefined ? ((G&&G.runSc)||0) : sc; return Math.max(1, Math.round(sc * rpScoreVal())); }   // RP reward (per country group)
 function claimRun(){
   if(!earnOk()) return earnBlockMsg();
   if(!G || !G.eligible || G.claimed) return;
   const btn = $("#boostBtn"); if(btn){ btn.disabled = true; btn.textContent = "⏳ Ad load ho raha hai..."; }
-  const amt = runRpAmt();
+  const amt = runRpAmt(G.runSc);
   watchAd("Ad khatam hone par "+amt+" RP milega", ()=>{
     if(!G || G.claimed) return; G.claimed = true;
-    S.rp = (S.rp||0) + amt; save();
+    S.rp = (S.rp||0) + amt; save(); try{ lbpPush(); }catch(e){}
     const bl = $(".bal"); if(bl) bl.textContent = balText();
     const b = $("#boostBtn"); if(b){ b.dataset.done = "1"; b.disabled = true; b.textContent = "✅ +"+amt+" RP mile"; b.style.background = "linear-gradient(180deg,#86efac,#22c55e)"; b.style.color = "#06290f"; gToast("✅ +"+amt+" RP mile"); setTimeout(()=>{ if(G && G.claimed) playAgain(); }, 500); }
   }, {onFail: ()=>{ const b = $("#boostBtn"); if(b){ b.disabled = false; b.textContent = "🎁 Claim "+amt+" RP"; } }});
@@ -1894,11 +1895,11 @@ function render(){
     <p class="mut" style="text-align:center;margin-top:14px">Sirf Gmail se login (mail verify hota hai). Koi OTP ya phone number nahi.</div>`; return; }
   geoDetect();
   const _eo = earnOk();
-  if(tab==="promo" || (!_eo && tab==="wallet")) tab = "play";
+  if(tab==="promo" || (!_eo && (tab==="wallet" || tab==="board"))) tab = "play";
   r.innerHTML = `<header><div class="logo">GAMENEST<span>REWARDS</span></div><div style="display:flex;align-items:center;gap:6px">${_eo?`<div class="bal">${balText()}</div>`:""}<button onclick="themeToggle()" aria-label="Theme" style="border:none;width:30px;height:30px;border-radius:50%;font-size:15px;background:${themeCur()==="dark"?"#3b2a6b":"#1e1b4b"};color:#fff;flex:none;box-shadow:0 2px 6px rgba(0,0,0,.25)">${themeCur()==="dark"?"☀️":"🌙"}</button></div></header>
     <main id="view"></main>
-    <nav>${[["home","🏠","Home"],["play","🎮","Games"],["wallet","💰","Wallet"],["me","👤","Profile"]].filter(t=>_eo || t[0]!=="wallet").map(t=>`<button class="${tab===t[0]?"on":""}" onclick="tab='${t[0]}';render()"><span>${t[1]}</span>${t[2]}</button>`).join("")}</nav>`;
-  ({home,play,promo,wallet,me}[tab])();
+    <nav>${[["home","🏠","Home"],["play","🎮","Games"],["board","🏆","Leaderboard"],["wallet","💰","Wallet"],["me","👤","Profile"]].filter(t=>_eo || (t[0]!=="wallet" && t[0]!=="board")).map(t=>`<button class="${tab===t[0]?"on":""}" onclick="tab='${t[0]}';render()"><span>${t[1]}</span>${t[2]}</button>`).join("")}</nav>`;
+  ({home,play,board,promo,wallet,me}[tab])();
 }
 
 function maybeNotifyDaily(){
@@ -2112,15 +2113,13 @@ function rewardsCard(){
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px"><div class="rw-rate">${rr.per.toLocaleString("en-IN")} RP<br>= 🪙 ${+rr.co.toFixed(2)} coins</div>
         <button onclick="claimRp()" ${rp>=rr.per?"":"disabled"} style="white-space:nowrap;border:none;border-radius:12px;padding:7px 16px;font-weight:900;font-size:13px;${rp>=rr.per?"background:linear-gradient(180deg,#ffe488,#f5a300);color:#3a1f00;box-shadow:0 3px 0 #b45309":"background:rgba(255,255,255,.2);color:rgba(255,255,255,.6)"}">${rp>=rr.per?"🎁 Claim 🪙 "+Math.floor(Math.floor(rp/rr.per)*rr.co):"🔒 Claim"}</button></div></div></div>`;
 }
-function play(){
+function board(){
   const v = $("#view");
-  if(!(S&&S.countryId) && !window.wdIpCc){ ipCountry().then(cc=>{ if(cc && !window.wdIpCc){ window.wdIpCc = cc; if(tab==='play' && !$('#gm')) render(); } }).catch(()=>{}); }
   const chips = "";
-  sub = "matches";
-  if(false){
+
     const myRP = S.rp||0;
-    if(!LBP.list && !LBP.busy && Date.now()-LBP.at>=30000) lbpFetch().then(()=>{ if(sub==="board" && !$("#gm")) render(); });
-    else if(LBP.list && Date.now()-LBP.at>=30000 && !LBP.busy) lbpFetch().then(()=>{ if(sub==="board" && !$("#gm")) render(); });
+    if(!LBP.list && !LBP.busy && Date.now()-LBP.at>=30000) lbpFetch().then(()=>{ if(tab==="board" && !$("#gm")) render(); });
+    else if(LBP.list && Date.now()-LBP.at>=30000 && !LBP.busy) lbpFetch().then(()=>{ if(tab==="board" && !$("#gm")) render(); });
     const bd = lbpBoard(), rank = bd ? bd.rank : -1;
     const top = bd ? bd.list : [];
     const LB_PRIZE = lbPrizeTable();
@@ -2133,7 +2132,7 @@ function play(){
           <span class="p">💜 ${b.rp}</span>
           ${prize?`<span style="background:linear-gradient(135deg,#ffe488,#f5a300);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:900;font-size:14px;text-shadow:0 0 12px rgba(245,163,0,.5)">🪙 ${prize.toLocaleString()}</span>`:""}
         </span></div>`;
-    }).join("") : `<div class="card mut" style="text-align:center">${bd ? "Abhi koi player RP ke saath nahi hai. Tournament khelo aur #1 bano!" : (LBP.err ? "Leaderboard load nahi hua, thodi der baad try karo" : "Leaderboard load ho raha hai…")}</div>`;
+    }).join("") : `<div class="card mut" style="text-align:center">${bd ? "Abhi koi player RP ke saath nahi hai. Games khelo aur #1 bano!" : (LBP.err ? "Leaderboard load nahi hua, thodi der baad try karo" : "Leaderboard load ho raha hai…")}</div>`;
     const youRow = (bd && rank<0) ? `<div class="lb" style="border:1px solid var(--acc);margin-top:6px"><b>50+</b><span class="n">${esc(lbpName())} (You)</span><span class="p">💜 ${myRP}</span></div>` : "";
     const loadMore = "";
     const payoutCard = `<div class="card" style="text-align:center">
@@ -2141,7 +2140,13 @@ function play(){
       <div id="lbCountdown" style="font-size:24px;font-weight:900;color:var(--gold)">${fmtCountdown(nextLbPayoutTime()-now())}</div>
       <div class="mut" style="margin-top:4px">${cfg().lbResetMode==="days" ? ((cfg().lbResetDays||[]).map(i=>["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][i]).join(", ")||"Koi din select nahi") : cfg().lbResetMode==="interval" ? `Every ${cfg().lbResetIntervalDays||1} Day(s)` : "Daily"} ${String(cfg().lbResetHour).padStart(2,"0")}:00 • Top rank ka prize account mein add hota hai</div>
     </div>`;
-    v.innerHTML = adBox('matches') + noticeBanner('matches') + chips + payoutCard + `<div class="mut" style="margin:10px 0 8px">Real players • ${bd ? (rank>=0 ? `Your Rank: <b>#${rank+1}</b>` : `Top 50 mein aane ke liye <b>${bd.need} RP</b> chahiye`) : "…"}</div>` + rows + youRow + loadMore; return; }
+    v.innerHTML = adBox('matches') + noticeBanner('matches') + `<div style="font-weight:900;font-size:21px;margin:4px 2px 10px">🏆 Leaderboard</div>` + payoutCard + `<div class="mut" style="margin:10px 0 8px">Real players • ${bd ? (rank>=0 ? `Your Rank: <b>#${rank+1}</b>` : `Top 50 mein aane ke liye <b>${bd.need} RP</b> chahiye`) : "…"}</div>` + rows + youRow + loadMore; return; 
+}
+function play(){
+  const v = $("#view");
+  if(!(S&&S.countryId) && !window.wdIpCc){ ipCountry().then(cc=>{ if(cc && !window.wdIpCc){ window.wdIpCc = cc; if(tab==='play' && !$('#gm')) render(); } }).catch(()=>{}); }
+  const chips = "";
+  sub = "matches";
   const ord = gamesOrderAll(cfg());
   const toursSorted = S.tours.slice().sort((a,b)=>ord.indexOf(a.g)-ord.indexOf(b.g));
   const customLinks = (cfg().customGames||[]).map(cg=>`<div class="tc">
@@ -2149,7 +2154,7 @@ function play(){
     <div style="padding:12px 14px 0;font-weight:800;color:var(--acc);font-size:18px">${esc(cg.name)}</div>
     <div class="mut" style="padding:6px 14px 0">External game link</div>
     <button class="btn play" style="margin:10px 14px 14px" onclick="window.open('${esc(cg.url)}','_blank')">Open Link ›</button></div>`).join("");
-  v.innerHTML = adBox('matches') + noticeBanner('matches') + chips + (earnOk() ? rewardsCard() : "") + `<div class="gl">` + toursSorted.map(t=>`<div class="gr">${t.g==="bubbleshoot"?'<span class="grn">NEW</span>':''}<div class="gri">${gLogo(t.g,68,0)}</div><div class="grt"><b>${esc(t.name)}</b><div class="grs">${earnOk() ? "<i>🎯 "+runMin()+" • ⏱ "+runTimeLbl()+"</i><i class='rp'>💜 "+runRpAmt()+" RP</i>" : "<i>🎮 Free Play • ⏱ "+runTimeLbl()+"</i>"}</div></div><button class="grb" onclick="playT(${t.id})">▶ Play</button></div>`).join("") + `</div>` + customLinks + `<div class="mut" style="text-align:center;font-size:11.5px;line-height:1.5;margin:6px 6px 16px">✅ 100% free to play — koi deposit ya entry fee nahi. Rewards promotional hain aur ads se funded hain. Ye gambling ya betting app nahi hai. Rewards fixed score milestones par milte hain, kisi player ke against nahi.</div>`;
+  v.innerHTML = adBox('matches') + noticeBanner('matches') + chips + `<div class="gl">` + toursSorted.map(t=>`<div class="gr">${t.g==="bubbleshoot"?'<span class="grn">NEW</span>':''}<div class="gri">${gLogo(t.g,68,0)}</div><div class="grt"><b>${esc(t.name)}</b><div class="grs">${earnOk() ? "<i class='rp'>🏆 Score badhao, #1 bano</i>" : "<i>🎮 Free Play</i>"}</div></div><button class="grb" onclick="playT(${t.id})">▶ Play</button></div>`).join("") + `</div>` + customLinks + `<div class="mut" style="text-align:center;font-size:11.5px;line-height:1.5;margin:6px 6px 16px">✅ 100% free to play — koi deposit ya entry fee nahi. Rewards promotional hain aur ads se funded hain. Ye gambling ya betting app nahi hai. Rewards promotional hain aur ads se funded hain.</div>`;
 }
 function nextLbPayoutTime(){
   const c = cfg(), d = new Date();
@@ -2191,7 +2196,7 @@ setInterval(()=>{
       lbDayOk = Math.round((todMid-lastMid)/86400000) >= iv;
     }
   } else { lbDayOk = true; }
-  if(false && !lbc.lbServerPayout && lbDayOk && d.getHours()>=lbc.lbResetHour && S.lastLbPayout !== todayStr){
+  if(!lbc.lbServerPayout && lbDayOk && d.getHours()>=lbc.lbResetHour && S.lastLbPayout !== todayStr){
     if(S.isGuest || !acctOf(S.phone)){ S.rp = 0; S.lastLbPayout = todayStr; ch = true; }
     else if(!LBP.payBusy && Date.now()>LBP.payAt){
       LBP.payBusy = true;
@@ -3345,9 +3350,9 @@ function gameOver(){
   if(G && G.tl!==undefined && G.tl>0.1 && !G.ending){ if(!G.rs){ G.rs = true; const o = G; G.rsT = setTimeout(()=>gameRestart(o), 450); } return; }
   try{ fxSound("over"); navigator.vibrate && navigator.vibrate([60,40,90]); }catch(e){}
   const t = G.t, sc = bank(), gh = $("#gh");
-  G.eligible = earnOk() && sc>=runMin() && (G.tl===undefined || G.tl<=0.1);   // min score AND the full timer finished
+  G.runSc = sc; G.eligible = earnOk() && sc>=runMin() && (G.tl===undefined || G.tl<=0.1);   // min score AND the full timer finished
   if(!G.eligible){   // 100 score not reached (or earning off): no reward, straight back into a fresh game
-    gToast(earnOk() ? "🎯 "+runMin()+" score nahi bana — dobara shuru" : "🎮 Dobara shuru");
+    gToast(earnOk() ? "🎯 Score banao — dobara shuru" : "🎮 Dobara shuru");
     const gg = G; setTimeout(()=>{ if(G && G===gg) playAgain(); }, 700); return;
   }
   gh.style.bottom = "auto"; gh.style.top = "30px"; gh.style.pointerEvents = "auto";
@@ -3360,7 +3365,7 @@ function gameOver(){
     <div style="font-size:26px;font-weight:900;color:#ffd54a;text-shadow:0 2px 0 #7c3f00,0 0 16px rgba(255,213,74,.6);margin:8px 0 16px">🎉 NICE GAME! 🎉</div>
     <div style="background:#bbf7d0;border-radius:12px;padding:10px;margin-bottom:14px"><div style="font-size:10px;color:#14532d;font-weight:800;letter-spacing:.5px">BEST SCORE</div><div style="font-size:22px;font-weight:900;color:#14532d">🏆 ${S.best[t.id]||sc}</div></div>
     <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:4px">
-      <button class="btn" id="boostBtn" style="background:linear-gradient(180deg,#ffe488,#f5a300);color:#3a1f00;font-weight:900;font-size:18px;flex:1;max-width:220px" onclick="claimRun()">🎁 Claim ${runRpAmt()} RP</button>
+      <button class="btn" id="boostBtn" style="background:linear-gradient(180deg,#ffe488,#f5a300);color:#3a1f00;font-weight:900;font-size:18px;flex:1;max-width:220px" onclick="claimRun()">🎁 Claim ${runRpAmt(sc)} RP</button>
       <div style="background:#22c55e;color:#fff;font-size:11px;font-weight:800;padding:5px 10px;border-radius:8px;display:flex;align-items:center;gap:3px">🎬 ADS</div>
     </div>
     <button class="btn" id="skipBtn" style="width:100%;margin-top:10px;background:#ffffff26;border:1px solid #ffffff44;color:#fff;font-weight:900;font-size:15px" onclick="playAgain()">⏭ Skip Ads</button>
