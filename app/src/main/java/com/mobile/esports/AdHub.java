@@ -153,7 +153,7 @@ class AdHub {
     // ================= banner =================
     /** LevelPlay banner only (other networks are mediated inside LevelPlay). */
     private String bannerNetwork() {
-        if (bannerOn && lpUsable() && lpReady && !bannerUnit().isEmpty() && !lpBannerFailed) return "levelplay";
+        if (configured && bannerOn && lpUsable() && lpReady && !bannerUnit().isEmpty() && !lpBannerFailed) return "levelplay";   // never before the admin config arrived
         return "";
     }
 

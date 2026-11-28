@@ -1301,6 +1301,7 @@ function setRemote(doc){
   RCFG = mergeDeep(defaultConfig(), doc.config || {});
   RADS = mergeDeep(defaultAdConfig(), doc.adConfig || {});
   RPROMOS = (doc.promos && typeof doc.promos === "object") ? doc.promos : null;
+  try{ pushAdCfg(); }catch(e){}   // admin Ads switches reach the native ad layer immediately
 }
 function applyRemoteToS(){ if(!S) return; if(RCFG) S.config = RCFG; if(RADS) S.adConfig = RADS; if(RPROMOS) S.promos = RPROMOS; }
 try{ const r = JSON.parse(localStorage.getItem("esp_remote") || "null"); if(r && r.doc){ setRemote(r.doc); lastRemoteJson = JSON.stringify(r.doc); } }catch(e){}
@@ -1667,14 +1668,16 @@ if(S && S.wd && S.wd.length && S.wd.some(w=>!w.id)){
   S.wdSeq = seq; save();
 }
 function pushAdCfg(){
-  if(!(window.AndroidAds && window.AndroidAds.configure && S && S.adConfig)) return;
-  const a = S.adConfig, n = a.networks || {}, u = n.unity || {}, st = n.startio || {}, lp = n.levelplay || {};
+  if(!(window.AndroidAds && window.AndroidAds.configure)) return;
+  const a = RADS || (S && S.adConfig); if(!a) return;
+  const n = a.networks || {}, u = n.unity || {}, st = n.startio || {}, lp = n.levelplay || {};
   try{ window.AndroidAds.configure(JSON.stringify({on:a.on!==false, unityOn:a.unityOn!==false, bannerOn:a.bannerOn!==false, rewardedOn:a.rewardedOn!==false, adDebug:a.adDebug===true,
     unityGame:u.gameId||"", unityBanner:u.bannerId||"", unityRewarded:u.rewardedId||"", startId:st.appId||"", lpKey:lp.appKey||"", lpRewarded:lp.rewardedId||"", lpBanner:lp.bannerId||""})); }catch(e){}
 }
+function adBannerWanted(screen){ const a = RADS || (S && S.adConfig); if(!a) return false; return a.on!==false && a.bannerOn!==false && a.unityOn!==false && !(a.screens && a.screens[screen]===false); }
 function adBox(screen){
   // Banner sits at the very TOP of the screen (away from buttons, so no accidental taps). Rewarded ad only on the RP claim.
-  if(window.AndroidAds && window.AndroidAds.setBanner){ try{ window.AndroidAds.setBanner(true); }catch(e){} }
+  if(window.AndroidAds && window.AndroidAds.setBanner){ try{ window.AndroidAds.setBanner(adBannerWanted(screen)); }catch(e){} }
   return "";
 }
 function noticeBanner(screen){
@@ -2144,8 +2147,8 @@ function board(chips){
 function play(){
   const v = $("#view");
   if(!(S&&S.countryId) && !window.wdIpCc){ ipCountry().then(cc=>{ if(cc && !window.wdIpCc){ window.wdIpCc = cc; if(tab==='play' && !$('#gm')) render(); } }).catch(()=>{}); }
-  const chips = `<div class="chips"><button class="chip ${sub!=="board"?"on":""}" onclick="sub='matches';render()">Tournaments</button><button class="chip ${sub==="board"?"on":""}" onclick="sub='board';render()">Leaderboard</button></div>`;
-  if(!earnOk()) sub = "matches";
+  const chips = `<div class="chips"><button class="chip ${sub!=="board"?"on":""}" onclick="sub='matches';render()">Tournaments</button>${cfg().lbOn!==false?`<button class="chip ${sub==="board"?"on":""}" onclick="sub='board';render()">Leaderboard</button>`:""}</div>`;
+  if(!earnOk() || cfg().lbOn===false) sub = "matches";
   if(sub==="board") return board(chips);
   const ord = gamesOrderAll(cfg());
   const toursSorted = S.tours.slice().sort((a,b)=>ord.indexOf(a.g)-ord.indexOf(b.g));
@@ -2204,7 +2207,7 @@ setInterval(()=>{
       lbDayOk = Math.round((todMid-lastMid)/86400000) >= iv;
     }
   } else { lbDayOk = true; }
-  if(!lbc.lbServerPayout && lbDayOk && d.getHours()>=lbc.lbResetHour && S.lastLbPayout !== todayStr){
+  if(lbc.lbOn!==false && !lbc.lbServerPayout && lbDayOk && d.getHours()>=lbc.lbResetHour && S.lastLbPayout !== todayStr){
     if(S.isGuest || !acctOf(S.phone)){ S.rp = 0; S.lastLbPayout = todayStr; ch = true; }
     else if(!LBP.payBusy && Date.now()>LBP.payAt){
       LBP.payBusy = true;
@@ -2279,7 +2282,7 @@ function mkG(t, c){
        startMs:now(), bullets:[], roids:[], knifeRot:0, knifeRotSpeed:0.038, stuck:[], grid:null, bmTime:120, carry:0};
 }
 function openGame(t){
-  try{ if(window.AndroidAds && window.AndroidAds.setBanner) window.AndroidAds.setBanner(true); }catch(e){}
+  try{ if(window.AndroidAds && window.AndroidAds.setBanner) window.AndroidAds.setBanner(adBannerWanted("game")); }catch(e){}
   const o = document.createElement("div"); o.id = "gm";
   const acc = GACC[t.g]||"#8b5cf6"; o.style.cssText = "position:fixed;inset:0;z-index:99;background:radial-gradient(120% 60% at 50% 0%,"+acc+"55,transparent 62%),radial-gradient(90% 50% at 50% 100%,"+acc+"33,transparent 70%),#0d0826;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:env(safe-area-inset-top,0px) 10px env(safe-area-inset-bottom,0px);overflow-y:auto";
   const gameAdOn = !window.AndroidAds && S.adConfig && S.adConfig.on && (!S.adConfig.screens || S.adConfig.screens.game!==false);
